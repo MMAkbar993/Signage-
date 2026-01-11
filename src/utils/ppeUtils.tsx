@@ -142,8 +142,6 @@ export function getPPEIcon(ppe: PPEType, className: string = 'w-8 h-8') {
       return <Footprints className={className} />;
     case 'fire-gloves':
       return <HandMetal className={className} />;
-    case 'fire-extinguisher':
-      return <Flame className={className} />;
     case 'fire-blanket':
       return <Shield className={className} />;
     case 'smoke-hood':
@@ -413,8 +411,6 @@ export function getPPELabel(ppe: PPEType): string {
       return 'FIRE BOOTS';
     case 'fire-gloves':
       return 'FIRE GLOVES';
-    case 'fire-extinguisher':
-      return 'EXTINGUISHER';
     case 'fire-blanket':
       return 'FIRE BLANKET';
     case 'smoke-hood':
