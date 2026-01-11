@@ -1,0 +1,112 @@
+import { SignageCategory, CategoryConfig } from '../types/signage';
+
+export function getCategoryConfig(category: SignageCategory): CategoryConfig {
+  const configs: Record<SignageCategory, CategoryConfig> = {
+    danger: {
+      name: 'Danger',
+      color: '#D60000',
+      borderColor: '#D60000',
+      backgroundColor: '#FFF5F5',
+      textColor: '#D60000',
+      icon: 'AlertTriangle',
+    },
+    warning: {
+      name: 'Warning',
+      color: '#FFD600',
+      borderColor: '#FFD600',
+      backgroundColor: '#FFFBEB',
+      textColor: '#92400E',
+      icon: 'AlertCircle',
+    },
+    caution: {
+      name: 'Caution',
+      color: '#FF8C00',
+      borderColor: '#FF8C00',
+      backgroundColor: '#FFF7ED',
+      textColor: '#9A3412',
+      icon: 'AlertCircle',
+    },
+    mandatory: {
+      name: 'Mandatory',
+      color: '#005BBB',
+      borderColor: '#005BBB',
+      backgroundColor: '#EFF6FF',
+      textColor: '#1E3A8A',
+      icon: 'Shield',
+    },
+    prohibition: {
+      name: 'Prohibition',
+      color: '#D60000',
+      borderColor: '#D60000',
+      backgroundColor: '#FFF5F5',
+      textColor: '#D60000',
+      icon: 'Ban',
+    },
+    emergency: {
+      name: 'Emergency',
+      color: '#009E2A',
+      borderColor: '#009E2A',
+      backgroundColor: '#F0FDF4',
+      textColor: '#14532D',
+      icon: 'Activity',
+    },
+    fire: {
+      name: 'Fire Safety',
+      color: '#D60000',
+      borderColor: '#D60000',
+      backgroundColor: '#FFF5F5',
+      textColor: '#D60000',
+      icon: 'Flame',
+    },
+    chemical: {
+      name: 'Chemical Safety',
+      color: '#FF8C00',
+      borderColor: '#FF8C00',
+      backgroundColor: '#FFF7ED',
+      textColor: '#9A3412',
+      icon: 'Droplet',
+    },
+    electrical: {
+      name: 'Electrical Safety',
+      color: '#FFD600',
+      borderColor: '#000000',
+      backgroundColor: '#FFFBEB',
+      textColor: '#000000',
+      icon: 'Zap',
+    },
+    stp: {
+      name: 'STP / Wastewater',
+      color: '#005BBB',
+      borderColor: '#005BBB',
+      backgroundColor: '#EFF6FF',
+      textColor: '#1E3A8A',
+      icon: 'Waves',
+    },
+    traffic: {
+      name: 'Traffic / Road',
+      color: '#D60000',
+      borderColor: '#D60000',
+      backgroundColor: '#FFFFFF',
+      textColor: '#000000',
+      icon: 'Car',
+    },
+    informational: {
+      name: 'Informational',
+      color: '#009E2A',
+      borderColor: '#009E2A',
+      backgroundColor: '#F0FDF4',
+      textColor: '#14532D',
+      icon: 'Info',
+    },
+    custom: {
+      name: 'Custom',
+      color: '#64748B',
+      borderColor: '#64748B',
+      backgroundColor: '#F8FAFC',
+      textColor: '#334155',
+      icon: 'Settings',
+    },
+  };
+
+  return configs[category] || configs.custom; // Fallback to custom if category not found
+}
