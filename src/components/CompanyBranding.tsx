@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, Palette, Type, Layout, X, Plus, Minus } from 'lucide-react';
+import { Upload, Palette, X } from 'lucide-react';
 
 export interface BrandingConfig {
   enabled: boolean;
@@ -12,6 +12,11 @@ export interface BrandingConfig {
   contractorLogo?: string;
   clientPosition: 'left' | 'right'; // Which side client logo appears in header
   headerLogosEnabled: boolean; // Toggle for header logos
+  // Logo positions and sizes (in percentage of header width/height)
+  clientLogoPosition?: { x: number; y: number }; // Position in percentage (0-100)
+  clientLogoSize?: { width: number; height: number }; // Size in pixels
+  contractorLogoPosition?: { x: number; y: number }; // Position in percentage (0-100)
+  contractorLogoSize?: { width: number; height: number }; // Size in pixels
   headerEnabled: boolean;
   headerText: string;
   headerColor: string;
@@ -280,200 +285,6 @@ export function CompanyBranding({ config, onChange }: CompanyBrandingProps) {
           </div>
         </div>
 
-        {config.logo && (
-          <>
-            {/* Logo Position */}
-            <div>
-              <label className="block text-sm text-slate-700 mb-2">Logo Position</label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { value: 'top-left', label: '↖ Top Left' },
-                  { value: 'center-top', label: '↑ Center Top' },
-                  { value: 'top-right', label: '↗ Top Right' },
-                  { value: 'bottom-left', label: '↙ Bottom Left' },
-                  { value: 'center-bottom', label: '↓ Center Bottom' },
-                  { value: 'bottom-right', label: '↘ Bottom Right' }
-                ].map((pos) => (
-                  <button
-                    key={pos.value}
-                    onClick={() => updateConfig({ logoPosition: pos.value as any })}
-                    className={`px-3 py-2 text-xs rounded-lg border transition-all ${
-                      config.logoPosition === pos.value
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-slate-700 border-slate-300 hover:border-blue-400'
-                    }`}
-                  >
-                    {pos.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Logo Size */}
-            <div>
-              <label className="block text-sm text-slate-700 mb-2">
-                Logo Size: {config.logoSize}%
-              </label>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => updateConfig({ logoSize: Math.max(50, config.logoSize - 10) })}
-                  className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center hover:bg-slate-200"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-                <input
-                  type="range"
-                  min="50"
-                  max="150"
-                  value={config.logoSize}
-                  onChange={(e) => updateConfig({ logoSize: Number(e.target.value) })}
-                  className="flex-1 h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer"
-                />
-                <button
-                  onClick={() => updateConfig({ logoSize: Math.min(150, config.logoSize + 10) })}
-                  className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center hover:bg-slate-200"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Logo Opacity */}
-            <div>
-              <label className="block text-sm text-slate-700 mb-2">
-                Logo Opacity: {config.logoOpacity}%
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={config.logoOpacity}
-                onChange={(e) => updateConfig({ logoOpacity: Number(e.target.value) })}
-                className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer"
-              />
-            </div>
-          </>
-        )}
-
-        {/* Custom Header */}
-        <div className="border-t border-slate-200 pt-4">
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-sm text-slate-700">Custom Header</label>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={config.headerEnabled}
-                onChange={(e) => updateConfig({ headerEnabled: e.target.checked })}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-          {config.headerEnabled && (
-            <div className="space-y-3">
-              <input
-                type="text"
-                placeholder="Header Text (e.g., ABC Corporation)"
-                value={config.headerText}
-                onChange={(e) => updateConfig({ headerText: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-slate-600 mb-1">Text Color</label>
-                  <input
-                    type="color"
-                    value={config.headerColor}
-                    onChange={(e) => updateConfig({ headerColor: e.target.value })}
-                    className="w-full h-10 rounded-lg cursor-pointer"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-slate-600 mb-1">Background Color</label>
-                  <input
-                    type="color"
-                    value={config.headerBgColor}
-                    onChange={(e) => updateConfig({ headerBgColor: e.target.value })}
-                    className="w-full h-10 rounded-lg cursor-pointer"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Custom Footer */}
-        <div className="border-t border-slate-200 pt-4">
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-sm text-slate-700">Custom Footer</label>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={config.footerEnabled}
-                onChange={(e) => updateConfig({ footerEnabled: e.target.checked })}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-          {config.footerEnabled && (
-            <div className="space-y-3">
-              <input
-                type="text"
-                placeholder="Footer Text (e.g., ISO 7010 Compliant)"
-                value={config.footerText}
-                onChange={(e) => updateConfig({ footerText: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-slate-600 mb-1">Text Color</label>
-                  <input
-                    type="color"
-                    value={config.footerColor}
-                    onChange={(e) => updateConfig({ footerColor: e.target.value })}
-                    className="w-full h-10 rounded-lg cursor-pointer"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-slate-600 mb-1">Background Color</label>
-                  <input
-                    type="color"
-                    value={config.footerBgColor}
-                    onChange={(e) => updateConfig({ footerBgColor: e.target.value })}
-                    className="w-full h-10 rounded-lg cursor-pointer"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* QR Code */}
-        <div className="border-t border-slate-200 pt-4">
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-sm text-slate-700">Add QR Code (SOP/Safety Code)</label>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={config.qrCodeEnabled}
-                onChange={(e) => updateConfig({ qrCodeEnabled: e.target.checked })}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-          {config.qrCodeEnabled && (
-            <input
-              type="text"
-              placeholder="URL or Text for QR Code"
-              value={config.qrCodeData}
-              onChange={(e) => updateConfig({ qrCodeData: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          )}
-        </div>
-
         {/* Brand Colors */}
         <div className="border-t border-slate-200 pt-4">
           <label className="block text-sm text-slate-700 mb-3">Brand Colors</label>
@@ -526,6 +337,10 @@ export const defaultBrandingConfig: BrandingConfig = {
   logoOpacity: 100,
   clientPosition: 'left',
   headerLogosEnabled: false,
+  clientLogoPosition: { x: 5, y: 5 }, // Default: 5% from left, 5% from top
+  clientLogoSize: { width: 96, height: 64 }, // Default: 96x64 pixels
+  contractorLogoPosition: { x: 95, y: 5 }, // Default: 95% from left (right side), 5% from top
+  contractorLogoSize: { width: 96, height: 64 }, // Default: 96x64 pixels
   headerEnabled: false,
   headerText: '',
   headerColor: '#ffffff',

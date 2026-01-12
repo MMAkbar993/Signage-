@@ -18,6 +18,80 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
     const [orientation, setOrientation] = useState('landscape') // portrait, landscape
     const chartContainerRef = useRef(null)
     const fileInputRef = useRef(null)
+    const isPositionDraggingRef = useRef(false)
+
+    // Load from localStorage on mount
+    useEffect(() => {
+        const savedMembers = localStorage.getItem('organizationChartMembers')
+        const savedPositions = localStorage.getItem('organizationChartPositions')
+        const savedChartImage = localStorage.getItem('organizationChartImage')
+        const savedChartStyle = localStorage.getItem('organizationChartStyle')
+        const savedPaperSize = localStorage.getItem('organizationChartPaperSize')
+        const savedOrientation = localStorage.getItem('organizationChartOrientation')
+        
+        if (savedMembers) {
+            try {
+                const loadedMembers = JSON.parse(savedMembers)
+                setOrgMembers(loadedMembers)
+            } catch (error) {
+                console.error('Error loading organization chart members:', error)
+            }
+        }
+        
+        if (savedPositions) {
+            try {
+                const loadedPositions = JSON.parse(savedPositions)
+                setMemberPositions(loadedPositions)
+            } catch (error) {
+                console.error('Error loading member positions:', error)
+            }
+        }
+        
+        if (savedChartImage) {
+            setChartImage(savedChartImage)
+        }
+        
+        if (savedChartStyle) {
+            setChartStyle(savedChartStyle)
+        }
+        
+        if (savedPaperSize) {
+            setPaperSize(savedPaperSize)
+        }
+        
+        if (savedOrientation) {
+            setOrientation(savedOrientation)
+        }
+    }, [])
+
+    // Save to localStorage whenever data changes
+    useEffect(() => {
+        localStorage.setItem('organizationChartMembers', JSON.stringify(orgMembers))
+    }, [orgMembers])
+
+    useEffect(() => {
+        localStorage.setItem('organizationChartPositions', JSON.stringify(memberPositions))
+    }, [memberPositions])
+
+    useEffect(() => {
+        if (chartImage) {
+            localStorage.setItem('organizationChartImage', chartImage)
+        } else {
+            localStorage.removeItem('organizationChartImage')
+        }
+    }, [chartImage])
+
+    useEffect(() => {
+        localStorage.setItem('organizationChartStyle', chartStyle)
+    }, [chartStyle])
+
+    useEffect(() => {
+        localStorage.setItem('organizationChartPaperSize', paperSize)
+    }, [paperSize])
+
+    useEffect(() => {
+        localStorage.setItem('organizationChartOrientation', orientation)
+    }, [orientation])
 
     // Initialize positions for new members
     useEffect(() => {
@@ -438,6 +512,20 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
 
     // Drag and Drop Handlers
     const handleDragStart = (e, memberId) => {
+        // Prevent HTML5 drag if we're doing position dragging
+        if (isPositionDraggingRef.current) {
+            e.preventDefault()
+            e.stopPropagation()
+            return false
+        }
+        // Only proceed with HTML5 drag if Alt/Option key is pressed (for linking)
+        // This allows linking while keeping position dragging as default
+        if (!e.altKey && !e.metaKey) {
+            // Cancel the drag - user wants to move position, not link
+            e.preventDefault()
+            e.stopPropagation()
+            return false
+        }
         setDraggedMember(memberId)
         e.dataTransfer.effectAllowed = 'move'
         e.dataTransfer.setData('text/html', memberId)
@@ -485,11 +573,23 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
             return // Don't drag if clicking on input/button
         }
 
+        // If Alt/Option key is pressed, allow HTML5 drag for linking
+        // Otherwise, do position dragging
+        if (e.altKey || e.metaKey) {
+            isPositionDraggingRef.current = false
+            return // Allow HTML5 drag to proceed
+        }
+
+        // Prevent HTML5 drag when doing position drag
+        e.preventDefault()
+        e.stopPropagation()
+
         const position = memberPositions[memberId] || { x: 100, y: 100 }
         const rect = e.currentTarget.getBoundingClientRect()
         const offsetX = e.clientX - rect.left
         const offsetY = e.clientY - rect.top
 
+        isPositionDraggingRef.current = true
         setDraggedMember(memberId)
         setIsDraggingPosition(true)
         setDragOffset({ x: offsetX, y: offsetY })
@@ -513,6 +613,7 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
     }, [isDraggingPosition, draggedMember, dragOffset])
 
     const handleMouseUp = useCallback(() => {
+        isPositionDraggingRef.current = false
         setIsDraggingPosition(false)
         setDraggedMember(null)
         setDragOverMember(null)
@@ -898,7 +999,7 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
 
         return (
             <div
-                draggable
+                draggable={true}
                 onDragStart={(e) => handleDragStart(e, member.id)}
                 onDragOver={(e) => handleDragOver(e, member.id)}
                 onDragLeave={handleDragLeave}
@@ -1541,7 +1642,7 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                                 <h2 className="text-xl lg:text-2xl font-bold text-gray-900">Organization Chart</h2>
                                 <div className="text-sm text-gray-600">
                                     <p className="mb-1">💡 Drag members to reposition</p>
-                                    <p>Drop one member on another to link them</p>
+                                    <p>Hold Alt/Option + drag to link members</p>
                                 </div>
                             </div>
 

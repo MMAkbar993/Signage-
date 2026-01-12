@@ -211,7 +211,10 @@ export function CustomSignageEditor() {
   // Interaction State
   const [isDragging, setIsDragging] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number; elementX: number; elementY: number } | null>(null);
+  const [isResizing, setIsResizing] = useState<string | null>(null);
+  const [resizeStart, setResizeStart] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [resizeHandle, setResizeHandle] = useState<string | null>(null);
   const [currentPath, setCurrentPath] = useState<{ x: number; y: number }[]>([]);
   
   // History
@@ -380,8 +383,8 @@ export function CustomSignageEditor() {
       id: `icon-${Date.now()}`,
       type: 'icon',
       content: emoji,
-      x: Math.random() * (canvasWidth - 100),
-      y: Math.random() * (canvasHeight - 100),
+      x: canvasWidth / 2 - 40,
+      y: canvasHeight / 2 - 40,
       width: 80,
       height: 80,
       rotation: 0,
@@ -389,7 +392,9 @@ export function CustomSignageEditor() {
       opacity: 1,
       zIndex: elements.length,
       visible: true,
-      locked: false
+      locked: false,
+      borderColor: '#3B82F6',
+      borderWidth: 2
     });
     toast.success(`${name} added`);
   };
@@ -422,7 +427,9 @@ export function CustomSignageEditor() {
           invert: false
         },
         visible: true,
-        locked: false
+        locked: false,
+        borderColor: '#3B82F6',
+        borderWidth: 2
       });
       toast.success('Image uploaded');
     };
@@ -583,6 +590,156 @@ export function CustomSignageEditor() {
   };
 
   const selected = elements.find(el => el.id === selectedElement);
+
+  // Handle element dragging
+  const handleElementMouseDown = (e: React.MouseEvent, element: CanvasElement) => {
+    if (element.locked || activeTool !== 'select') return;
+    
+    // Don't start drag if clicking on resize handle
+    if ((e.target as HTMLElement).closest('.resize-handle')) {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setSelectedElement(element.id);
+    setIsDragging(true);
+    
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const scale = zoom / 100;
+    const canvasX = (e.clientX - rect.left) / scale;
+    const canvasY = (e.clientY - rect.top) / scale;
+    
+    setDragStart({
+      x: canvasX,
+      y: canvasY,
+      elementX: element.x,
+      elementY: element.y
+    });
+  };
+
+  // Handle resize start
+  const handleResizeMouseDown = (e: React.MouseEvent, elementId: string, handle: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const element = elements.find(el => el.id === elementId);
+    if (!element || element.locked) return;
+    
+    setIsResizing(elementId);
+    setResizeHandle(handle);
+    
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const scale = zoom / 100;
+    const canvasX = (e.clientX - rect.left) / scale;
+    const canvasY = (e.clientY - rect.top) / scale;
+    
+    setResizeStart({
+      x: canvasX,
+      y: canvasY,
+      width: element.width,
+      height: element.height
+    });
+  };
+
+  // Handle mouse move for dragging and resizing
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!canvasRef.current) return;
+      
+      const rect = canvasRef.current.getBoundingClientRect();
+      const scale = zoom / 100;
+      const canvasX = (e.clientX - rect.left) / scale;
+      const canvasY = (e.clientY - rect.top) / scale;
+
+      if (isDragging && dragStart && selectedElement) {
+        const element = elements.find(el => el.id === selectedElement);
+        if (!element || element.locked) return;
+        
+        const deltaX = canvasX - dragStart.x;
+        const deltaY = canvasY - dragStart.y;
+        
+        const newX = Math.max(0, Math.min(canvasWidth - element.width, dragStart.elementX + deltaX));
+        const newY = Math.max(0, Math.min(canvasHeight - element.height, dragStart.elementY + deltaY));
+        
+        updateElement(selectedElement, { x: newX, y: newY });
+      } else if (isResizing && resizeStart && resizeHandle) {
+        const element = elements.find(el => el.id === isResizing);
+        if (!element || element.locked) return;
+        
+        const deltaX = canvasX - resizeStart.x;
+        const deltaY = canvasY - resizeStart.y;
+        
+        let newWidth = resizeStart.width;
+        let newHeight = resizeStart.height;
+        let newX = element.x;
+        let newY = element.y;
+        
+        const minSize = 20;
+        const maxWidth = canvasWidth - element.x;
+        const maxHeight = canvasHeight - element.y;
+        
+        switch (resizeHandle) {
+          case 'se': // Southeast (bottom-right)
+            newWidth = Math.max(minSize, Math.min(maxWidth, resizeStart.width + deltaX));
+            newHeight = Math.max(minSize, Math.min(maxHeight, resizeStart.height + deltaY));
+            break;
+          case 'sw': // Southwest (bottom-left)
+            newWidth = Math.max(minSize, Math.min(element.x + resizeStart.width, resizeStart.width - deltaX));
+            newHeight = Math.max(minSize, Math.min(maxHeight, resizeStart.height + deltaY));
+            newX = Math.max(0, element.x + (resizeStart.width - newWidth));
+            break;
+          case 'ne': // Northeast (top-right)
+            newWidth = Math.max(minSize, Math.min(maxWidth, resizeStart.width + deltaX));
+            newHeight = Math.max(minSize, Math.min(element.y + resizeStart.height, resizeStart.height - deltaY));
+            newY = Math.max(0, element.y + (resizeStart.height - newHeight));
+            break;
+          case 'nw': // Northwest (top-left)
+            newWidth = Math.max(minSize, Math.min(element.x + resizeStart.width, resizeStart.width - deltaX));
+            newHeight = Math.max(minSize, Math.min(element.y + resizeStart.height, resizeStart.height - deltaY));
+            newX = Math.max(0, element.x + (resizeStart.width - newWidth));
+            newY = Math.max(0, element.y + (resizeStart.height - newHeight));
+            break;
+        }
+        
+        // For icons, also update fontSize to match the new size
+        const updates: Partial<CanvasElement> = { width: newWidth, height: newHeight, x: newX, y: newY };
+        if (element.type === 'icon') {
+          // Scale fontSize proportionally to the new size
+          const sizeRatio = Math.min(newWidth, newHeight) / Math.min(resizeStart.width, resizeStart.height);
+          const currentFontSize = element.fontSize || 64;
+          updates.fontSize = Math.max(12, Math.min(200, currentFontSize * sizeRatio));
+        }
+        
+        updateElement(isResizing, updates);
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (isDragging || isResizing) {
+        saveToHistory();
+      }
+      setIsDragging(false);
+      setIsResizing(null);
+      setResizeHandle(null);
+      setDragStart(null);
+      setResizeStart(null);
+    };
+
+    if (isDragging || isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, isResizing, dragStart, resizeStart, resizeHandle, selectedElement, elements, zoom, canvasWidth, canvasHeight, updateElement, saveToHistory]);
 
   // Filter icons based on search
   const getFilteredIcons = () => {
@@ -915,7 +1072,57 @@ export function CustomSignageEditor() {
               )}
 
               {activeLeftTab === 'uploads' && (
-                <div className="text-center py-12">
+                <div 
+                  className="text-center py-12 border-2 border-dashed border-slate-600 rounded-lg mx-4 hover:border-blue-500 transition-colors"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onDragEnter={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+                    files.forEach((file) => {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        addElement({
+                          id: `image-${Date.now()}-${Math.random()}`,
+                          type: 'image',
+                          content: event.target?.result as string,
+                          x: 100,
+                          y: 100,
+                          width: 300,
+                          height: 300,
+                          rotation: 0,
+                          opacity: 1,
+                          zIndex: elements.length,
+                          filter: {
+                            brightness: 100,
+                            contrast: 100,
+                            saturation: 100,
+                            blur: 0,
+                            hue: 0,
+                            grayscale: false,
+                            sepia: false,
+                            invert: false
+                          },
+                          visible: true,
+                          locked: false,
+                          borderColor: '#3B82F6',
+                          borderWidth: 2
+                        });
+                      };
+                      reader.readAsDataURL(file);
+                    });
+                    if (files.length > 0) {
+                      toast.success(`${files.length} image(s) uploaded`);
+                    }
+                  }}
+                >
                   <Upload className="w-16 h-16 mx-auto mb-4 text-slate-600" />
                   <p className="text-slate-400 mb-4">Drag & drop images here</p>
                   <button
@@ -1017,64 +1224,229 @@ export function CustomSignageEditor() {
               {elements
                 .filter(el => el.visible !== false)
                 .sort((a, b) => a.zIndex - b.zIndex)
-                .map((element) => (
-                  <div
-                    key={element.id}
-                    onClick={() => setSelectedElement(element.id)}
-                    className={`absolute cursor-move ${selectedElement === element.id ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-900' : ''} ${element.locked ? 'cursor-not-allowed' : ''}`}
-                    style={{
-                      left: `${element.x}px`,
-                      top: `${element.y}px`,
-                      width: `${element.width}px`,
-                      height: `${element.height}px`,
-                      transform: `rotate(${element.rotation}deg) scaleX(${element.flipHorizontal ? -1 : 1}) scaleY(${element.flipVertical ? -1 : 1})`,
-                      opacity: element.opacity || 1,
-                      zIndex: element.zIndex,
-                      filter: getFilterCSS(element),
-                      mixBlendMode: element.blendMode as any || 'normal'
-                    }}
-                  >
-                    {element.type === 'text' && (
-                      <div
-                        contentEditable={!element.locked}
-                        suppressContentEditableWarning
-                        onBlur={(e) => updateElement(element.id, { content: e.currentTarget.textContent || '' })}
-                        style={{
-                          fontSize: `${element.fontSize}px`,
-                          fontFamily: element.fontFamily,
-                          fontWeight: element.fontWeight,
-                          fontStyle: element.fontStyle,
-                          textAlign: element.textAlign as any,
-                          textDecoration: element.textDecoration,
-                          color: element.color,
-                          width: '100%',
-                          height: '100%',
-                          outline: 'none',
-                          lineHeight: element.lineHeight || 1.2,
-                          letterSpacing: `${element.letterSpacing || 0}px`,
-                          textShadow: element.textShadow,
-                          WebkitTextStroke: element.textStroke,
-                          wordWrap: 'break-word',
-                          whiteSpace: 'pre-wrap'
-                        }}
-                      >
-                        {element.content}
-                      </div>
-                    )}
-                    
-                    {element.type === 'image' && (
-                      <img src={element.content} alt="" draggable={false} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
-                    )}
-                    
-                    {element.type === 'shape' && renderShape(element)}
-                    
-                    {element.type === 'icon' && (
-                      <div style={{ fontSize: element.fontSize || 64, lineHeight: '1', textAlign: 'center', userSelect: 'none' }}>
-                        {element.content}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                .map((element) => {
+                  const isSelected = selectedElement === element.id;
+                  const isIconOrImage = element.type === 'icon' || element.type === 'image';
+                  const isDraggableResizable = element.type === 'icon' || element.type === 'image' || element.type === 'text' || element.type === 'shape';
+                  // Show border for icons/images when selected, or for shapes when they don't have their own border
+                  const showBorder = (isIconOrImage && (isSelected || element.borderWidth)) || (element.type === 'shape' && isSelected && !element.borderWidth);
+                  
+                  return (
+                    <div
+                      key={element.id}
+                      onClick={(e) => {
+                        // Don't select if clicking on resize handle
+                        if ((e.target as HTMLElement).closest('.resize-handle')) {
+                          return;
+                        }
+                        setSelectedElement(element.id);
+                      }}
+                      onMouseDown={(e) => {
+                        // Don't start drag if clicking on resize handle
+                        if ((e.target as HTMLElement).closest('.resize-handle')) {
+                          return;
+                        }
+                        // For text elements: allow editing on click, dragging on click-and-drag
+                        if (element.type === 'text' && isDraggableResizable && activeTool === 'select') {
+                          const target = e.target as HTMLElement;
+                          // If clicking on the contentEditable div, handle specially
+                          if (target.isContentEditable || target.closest('[contenteditable="true"]')) {
+                            // Track if user is dragging or just clicking
+                            let startX = e.clientX;
+                            let startY = e.clientY;
+                            let isDraggingText = false;
+                            
+                            const handleMove = (moveEvent: MouseEvent) => {
+                              const deltaX = Math.abs(moveEvent.clientX - startX);
+                              const deltaY = Math.abs(moveEvent.clientY - startY);
+                              // If mouse moved more than 5px, it's a drag
+                              if (deltaX > 5 || deltaY > 5) {
+                                isDraggingText = true;
+                                // Cancel text selection
+                                window.getSelection()?.removeAllRanges();
+                                // Create a synthetic event for dragging
+                                const syntheticEvent = {
+                                  ...e,
+                                  clientX: moveEvent.clientX,
+                                  clientY: moveEvent.clientY,
+                                  preventDefault: () => {},
+                                  stopPropagation: () => {}
+                                } as React.MouseEvent;
+                                handleElementMouseDown(syntheticEvent, element);
+                                document.removeEventListener('mousemove', handleMove);
+                                document.removeEventListener('mouseup', handleUp);
+                              }
+                            };
+                            
+                            const handleUp = () => {
+                              document.removeEventListener('mousemove', handleMove);
+                              document.removeEventListener('mouseup', handleUp);
+                            };
+                            
+                            document.addEventListener('mousemove', handleMove);
+                            document.addEventListener('mouseup', handleUp);
+                            return; // Don't start drag immediately - wait to see if it's a drag or click
+                          }
+                        }
+                        // Start drag for draggable elements (including text when clicking on container)
+                        if (isDraggableResizable && activeTool === 'select') {
+                          handleElementMouseDown(e, element);
+                        }
+                      }}
+                      className={`absolute ${isSelected && activeTool === 'select' && isDraggableResizable ? 'cursor-move' : 'cursor-pointer'} ${element.locked ? 'cursor-not-allowed' : ''}`}
+                      style={{
+                        left: `${element.x}px`,
+                        top: `${element.y}px`,
+                        width: `${element.width}px`,
+                        height: `${element.height}px`,
+                        transform: `rotate(${element.rotation}deg) scaleX(${element.flipHorizontal ? -1 : 1}) scaleY(${element.flipVertical ? -1 : 1})`,
+                        opacity: element.opacity || 1,
+                        zIndex: element.zIndex,
+                        filter: getFilterCSS(element),
+                        mixBlendMode: element.blendMode as any || 'normal',
+                        border: showBorder 
+                          ? `${element.borderWidth || 2}px solid ${element.borderColor || '#3B82F6'}` 
+                          : (element.type === 'shape' && element.borderWidth ? `${element.borderWidth}px solid ${element.borderColor || '#000000'}` : 'none'),
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      {element.type === 'text' && (
+                        <div
+                          contentEditable={!element.locked}
+                          suppressContentEditableWarning
+                          onBlur={(e) => updateElement(element.id, { content: e.currentTarget.textContent || '' })}
+                          onFocus={(e) => {
+                            // When text is focused, ensure it's selected
+                            setSelectedElement(element.id);
+                          }}
+                          onMouseDown={(e) => {
+                            // Allow text editing - the parent will handle drag detection
+                            // If user clicks and doesn't move, text editing happens
+                            // If user clicks and drags, parent will handle the drag
+                          }}
+                          style={{
+                            fontSize: `${element.fontSize}px`,
+                            fontFamily: element.fontFamily,
+                            fontWeight: element.fontWeight,
+                            fontStyle: element.fontStyle,
+                            textAlign: element.textAlign as any,
+                            textDecoration: element.textDecoration,
+                            color: element.color,
+                            width: '100%',
+                            height: '100%',
+                            outline: 'none',
+                            lineHeight: element.lineHeight || 1.2,
+                            letterSpacing: `${element.letterSpacing || 0}px`,
+                            textShadow: element.textShadow,
+                            WebkitTextStroke: element.textStroke,
+                            wordWrap: 'break-word',
+                            whiteSpace: 'pre-wrap',
+                            pointerEvents: element.locked ? 'none' : 'auto',
+                            minHeight: '100%',
+                            userSelect: 'text',
+                            cursor: 'text'
+                          }}
+                        >
+                          {element.content || '\u00A0'}
+                        </div>
+                      )}
+                      
+                      {element.type === 'image' && (
+                        <div style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxSizing: 'border-box',
+                          overflow: 'hidden',
+                          backgroundColor: 'transparent'
+                        }}>
+                          <img 
+                            src={element.content} 
+                            alt="" 
+                            draggable={false} 
+                            style={{ 
+                              width: '100%', 
+                              height: '100%', 
+                              objectFit: 'contain', 
+                              pointerEvents: 'none',
+                              display: 'block'
+                            }} 
+                          />
+                        </div>
+                      )}
+                      
+                      {element.type === 'shape' && renderShape(element)}
+                      
+                      {element.type === 'icon' && (
+                        <div 
+                          style={{ 
+                            fontSize: element.fontSize || 64, 
+                            lineHeight: '1', 
+                            textAlign: 'center', 
+                            userSelect: 'none',
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            pointerEvents: 'none'
+                          }}
+                        >
+                          {element.content}
+                        </div>
+                      )}
+                      
+                      {/* Resize handles for icons, images, and text when selected */}
+                      {isSelected && isDraggableResizable && !element.locked && activeTool === 'select' && (
+                        <>
+                          {/* Selection border/outline */}
+                          <div
+                            className="absolute inset-0 pointer-events-none z-40"
+                            style={{
+                              border: '2px dashed #3B82F6',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                          {/* Corner handles */}
+                          <div
+                            className="resize-handle absolute -top-1 -left-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-nwse-resize z-50"
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              handleResizeMouseDown(e, element.id, 'nw');
+                            }}
+                            style={{ transform: 'translate(0, 0)' }}
+                          />
+                          <div
+                            className="resize-handle absolute -top-1 -right-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-nesw-resize z-50"
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              handleResizeMouseDown(e, element.id, 'ne');
+                            }}
+                            style={{ transform: 'translate(0, 0)' }}
+                          />
+                          <div
+                            className="resize-handle absolute -bottom-1 -left-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-nesw-resize z-50"
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              handleResizeMouseDown(e, element.id, 'sw');
+                            }}
+                            style={{ transform: 'translate(0, 0)' }}
+                          />
+                          <div
+                            className="resize-handle absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-nwse-resize z-50"
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              handleResizeMouseDown(e, element.id, 'se');
+                            }}
+                            style={{ transform: 'translate(0, 0)' }}
+                          />
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
 
               {/* Empty state */}
               {elements.length === 0 && (

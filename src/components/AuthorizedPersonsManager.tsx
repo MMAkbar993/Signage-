@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { AuthorizedPerson, SignageCategory } from '../types/signage';
 import { Plus, Trash2, Upload, User, Clock, Phone, Image as ImageIcon, Briefcase, Hash, Building2, Award, Calendar, Eye, ChevronDown, Printer, Layout } from 'lucide-react';
@@ -58,7 +59,14 @@ export function AuthorizedPersonsManager() {
     category: 'mandatory' as SignageCategory,
     paperSize: 'a4' as 'a5' | 'a4' | 'a3' | 'letter' | 'legal',
     orientation: 'landscape' as 'landscape' | 'portrait',
+    headerText: 'AUTHORIZED PERSONNEL',
+    footerText: 'ISO 7010 Compliant • EHS Safety',
   });
+  
+  // Global settings for header and footer (applied to all signage)
+  const [headerText, setHeaderText] = useState('AUTHORIZED PERSONNEL');
+  const [footerText, setFooterText] = useState('ISO 7010 Compliant • EHS Safety');
+  const [cardBackgroundColor, setCardBackgroundColor] = useState('#ffffff');
   const [previewImage, setPreviewImage] = useState<string>('');
   const previewRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -271,7 +279,7 @@ export function AuthorizedPersonsManager() {
               fontWeight: 700,
               lineHeight: '1.2'
             }}>
-              AUTHORIZED PERSONNEL
+              {headerText}
             </div>
           </div>
 
@@ -291,7 +299,7 @@ export function AuthorizedPersonsManager() {
                   border: `3px solid ${config.color}`,
                   borderRadius: '8px',
                   padding: '12px',
-                  backgroundColor: '#ffffff',
+                  backgroundColor: cardBackgroundColor,
                   boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                   display: 'flex',
                   flexDirection: 'column',
@@ -526,7 +534,7 @@ export function AuthorizedPersonsManager() {
               fontSize: '10px',
               fontWeight: 600
             }}>
-              <div>ISO 7010 Compliant • EHS Safety</div>
+              <div>{footerText}</div>
               <div>{displayPersons.length} Person{displayPersons.length > 1 ? 's' : ''}</div>
             </div>
           </div>
@@ -596,9 +604,10 @@ export function AuthorizedPersonsManager() {
             color-adjust: exact !important;
           }
           
-          /* Optimize page layout - Set specific page size */
+          /* Set page orientation based on multiOrientation state */
           @page {
             margin: 0;
+            size: ${multiOrientation === 'landscape' ? 'landscape' : 'portrait'};
           }
           
           /* Hide scrollbars */
@@ -624,6 +633,58 @@ export function AuthorizedPersonsManager() {
               </h3>
 
               <div className="space-y-4">
+                {/* Header Text */}
+                <div>
+                  <label className="block text-sm text-slate-700 mb-2">
+                    Header Text
+                  </label>
+                  <input
+                    type="text"
+                    value={headerText}
+                    onChange={(e) => setHeaderText(e.target.value)}
+                    placeholder="e.g., AUTHORIZED PERSONNEL"
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Footer Text */}
+                <div>
+                  <label className="block text-sm text-slate-700 mb-2">
+                    Footer Text
+                  </label>
+                  <input
+                    type="text"
+                    value={footerText}
+                    onChange={(e) => setFooterText(e.target.value)}
+                    placeholder="e.g., ISO 7010 Compliant • EHS Safety"
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Card Background Color */}
+                <div>
+                  <label className="block text-sm text-slate-700 mb-2">
+                    Card Background Color
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={cardBackgroundColor}
+                      onChange={(e) => setCardBackgroundColor(e.target.value)}
+                      className="w-16 h-10 rounded-lg border-2 border-slate-300 cursor-pointer"
+                      title="Pick a color"
+                    />
+                    <input
+                      type="text"
+                      value={cardBackgroundColor}
+                      onChange={(e) => setCardBackgroundColor(e.target.value)}
+                      placeholder="#ffffff"
+                      className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Color for the person card backgrounds</p>
+                </div>
+
                 {/* Paper Size */}
                 <div>
                   <label className="block text-sm text-slate-700 mb-2">
@@ -1168,28 +1229,6 @@ export function AuthorizedPersonsManager() {
                         </div>
                       </div>
 
-                      {/* Card Scale Slider */}
-                      <div>
-                        <label className="block text-sm text-slate-700 mb-2">
-                          Card Size: {cardScale}%
-                        </label>
-                        <input
-                          type="range"
-                          min="50"
-                          max="150"
-                          value={cardScale}
-                          onChange={(e) => setCardScale(Number(e.target.value))}
-                          className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer"
-                          style={{
-                            accentColor: '#2563eb'
-                          }}
-                        />
-                        <div className="flex justify-between text-xs text-slate-500 mt-1">
-                          <span>50%</span>
-                          <span>100%</span>
-                          <span>150%</span>
-                        </div>
-                      </div>
 
                       {/* Photo Scale Slider */}
                       <div>

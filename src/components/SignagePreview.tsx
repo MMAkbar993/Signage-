@@ -1,5 +1,6 @@
+import React from 'react';
 import { SignageData, QRCodeConfig } from '../types/signage';
-import { AlertTriangle, AlertCircle, Shield, Ban, Activity, Flame, Droplet, Zap, Waves, Car, Info, Settings, Download, FileDown, MapPin, Phone, Globe, Printer, X } from 'lucide-react';
+import { AlertTriangle, AlertCircle, Shield, Ban, Activity, Flame, Droplet, Zap, Waves, Car, Info, Settings, Download, FileDown, MapPin, Phone, Globe, Printer, X, Move, Maximize2 } from 'lucide-react';
 import { getCategoryConfig } from '../utils/categoryConfig';
 import { getPPEIcon, getPPELabel } from '../utils/ppeUtils';
 import { QRCodeSVG } from 'qrcode.react';
@@ -7,11 +8,12 @@ import { BrandingConfig } from './CompanyBranding';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { toast } from 'sonner';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface SignagePreviewProps {
   signageData: SignageData;
   brandingConfig?: BrandingConfig;
+  onBrandingConfigChange?: (config: BrandingConfig) => void;
 }
 
 // Helper function to get QR code value from config (usable in exports)
@@ -30,41 +32,156 @@ const getQRCodeValueFromConfig = (signageData: SignageData): { value: string | n
   
   if (!qrConfig) return { value: null, isExistingImage: false };
   
-  // Priority 1: Legacy URL
-  if (qrConfig.legacyUrl) {
-    return { value: qrConfig.legacyUrl, isExistingImage: false };
+  // Priority 1: Manual Input - Legacy URL (highest priority, overrides everything)
+  if (qrConfig.legacyUrl && qrConfig.legacyUrl.trim()) {
+    return { value: qrConfig.legacyUrl.trim(), isExistingImage: false };
   }
   
-  // Priority 2: Content boxes URLs
+  // Priority 2: Manual Input - Content boxes URLs (overrides auto-selected sources)
   if (qrConfig.contentBoxes && qrConfig.contentBoxes.length > 0) {
     const urls = qrConfig.contentBoxes
-      .filter(box => box.url)
-      .map(box => box.url);
+      .filter(box => box.url && box.url.trim())
+      .map(box => box.url.trim());
     if (urls.length > 0) {
       return { value: urls.join('\n'), isExistingImage: false };
     }
   }
   
-  // Priority 3: Authorized Person
+  // Priority 3: Auto-selected sources (only used if no manual input)
+  // Combine all selected sources into one QR code
+  const selectedSources: string[] = [];
+  
   if (qrConfig.sources.includes('authorizedPerson') && qrConfig.selectedAuthorizedPersonId) {
-    return { value: `authorized-person:${qrConfig.selectedAuthorizedPersonId}`, isExistingImage: false };
+    selectedSources.push(`authorized-person:${qrConfig.selectedAuthorizedPersonId}`);
   }
   
-  // Priority 4: Organization Chart
   if (qrConfig.sources.includes('organizationChart') && qrConfig.selectedOrganizationChartId) {
-    return { value: `organization-chart:${qrConfig.selectedOrganizationChartId}`, isExistingImage: false };
+    selectedSources.push(`organization-chart:${qrConfig.selectedOrganizationChartId}`);
   }
   
-  // Priority 5: Safety Committee
-  if (qrConfig.sources.includes('safetyCommittee') && qrConfig.selectedSafetyCommitteeId) {
-    return { value: `safety-committee:${qrConfig.selectedSafetyCommitteeId}`, isExistingImage: false };
+  if (qrConfig.sources.includes('safetyCommittee')) {
+    // Load actual safety committee data from localStorage
+    try {
+      const savedCommittee = localStorage.getItem('emergencyResponseTeam');
+      if (savedCommittee) {
+        const committeeData = JSON.parse(savedCommittee);
+        if (Array.isArray(committeeData) && committeeData.length > 0) {
+          // Format the safety committee data
+          const committeeInfo: string[] = [];
+          committeeInfo.push('=== SAFETY COMMITTEE ===');
+          committeeData.forEach((member, index) => {
+            if (member.name || member.role || member.phone || member.email) {
+              committeeInfo.push(`\nMember ${index + 1}:`);
+              if (member.name) committeeInfo.push(`Name: ${member.name}`);
+              if (member.role) committeeInfo.push(`Role: ${member.role}`);
+              if (member.phone) committeeInfo.push(`Phone: ${member.phone}`);
+              if (member.email) committeeInfo.push(`Email: ${member.email}`);
+            }
+          });
+          selectedSources.push(committeeInfo.join('\n'));
+        } else if (qrConfig.selectedSafetyCommitteeId) {
+          selectedSources.push(`safety-committee:${qrConfig.selectedSafetyCommitteeId}`);
+        }
+      } else if (qrConfig.selectedSafetyCommitteeId) {
+        selectedSources.push(`safety-committee:${qrConfig.selectedSafetyCommitteeId}`);
+      }
+    } catch (error) {
+      console.error('Error loading safety committee data:', error);
+      if (qrConfig.selectedSafetyCommitteeId) {
+        selectedSources.push(`safety-committee:${qrConfig.selectedSafetyCommitteeId}`);
+      }
+    }
+  }
+  
+  if (selectedSources.length > 0) {
+    return { value: selectedSources.join('\n'), isExistingImage: false };
   }
   
   return { value: null, isExistingImage: false };
 };
 
-export function SignagePreview({ signageData, brandingConfig }: SignagePreviewProps) {
+// Helper function to generate watermark HTML
+const getWatermarkHTML = (brandingConfig?: BrandingConfig): string => {
+  if (!brandingConfig?.logo || !brandingConfig.enabled) return '';
+  
+  const position = brandingConfig.logoPosition || 'top-right';
+  const size = brandingConfig.logoSize || 100;
+  const opacity = brandingConfig.logoOpacity || 100;
+  
+  // Calculate position styles
+  let positionStyle = '';
+  switch (position) {
+    case 'top-left':
+      positionStyle = 'top: 20px; left: 20px;';
+      break;
+    case 'top-right':
+      positionStyle = 'top: 20px; right: 20px;';
+      break;
+    case 'bottom-left':
+      positionStyle = 'bottom: 20px; left: 20px;';
+      break;
+    case 'bottom-right':
+      positionStyle = 'bottom: 20px; right: 20px;';
+      break;
+    case 'center-top':
+      positionStyle = 'top: 20px; left: 50%; transform: translateX(-50%);';
+      break;
+    case 'center-bottom':
+      positionStyle = 'bottom: 20px; left: 50%; transform: translateX(-50%);';
+      break;
+  }
+  
+  return `
+    <div style="
+      position: absolute;
+      ${positionStyle}
+      width: ${size}px;
+      height: auto;
+      opacity: ${opacity / 100};
+      z-index: 1;
+      pointer-events: none;
+    ">
+      <img 
+        src="${brandingConfig.logo}" 
+        alt="Watermark" 
+        style="width: 100%; height: auto; object-fit: contain;"
+      />
+    </div>
+  `;
+};
+
+// Helper function to generate full-page repeating watermark HTML
+const getFullPageWatermarkHTML = (brandingConfig?: BrandingConfig): string => {
+  if (!brandingConfig?.logo || !brandingConfig.enabled) return '';
+  
+  const size = brandingConfig.logoSize || 100;
+  const opacity = brandingConfig.logoOpacity || 100;
+  
+  // Create a repeating pattern across the entire page
+  return `
+    <div style="
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      background-image: url(${brandingConfig.logo});
+      background-repeat: repeat;
+      background-size: ${size * 2}px ${size * 2}px;
+      opacity: ${opacity / 100};
+      background-position: 0 0;
+    "></div>
+  `;
+};
+
+export function SignagePreview({ signageData, brandingConfig, onBrandingConfigChange }: SignagePreviewProps) {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [isDragging, setIsDragging] = useState<string | null>(null);
+  const [isResizing, setIsResizing] = useState<string | null>(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0, offsetX: 0, offsetY: 0 });
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   
   const config = signageData.category === 'custom' 
     ? {
@@ -92,6 +209,135 @@ export function SignagePreview({ signageData, brandingConfig }: SignagePreviewPr
     hasContractorLogo: !!brandingConfig?.contractorLogo,
     clientPosition: brandingConfig?.clientPosition
   });
+
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  // Handle logo dragging
+  const handleLogoMouseDown = (e: React.MouseEvent, logoType: 'client' | 'contractor') => {
+    // Don't start drag if clicking on resize handle
+    const target = e.target as HTMLElement;
+    if (target.closest('.resize-handle')) {
+      return;
+    }
+    
+    if (!headerRef.current || !onBrandingConfigChange || !brandingConfig) return;
+    
+    // Prevent default to avoid text selection and image dragging
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setIsDragging(logoType);
+    
+    const rect = headerRef.current.getBoundingClientRect();
+    const logoElement = (e.currentTarget as HTMLElement);
+    const logoRect = logoElement.getBoundingClientRect();
+    
+    // Calculate offset from mouse to logo top-left corner
+    const offsetX = e.clientX - logoRect.left;
+    const offsetY = e.clientY - logoRect.top;
+    
+    // Store initial mouse position and offset
+    setDragStart({ 
+      x: e.clientX,
+      y: e.clientY,
+      offsetX: offsetX,
+      offsetY: offsetY
+    });
+  };
+
+  // Handle logo resizing
+  const handleResizeMouseDown = (e: React.MouseEvent, logoType: 'client' | 'contractor') => {
+    if (!headerRef.current || !onBrandingConfigChange || !brandingConfig) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(logoType);
+    
+    const logoConfig = logoType === 'client' 
+      ? { pos: brandingConfig.clientLogoPosition || { x: 5, y: 5 }, size: brandingConfig.clientLogoSize || { width: 96, height: 64 } }
+      : { pos: brandingConfig.contractorLogoPosition || { x: 95, y: 5 }, size: brandingConfig.contractorLogoSize || { width: 96, height: 64 } };
+    
+    const rect = headerRef.current.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    setResizeStart({ x, y, width: logoConfig.size.width, height: logoConfig.size.height });
+  };
+
+  // Handle mouse move for dragging and resizing
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!headerRef.current || !onBrandingConfigChange || !brandingConfig) return;
+
+      if (isDragging) {
+        const rect = headerRef.current.getBoundingClientRect();
+        
+        // Calculate new position accounting for the offset
+        const newLogoLeft = e.clientX - dragStart.offsetX;
+        const newLogoTop = e.clientY - dragStart.offsetY;
+        
+        // Convert to percentage relative to header
+        const newX = ((newLogoLeft - rect.left) / rect.width) * 100;
+        const newY = ((newLogoTop - rect.top) / rect.height) * 100;
+        
+        // Get current logo size to clamp properly
+        const logoSize = isDragging === 'client'
+          ? brandingConfig.clientLogoSize || { width: 96, height: 64 }
+          : brandingConfig.contractorLogoSize || { width: 96, height: 64 };
+        
+        // Clamp values to stay within bounds (accounting for logo size)
+        const maxX = 100 - (logoSize.width / rect.width * 100);
+        const maxY = 100 - (logoSize.height / rect.height * 100);
+        const clampedX = Math.max(0, Math.min(maxX, newX));
+        const clampedY = Math.max(0, Math.min(maxY, newY));
+        
+        if (isDragging === 'client') {
+          onBrandingConfigChange({
+            ...brandingConfig,
+            clientLogoPosition: { x: clampedX, y: clampedY }
+          });
+        } else {
+          onBrandingConfigChange({
+            ...brandingConfig,
+            contractorLogoPosition: { x: clampedX, y: clampedY }
+          });
+        }
+      } else if (isResizing) {
+        const rect = headerRef.current.getBoundingClientRect();
+        const deltaX = e.clientX - resizeStart.x;
+        const deltaY = e.clientY - resizeStart.y;
+        
+        const newWidth = Math.max(40, Math.min(300, resizeStart.width + deltaX));
+        const newHeight = Math.max(30, Math.min(200, resizeStart.height + deltaY));
+        
+        if (isResizing === 'client') {
+          onBrandingConfigChange({
+            ...brandingConfig,
+            clientLogoSize: { width: newWidth, height: newHeight }
+          });
+        } else {
+          onBrandingConfigChange({
+            ...brandingConfig,
+            contractorLogoSize: { width: newWidth, height: newHeight }
+          });
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(null);
+      setIsResizing(null);
+    };
+
+    if (isDragging || isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, isResizing, dragStart, resizeStart, brandingConfig, onBrandingConfigChange]);
   
   const handleExportPDF = async () => {
     try {
@@ -122,9 +368,65 @@ export function SignagePreview({ signageData, brandingConfig }: SignagePreviewPr
         ? `background-image: url(${signageData.backgroundImage}); background-size: cover; background-position: center;`
         : `background: linear-gradient(135deg, ${headerColor} 0%, ${headerColor}dd 100%);`;
       
+      // Watermark HTML for full page
+      const watermarkHTML = brandingConfig?.logo && brandingConfig?.enabled ? `
+        <div style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          z-index: 1;
+          background-image: url(${brandingConfig.logo});
+          background-repeat: repeat;
+          background-size: ${(brandingConfig.logoSize || 100) * 2}px ${(brandingConfig.logoSize || 100) * 2}px;
+          opacity: ${(brandingConfig.logoOpacity || 100) / 100};
+        "></div>
+      ` : '';
+      
       // Build clean HTML with inline RGB styles only
-      exportElement.innerHTML = `
-        <div style="max-width: 800px; margin: 0 auto; background: ${bgColor}; border-radius: 8px; overflow: hidden; border: 4px solid #000000;">
+      exportElement.innerHTML = signageData.qrCodeConfig?.showOnlyTitleAndQR ? `
+        <div style="max-width: 800px; margin: 0 auto; background: ${bgColor}; border-radius: 8px; overflow: hidden; border: 4px solid #000000; min-height: 100vh; display: flex; flex-direction: column; position: relative;">
+          ${watermarkHTML}
+          
+          <!-- Full Page QR Code Layout -->
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; ${headerBgStyle}">
+            <!-- Title -->
+            <div style="color: white; font-size: 36px; font-weight: bold; margin-bottom: 40px; text-align: center;">
+              ${signageData.title || 'SIGNAGE TITLE'}
+            </div>
+            
+            <!-- QR Code - Large and Centered -->
+            ${(() => {
+              const qrData = getQRCodeValueFromConfig(signageData);
+              if (!qrData.isExistingImage && !qrData.value) return '';
+              return `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                  ${qrData.isExistingImage && qrData.imageData ? `
+                    <img src="${qrData.imageData}" alt="QR Code" style="width: 300px; height: 300px; object-fit: contain;" />
+                  ` : qrData.value ? `
+                    <div style="width: 300px; height: 300px; background: #000; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; text-align: center;">
+                      QR Code
+                    </div>
+                  ` : ''}
+                  <div style="font-size: 18px; text-align: center; color: #334155; margin-top: 16px; font-weight: 500;">Scan QR Code</div>
+                </div>
+              `;
+            })()}
+          </div>
+
+          <!-- Footer -->
+          <div style="padding: 12px 16px; background: #000000; text-align: center;">
+            <div style="color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
+              ${signageData.footerText || 'ISO 7010 Compliant • Last Updated: December 2025 • Review Annually'}
+            </div>
+          </div>
+
+        </div>
+      ` : `
+        <div style="max-width: 800px; margin: 0 auto; background: ${bgColor}; border-radius: 8px; overflow: hidden; border: 4px solid #000000; position: relative;">
+          ${watermarkHTML}
           
           <!-- Header Section -->
           <div style="padding: 24px 16px; text-align: center; ${headerBgStyle}">
@@ -192,6 +494,26 @@ export function SignagePreview({ signageData, brandingConfig }: SignagePreviewPr
             </div>
           ` : ''}
 
+          <!-- Hazards -->
+          ${displayHazards.length > 0 ? `
+            <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">
+              <div style="background: ${headerColor}; padding: 8px 12px; border-radius: 4px; margin-bottom: 12px;">
+                <div style="color: white; font-size: 12px; font-weight: bold; text-transform: uppercase;">
+                  ⚠ HAZARDS
+                </div>
+              </div>
+              <div style="display: grid; gap: 8px;">
+                ${displayHazards.map(hazard => `
+                  <div style="padding: 8px 12px; background: #fef2f2; border-left: 3px solid #dc2626; border-radius: 4px;">
+                    <div style="font-size: 12px; color: #1e293b;">
+                      ⚠ ${hazard}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+
           <!-- Procedures -->
           ${displayProcedures.length > 0 ? `
             <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">
@@ -229,61 +551,41 @@ export function SignagePreview({ signageData, brandingConfig }: SignagePreviewPr
             </div>
           ` : ''}
 
-          ${!signageData.qrCodeConfig?.showOnlyTitleAndQR ? `
-            <!-- Emergency Contacts + QR Code - Side by side -->
-            <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; gap: 12px;">
-              <!-- Emergency Contacts -->
-              <div style="flex: 1;">
-                <div style="background: #f97316; padding: 8px 12px; border-radius: 4px; margin-bottom: 8px;">
-                  <div style="color: white; font-size: 12px; font-weight: bold; text-transform: uppercase;">
-                    📞 EMERGENCY CONTACTS
-                  </div>
-                </div>
-                <div style="background: #fff7ed; border-radius: 4px; padding: 8px 12px;">
-                  ${signageData.emergencyContacts.map(contact => `
-                    <div style="font-size: 12px; color: #9a3412; margin-bottom: 4px;">
-                      <span style="font-weight: bold;">${contact.label}:</span> ${contact.number}
-                    </div>
-                  `).join('')}
+          <!-- Emergency Contacts + QR Code - Side by side -->
+          <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; gap: 12px;">
+            <!-- Emergency Contacts -->
+            <div style="flex: 1;">
+              <div style="background: #f97316; padding: 8px 12px; border-radius: 4px; margin-bottom: 8px;">
+                <div style="color: white; font-size: 12px; font-weight: bold; text-transform: uppercase;">
+                  📞 EMERGENCY CONTACTS
                 </div>
               </div>
-              <!-- QR Code -->
-              ${(() => {
-                const qrData = getQRCodeValueFromConfig(signageData);
-                if (!qrData.isExistingImage && !qrData.value) return '';
-                return `
-                  <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">
-                    ${qrData.isExistingImage && qrData.imageData ? `
-                      <img src="${qrData.imageData}" alt="QR Code" style="width: 50px; height: 50px; object-fit: contain;" />
-                    ` : qrData.value ? `
-                      <div style="width: 50px; height: 50px; background: #000; display: flex; align-items: center; justify-content: center; color: white; font-size: 8px; text-align: center;">
-                        QR Code
-                      </div>
-                    ` : ''}
-                    <div style="font-size: 8px; text-align: center; color: #64748b; margin-top: 4px;">Scan</div>
+              <div style="background: #fff7ed; border-radius: 4px; padding: 8px 12px;">
+                ${signageData.emergencyContacts.map(contact => `
+                  <div style="font-size: 12px; color: #9a3412; margin-bottom: 4px;">
+                    <span style="font-weight: bold;">${contact.label}:</span> ${contact.number}
                   </div>
-                `;
-              })()}
+                `).join('')}
+              </div>
             </div>
-          ` : (() => {
-            const qrData = getQRCodeValueFromConfig(signageData);
-            if (!qrData.isExistingImage && !qrData.value) return '';
-            return `
-              <!-- QR Code only (when showOnlyTitleAndQR is true) -->
-              <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: center;">
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; padding: 16px; border-radius: 4px; border: 1px solid #e2e8f0;">
+            <!-- QR Code -->
+            ${(() => {
+              const qrData = getQRCodeValueFromConfig(signageData);
+              if (!qrData.isExistingImage && !qrData.value) return '';
+              return `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">
                   ${qrData.isExistingImage && qrData.imageData ? `
-                    <img src="${qrData.imageData}" alt="QR Code" style="width: 128px; height: 128px; object-fit: contain;" />
+                    <img src="${qrData.imageData}" alt="QR Code" style="width: 50px; height: 50px; object-fit: contain;" />
                   ` : qrData.value ? `
-                    <div style="width: 128px; height: 128px; background: #000; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; text-align: center;">
+                    <div style="width: 50px; height: 50px; background: #000; display: flex; align-items: center; justify-content: center; color: white; font-size: 8px; text-align: center;">
                       QR Code
                     </div>
                   ` : ''}
-                  <div style="font-size: 12px; text-align: center; color: #64748b; margin-top: 8px;">Scan QR Code</div>
+                  <div style="font-size: 8px; text-align: center; color: #64748b; margin-top: 4px;">Scan</div>
                 </div>
-              </div>
-            `;
-          })()}
+              `;
+            })()}
+          </div>
 
           <!-- Footer -->
           <div style="padding: 12px 16px; background: #000000; text-align: center;">
@@ -397,9 +699,65 @@ export function SignagePreview({ signageData, brandingConfig }: SignagePreviewPr
         ? `background-image: url(${signageData.backgroundImage}); background-size: cover; background-position: center;`
         : `background: linear-gradient(135deg, ${headerColor} 0%, ${headerColor}dd 100%);`;
       
+      // Watermark HTML for full page (PNG export)
+      const watermarkHTMLPNG = brandingConfig?.logo && brandingConfig?.enabled ? `
+        <div style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          z-index: 1;
+          background-image: url(${brandingConfig.logo});
+          background-repeat: repeat;
+          background-size: ${(brandingConfig.logoSize || 100) * 2}px ${(brandingConfig.logoSize || 100) * 2}px;
+          opacity: ${(brandingConfig.logoOpacity || 100) / 100};
+        "></div>
+      ` : '';
+      
       // Build clean HTML with inline RGB styles only
-      exportElement.innerHTML = `
-        <div style="max-width: 800px; margin: 0 auto; background: ${bgColor}; border-radius: 8px; overflow: hidden; border: 4px solid #000000;">
+      exportElement.innerHTML = signageData.qrCodeConfig?.showOnlyTitleAndQR ? `
+        <div style="max-width: 800px; margin: 0 auto; background: ${bgColor}; border-radius: 8px; overflow: hidden; border: 4px solid #000000; min-height: 100vh; display: flex; flex-direction: column; position: relative;">
+          ${watermarkHTMLPNG}
+          
+          <!-- Full Page QR Code Layout -->
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; ${headerBgStyle}">
+            <!-- Title -->
+            <div style="color: white; font-size: 36px; font-weight: bold; margin-bottom: 40px; text-align: center;">
+              ${signageData.title || 'SIGNAGE TITLE'}
+            </div>
+            
+            <!-- QR Code - Large and Centered -->
+            ${(() => {
+              const qrData = getQRCodeValueFromConfig(signageData);
+              if (!qrData.isExistingImage && !qrData.value) return '';
+              return `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                  ${qrData.isExistingImage && qrData.imageData ? `
+                    <img src="${qrData.imageData}" alt="QR Code" style="width: 300px; height: 300px; object-fit: contain;" />
+                  ` : qrData.value ? `
+                    <div style="width: 300px; height: 300px; background: #000; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; text-align: center;">
+                      QR Code
+                    </div>
+                  ` : ''}
+                  <div style="font-size: 18px; text-align: center; color: #334155; margin-top: 16px; font-weight: 500;">Scan QR Code</div>
+                </div>
+              `;
+            })()}
+          </div>
+
+          <!-- Footer -->
+          <div style="padding: 12px 16px; background: #000000; text-align: center;">
+            <div style="color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
+              ${signageData.footerText || 'ISO 7010 Compliant • Last Updated: December 2025 • Review Annually'}
+            </div>
+          </div>
+
+        </div>
+      ` : `
+        <div style="max-width: 800px; margin: 0 auto; background: ${bgColor}; border-radius: 8px; overflow: hidden; border: 4px solid #000000; position: relative;">
+          ${watermarkHTMLPNG}
           
           <!-- Header Section -->
           <div style="padding: 24px 16px; text-align: center; ${headerBgStyle}">
@@ -467,6 +825,26 @@ export function SignagePreview({ signageData, brandingConfig }: SignagePreviewPr
             </div>
           ` : ''}
 
+          <!-- Hazards -->
+          ${displayHazards.length > 0 ? `
+            <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">
+              <div style="background: ${headerColor}; padding: 8px 12px; border-radius: 4px; margin-bottom: 12px;">
+                <div style="color: white; font-size: 12px; font-weight: bold; text-transform: uppercase;">
+                  ⚠ HAZARDS
+                </div>
+              </div>
+              <div style="display: grid; gap: 8px;">
+                ${displayHazards.map(hazard => `
+                  <div style="padding: 8px 12px; background: #fef2f2; border-left: 3px solid #dc2626; border-radius: 4px;">
+                    <div style="font-size: 12px; color: #1e293b;">
+                      ⚠ ${hazard}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+
           <!-- Procedures -->
           ${displayProcedures.length > 0 ? `
             <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">
@@ -504,61 +882,41 @@ export function SignagePreview({ signageData, brandingConfig }: SignagePreviewPr
             </div>
           ` : ''}
 
-          ${!signageData.qrCodeConfig?.showOnlyTitleAndQR ? `
-            <!-- Emergency Contacts + QR Code - Side by side -->
-            <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; gap: 12px;">
-              <!-- Emergency Contacts -->
-              <div style="flex: 1;">
-                <div style="background: #f97316; padding: 8px 12px; border-radius: 4px; margin-bottom: 8px;">
-                  <div style="color: white; font-size: 12px; font-weight: bold; text-transform: uppercase;">
-                    📞 EMERGENCY CONTACTS
-                  </div>
-                </div>
-                <div style="background: #fff7ed; border-radius: 4px; padding: 8px 12px;">
-                  ${signageData.emergencyContacts.map(contact => `
-                    <div style="font-size: 12px; color: #9a3412; margin-bottom: 4px;">
-                      <span style="font-weight: bold;">${contact.label}:</span> ${contact.number}
-                    </div>
-                  `).join('')}
+          <!-- Emergency Contacts + QR Code - Side by side -->
+          <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; gap: 12px;">
+            <!-- Emergency Contacts -->
+            <div style="flex: 1;">
+              <div style="background: #f97316; padding: 8px 12px; border-radius: 4px; margin-bottom: 8px;">
+                <div style="color: white; font-size: 12px; font-weight: bold; text-transform: uppercase;">
+                  📞 EMERGENCY CONTACTS
                 </div>
               </div>
-              <!-- QR Code -->
-              ${(() => {
-                const qrData = getQRCodeValueFromConfig(signageData);
-                if (!qrData.isExistingImage && !qrData.value) return '';
-                return `
-                  <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">
-                    ${qrData.isExistingImage && qrData.imageData ? `
-                      <img src="${qrData.imageData}" alt="QR Code" style="width: 50px; height: 50px; object-fit: contain;" />
-                    ` : qrData.value ? `
-                      <div style="width: 50px; height: 50px; background: #000; display: flex; align-items: center; justify-content: center; color: white; font-size: 8px; text-align: center;">
-                        QR Code
-                      </div>
-                    ` : ''}
-                    <div style="font-size: 8px; text-align: center; color: #64748b; margin-top: 4px;">Scan</div>
+              <div style="background: #fff7ed; border-radius: 4px; padding: 8px 12px;">
+                ${signageData.emergencyContacts.map(contact => `
+                  <div style="font-size: 12px; color: #9a3412; margin-bottom: 4px;">
+                    <span style="font-weight: bold;">${contact.label}:</span> ${contact.number}
                   </div>
-                `;
-              })()}
+                `).join('')}
+              </div>
             </div>
-          ` : (() => {
-            const qrData = getQRCodeValueFromConfig(signageData);
-            if (!qrData.isExistingImage && !qrData.value) return '';
-            return `
-              <!-- QR Code only (when showOnlyTitleAndQR is true) -->
-              <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: center;">
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; padding: 16px; border-radius: 4px; border: 1px solid #e2e8f0;">
+            <!-- QR Code -->
+            ${(() => {
+              const qrData = getQRCodeValueFromConfig(signageData);
+              if (!qrData.isExistingImage && !qrData.value) return '';
+              return `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">
                   ${qrData.isExistingImage && qrData.imageData ? `
-                    <img src="${qrData.imageData}" alt="QR Code" style="width: 128px; height: 128px; object-fit: contain;" />
+                    <img src="${qrData.imageData}" alt="QR Code" style="width: 50px; height: 50px; object-fit: contain;" />
                   ` : qrData.value ? `
-                    <div style="width: 128px; height: 128px; background: #000; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; text-align: center;">
+                    <div style="width: 50px; height: 50px; background: #000; display: flex; align-items: center; justify-content: center; color: white; font-size: 8px; text-align: center;">
                       QR Code
                     </div>
                   ` : ''}
-                  <div style="font-size: 12px; text-align: center; color: #64748b; margin-top: 8px;">Scan QR Code</div>
+                  <div style="font-size: 8px; text-align: center; color: #64748b; margin-top: 4px;">Scan</div>
                 </div>
-              </div>
-            `;
-          })()}
+              `;
+            })()}
+          </div>
 
           <!-- Footer -->
           <div style="padding: 12px 16px; background: #000000; text-align: center;">
@@ -663,6 +1021,7 @@ export function SignagePreview({ signageData, brandingConfig }: SignagePreviewPr
 
   // Limit items to fit on one page
   const displayProcedures = signageData.procedures.slice(0, 4);
+  const displayHazards = signageData.hazards || [];
   
   // Get QR code data using helper function
   const qrCodeData = getQRCodeValueFromConfig(signageData);
@@ -794,253 +1153,359 @@ export function SignagePreview({ signageData, brandingConfig }: SignagePreviewPr
       <div id="printable-signage-container" className="bg-slate-100 rounded-lg p-4 mb-6 overflow-hidden">
         <div 
           id="signage-preview-content" 
-          className="max-w-2xl mx-auto shadow-2xl rounded-lg overflow-hidden border-4 border-black bg-white"
+          className={`max-w-2xl mx-auto shadow-2xl rounded-lg overflow-hidden border-4 border-black bg-white relative ${
+            signageData.qrCodeConfig?.showOnlyTitleAndQR ? 'flex flex-col min-h-full' : ''
+          }`}
           style={containerBackgroundStyle}
         >
+          {/* Watermark - Full Page Repeating Pattern */}
+          {brandingConfig?.logo && brandingConfig?.enabled && (
+            <div 
+              className="absolute inset-0 pointer-events-none z-0"
+              style={{
+                backgroundImage: `url(${brandingConfig.logo})`,
+                backgroundRepeat: 'repeat',
+                backgroundSize: `${(brandingConfig.logoSize || 100) * 2}px ${(brandingConfig.logoSize || 100) * 2}px`,
+                opacity: (brandingConfig.logoOpacity || 100) / 100,
+              }}
+            />
+          )}
           
-          {/* Header Section - Colored with gradient and optional background image */}
-          <div className="px-4 py-4 text-center relative overflow-hidden" 
-            style={headerBackgroundStyle}
-          >
-            {/* Client & Contractor Logos - Positioned left and right */}
-            {brandingConfig?.headerLogosEnabled && (brandingConfig?.clientLogo || brandingConfig?.contractorLogo) && (
-              <div className="absolute top-2 left-0 right-0 flex justify-between items-start px-3 z-10">
-                {/* Left Logo */}
-                <div className="w-24 h-16 flex items-center justify-center">
-                  {brandingConfig.clientPosition === 'left' && brandingConfig.clientLogo && (
-                    <img 
-                      src={brandingConfig.clientLogo} 
-                      alt="Client Logo" 
-                      className="max-w-full max-h-full object-contain drop-shadow-lg"
-                    />
-                  )}
-                  {brandingConfig.clientPosition === 'right' && brandingConfig.contractorLogo && (
-                    <img 
-                      src={brandingConfig.contractorLogo} 
-                      alt="Contractor Logo" 
-                      className="max-w-full max-h-full object-contain drop-shadow-lg"
-                    />
+          {/* Full Page QR Code Layout (when showOnlyTitleAndQR is true) */}
+          {signageData.qrCodeConfig?.showOnlyTitleAndQR && showQRCode ? (
+            <>
+              {/* Title and QR Code Section - Full Page */}
+              <div className="flex-1 flex flex-col items-center justify-center px-4 py-8" 
+                style={headerBackgroundStyle}
+              >
+                {/* Title */}
+                <div className="text-white mb-6 tracking-wide text-center">
+                  {signageData.title ? (
+                    <h1 className="text-3xl md:text-4xl font-bold">{signageData.title}</h1>
+                  ) : (
+                    <h1 className="text-3xl md:text-4xl font-bold">SIGNAGE TITLE</h1>
                   )}
                 </div>
                 
-                {/* Right Logo */}
-                <div className="w-24 h-16 flex items-center justify-center">
-                  {brandingConfig.clientPosition === 'left' && brandingConfig.contractorLogo && (
-                    <img 
-                      src={brandingConfig.contractorLogo} 
-                      alt="Contractor Logo" 
-                      className="max-w-full max-h-full object-contain drop-shadow-lg"
-                    />
-                  )}
-                  {brandingConfig.clientPosition === 'right' && brandingConfig.clientLogo && (
-                    <img 
-                      src={brandingConfig.clientLogo} 
-                      alt="Client Logo" 
-                      className="max-w-full max-h-full object-contain drop-shadow-lg"
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-            
-            {/* Icons */}
-            <div className="flex justify-center gap-3 mb-2 text-white opacity-90">
-              {signageData.warningIcon ? (
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <img 
-                    src={signageData.warningIcon} 
-                    alt="Warning Icon" 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ) : (
-                <>
-                  {getCategoryIcon()}
-                  {getCategoryIcon()}
-                </>
-              )}
-            </div>
-            
-            {/* Title */}
-            <div className="text-white mb-1 tracking-wide">
-              {signageData.title ? (
-                <h1 className="text-xl">{signageData.title}</h1>
-              ) : (
-                <h1 className="text-xl">SIGNAGE TITLE</h1>
-              )}
-            </div>
-            
-            {/* Purpose */}
-            {signageData.purpose && (
-              <p className="text-white text-sm opacity-90">
-                {signageData.purpose}
-              </p>
-            )}
-          </div>
-
-          {/* Location Section */}
-          {signageData.location && (
-            <div className="px-3 py-2 bg-white border-b border-slate-200">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-3 h-3 text-blue-600" />
-                <div className="text-xs">
-                  <span className="text-slate-500 uppercase">Location: </span>
-                  <span className="text-slate-900">{signageData.location}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Category Description */}
-          {signageData.description && (
-            <div className="px-3 py-2 bg-slate-50 border-b border-slate-200">
-              <p className="text-xs text-slate-700 leading-relaxed">
-                {signageData.description}
-              </p>
-            </div>
-          )}
-
-
-          {/* PPE Section - Compact */}
-          {(signageData.ppe.length > 0 || (signageData.customPPEImages && signageData.customPPEImages.length > 0)) && (
-            <div className="px-3 py-2 border-b border-slate-200">
-              <div className="flex items-center gap-2 mb-2 px-2 py-1 bg-blue-600 rounded text-xs">
-                <Shield className="w-3 h-3 text-white" />
-                <h3 className="text-white uppercase tracking-wide">
-                  Mandatory PPE ({signageData.ppe.length + (signageData.customPPEImages?.length || 0)})
-                </h3>
-              </div>
-              <div className={`grid gap-2 ${
-                (signageData.ppe.length + (signageData.customPPEImages?.length || 0)) <= 4 ? 'grid-cols-4' :
-                (signageData.ppe.length + (signageData.customPPEImages?.length || 0)) <= 6 ? 'grid-cols-3' :
-                (signageData.ppe.length + (signageData.customPPEImages?.length || 0)) <= 12 ? 'grid-cols-4' :
-                (signageData.ppe.length + (signageData.customPPEImages?.length || 0)) <= 20 ? 'grid-cols-5' :
-                'grid-cols-6'
-              }`}>
-                {signageData.ppe.map((ppe) => (
-                  <div key={ppe} className="bg-blue-600 rounded p-2 text-center">
-                    <div className="flex justify-center mb-1 text-white">
-                      {getPPEIcon(ppe, 'w-6 h-6')}
-                    </div>
-                    <div className="text-[9px] text-white uppercase leading-tight">
-                      {getPPELabel(ppe)}
-                    </div>
-                  </div>
-                ))}
-                {/* Custom PPE Images */}
-                {signageData.customPPEImages && signageData.customPPEImages.map((ppe, index) => (
-                  <div key={`custom-${index}`} className="bg-blue-600 rounded p-2 text-center">
-                    <div className="flex justify-center mb-1">
-                      <img 
-                        src={ppe.image} 
-                        alt={ppe.name || `Custom PPE ${index + 1}`}
-                        className="w-6 h-6 object-contain"
-                      />
-                    </div>
-                    <div className="text-[9px] text-white uppercase leading-tight">
-                      {ppe.name || `Custom PPE ${index + 1}`}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Safety Procedures Section - Compact */}
-          {displayProcedures.length > 0 && (
-            <div className="px-3 py-2 border-b border-slate-200">
-              <div className="flex items-center gap-2 mb-2 px-2 py-1 bg-green-600 rounded text-xs">
-                <Shield className="w-3 h-3 text-white" />
-                <h3 className="text-white uppercase tracking-wide">
-                  Safety Procedures
-                </h3>
-              </div>
-              <div className="space-y-2">
-                {displayProcedures.map((procedure, index) => (
-                  <div key={index} className="px-2 py-2 bg-green-50 rounded">
-                    <div className="flex items-start gap-2">
-                      <div className="w-4 h-4 bg-green-600 text-white rounded-full flex items-center justify-center flex-shrink-0 text-[9px] mt-0.5">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1 text-xs text-slate-800">
-                        {procedure}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Permit Required Section */}
-          {signageData.permitRequired === 'yes' && (
-            <div className="px-4 py-3 bg-red-700 border-b border-slate-200">
-              <div className="flex items-center gap-3 text-white">
-                <div className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center flex-shrink-0">
-                  <Ban className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="uppercase tracking-wider text-sm">Permit Required</div>
-                  {signageData.permitDetails && (
-                    <div className="text-xs mt-0.5 opacity-90">{signageData.permitDetails}</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Emergency Contacts + QR Code - Side by side */}
-          {!signageData.qrCodeConfig?.showOnlyTitleAndQR && (
-            <div className="px-3 py-2 border-b border-slate-200 flex gap-3">
-              {/* Emergency Contacts */}
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1 px-2 py-1 bg-orange-500 rounded text-xs">
-                  <Phone className="w-3 h-3 text-white" />
-                  <h3 className="text-white uppercase tracking-wide">Emergency</h3>
-                </div>
-                <div className="bg-orange-50 rounded px-2 py-1 space-y-0.5">
-                  {signageData.emergencyContacts.map((contact, index) => (
-                    <div key={index} className="text-xs text-orange-900">
-                      <span className="font-semibold">{contact.label}:</span> {contact.number}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* QR Code */}
-              {showQRCode && (
-                <div className="flex flex-col items-center justify-center bg-white p-2 rounded border border-slate-200">
-                  {signageData.qrCodeConfig?.type === 'existing' && signageData.qrCodeConfig.existingQRCodeImage ? (
+                {/* QR Code - Large and Centered */}
+                <div className="flex flex-col items-center justify-center bg-white p-6 rounded-lg shadow-lg">
+                  {signageData.qrCodeConfig.type === 'existing' && signageData.qrCodeConfig.existingQRCodeImage ? (
                     <img 
                       src={signageData.qrCodeConfig.existingQRCodeImage} 
                       alt="QR Code" 
-                      className="w-[50px] h-[50px] object-contain"
+                      className="w-64 h-64 md:w-80 md:h-80 object-contain"
                     />
                   ) : qrCodeValue ? (
-                    <QRCodeSVG value={qrCodeValue} size={50} />
+                    <QRCodeSVG value={qrCodeValue} size={320} />
                   ) : null}
-                  <div className="text-[8px] text-center text-slate-600 mt-1">Scan</div>
+                  <div className="text-base md:text-lg text-center text-slate-700 mt-4 font-medium">Scan QR Code</div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Header Section - Colored with gradient and optional background image */}
+              <div 
+                ref={headerRef}
+                className="px-4 py-4 text-center relative overflow-visible" 
+                style={headerBackgroundStyle}
+              >
+                {/* Client & Contractor Logos - Draggable and Resizable */}
+                {brandingConfig?.headerLogosEnabled && (
+                  <>
+                    {/* Client Logo */}
+                    {brandingConfig?.clientLogo && (
+                      <div
+                        data-logo-type="client"
+                        className="absolute cursor-move z-20 group select-none"
+                        style={{
+                          left: `${brandingConfig.clientLogoPosition?.x || 5}%`,
+                          top: `${brandingConfig.clientLogoPosition?.y || 5}%`,
+                          width: `${brandingConfig.clientLogoSize?.width || 96}px`,
+                          height: `${brandingConfig.clientLogoSize?.height || 64}px`,
+                        }}
+                        onMouseDown={(e) => handleLogoMouseDown(e, 'client')}
+                      >
+                        <div 
+                          className="relative w-full h-full bg-white rounded border-2 border-blue-400 p-1 shadow-lg cursor-move"
+                          onMouseDown={(e) => {
+                            // Handle drag from inner div
+                            if (!(e.target as HTMLElement).closest('.resize-handle')) {
+                              handleLogoMouseDown(e, 'client');
+                              e.stopPropagation(); // Prevent outer handler from also firing
+                            }
+                          }}
+                        >
+                          <img 
+                            src={brandingConfig.clientLogo} 
+                            alt="Client Logo" 
+                            className="w-full h-full object-contain pointer-events-none"
+                            draggable="false"
+                          />
+                          {/* Resize handle */}
+                          <div
+                            className="resize-handle absolute bottom-0 right-0 w-5 h-5 bg-blue-600 rounded-tl-lg cursor-nwse-resize opacity-80 hover:opacity-100 transition-opacity flex items-center justify-center z-10 shadow-md"
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              handleResizeMouseDown(e, 'client');
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Maximize2 className="w-3 h-3 text-white" />
+                          </div>
+                          {/* Drag indicator */}
+                          <div className="absolute top-0 left-0 w-full h-6 bg-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                            <Move className="w-3 h-3 text-blue-600" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Contractor Logo */}
+                    {brandingConfig?.contractorLogo && (
+                      <div
+                        data-logo-type="contractor"
+                        className="absolute cursor-move z-20 group select-none"
+                        style={{
+                          left: `${brandingConfig.contractorLogoPosition?.x || 95}%`,
+                          top: `${brandingConfig.contractorLogoPosition?.y || 5}%`,
+                          width: `${brandingConfig.contractorLogoSize?.width || 96}px`,
+                          height: `${brandingConfig.contractorLogoSize?.height || 64}px`,
+                        }}
+                        onMouseDown={(e) => handleLogoMouseDown(e, 'contractor')}
+                      >
+                        <div 
+                          className="relative w-full h-full bg-white rounded border-2 border-purple-400 p-1 shadow-lg cursor-move"
+                          onMouseDown={(e) => {
+                            // Handle drag from inner div
+                            if (!(e.target as HTMLElement).closest('.resize-handle')) {
+                              handleLogoMouseDown(e, 'contractor');
+                              e.stopPropagation(); // Prevent outer handler from also firing
+                            }
+                          }}
+                        >
+                          <img 
+                            src={brandingConfig.contractorLogo} 
+                            alt="Contractor Logo" 
+                            className="w-full h-full object-contain pointer-events-none"
+                            draggable="false"
+                          />
+                          {/* Resize handle */}
+                          <div
+                            className="resize-handle absolute bottom-0 right-0 w-5 h-5 bg-purple-600 rounded-tl-lg cursor-nwse-resize opacity-80 hover:opacity-100 transition-opacity flex items-center justify-center z-10 shadow-md"
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              handleResizeMouseDown(e, 'contractor');
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Maximize2 className="w-3 h-3 text-white" />
+                          </div>
+                          {/* Drag indicator */}
+                          <div className="absolute top-0 left-0 w-full h-6 bg-purple-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                            <Move className="w-3 h-3 text-purple-600" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+                
+                {/* Icons - Only show if user uploaded one */}
+                {signageData.warningIcon && (
+                  <div className="flex justify-center gap-3 mb-2 text-white opacity-90">
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <img 
+                        src={signageData.warningIcon} 
+                        alt="Warning Icon" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {/* Title */}
+                <div className="text-white mb-1 tracking-wide">
+                  {signageData.title ? (
+                    <h1 className="text-xl">{signageData.title}</h1>
+                  ) : (
+                    <h1 className="text-xl">SIGNAGE TITLE</h1>
+                  )}
+                </div>
+                
+                {/* Purpose */}
+                {signageData.purpose && (
+                  <p className="text-white text-sm opacity-90">
+                    {signageData.purpose}
+                  </p>
+                )}
+              </div>
+
+              {/* Location Section */}
+              {signageData.location && (
+                <div className="px-3 py-2 bg-white border-b border-slate-200">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-3 h-3 text-blue-600" />
+                    <div className="text-xs">
+                      <span className="text-slate-500 uppercase">Location: </span>
+                      <span className="text-slate-900">{signageData.location}</span>
+                    </div>
+                  </div>
                 </div>
               )}
-            </div>
-          )}
 
-          {/* QR Code only (when showOnlyTitleAndQR is true) */}
-          {signageData.qrCodeConfig?.showOnlyTitleAndQR && showQRCode && (
-            <div className="px-3 py-4 border-b border-slate-200 flex justify-center">
-              <div className="flex flex-col items-center justify-center bg-white p-4 rounded border border-slate-200">
-                {signageData.qrCodeConfig.type === 'existing' && signageData.qrCodeConfig.existingQRCodeImage ? (
-                  <img 
-                    src={signageData.qrCodeConfig.existingQRCodeImage} 
-                    alt="QR Code" 
-                    className="w-32 h-32 object-contain"
-                  />
-                ) : qrCodeValue ? (
-                  <QRCodeSVG value={qrCodeValue} size={128} />
-                ) : null}
-                <div className="text-xs text-center text-slate-600 mt-2">Scan QR Code</div>
+              {/* Category Description */}
+              {signageData.description && (
+                <div className="px-3 py-2 bg-slate-50 border-b border-slate-200">
+                  <p className="text-xs text-slate-700 leading-relaxed">
+                    {signageData.description}
+                  </p>
+                </div>
+              )}
+
+
+              {/* PPE Section - Compact */}
+              {(signageData.ppe.length > 0 || (signageData.customPPEImages && signageData.customPPEImages.length > 0)) && (
+                <div className="px-3 py-2 border-b border-slate-200">
+                  <div className="flex items-center gap-2 mb-2 px-2 py-1 bg-blue-600 rounded text-xs">
+                    <Shield className="w-3 h-3 text-white" />
+                    <h3 className="text-white uppercase tracking-wide">
+                      Mandatory PPE ({signageData.ppe.length + (signageData.customPPEImages?.length || 0)})
+                    </h3>
+                  </div>
+                  <div className={`grid gap-2 ${
+                    (signageData.ppe.length + (signageData.customPPEImages?.length || 0)) <= 4 ? 'grid-cols-4' :
+                    (signageData.ppe.length + (signageData.customPPEImages?.length || 0)) <= 6 ? 'grid-cols-3' :
+                    (signageData.ppe.length + (signageData.customPPEImages?.length || 0)) <= 12 ? 'grid-cols-4' :
+                    (signageData.ppe.length + (signageData.customPPEImages?.length || 0)) <= 20 ? 'grid-cols-5' :
+                    'grid-cols-6'
+                  }`}>
+                    {signageData.ppe.map((ppe) => (
+                      <div key={ppe} className="bg-blue-600 rounded p-2 text-center">
+                        <div className="flex justify-center mb-1 text-white">
+                          {getPPEIcon(ppe, 'w-6 h-6')}
+                        </div>
+                        <div className="text-[9px] text-white uppercase leading-tight">
+                          {getPPELabel(ppe)}
+                        </div>
+                      </div>
+                    ))}
+                    {/* Custom PPE Images */}
+                    {signageData.customPPEImages && signageData.customPPEImages.map((ppe, index) => (
+                      <div key={`custom-${index}`} className="bg-blue-600 rounded p-2 text-center">
+                        <div className="flex justify-center mb-1">
+                          <img 
+                            src={ppe.image} 
+                            alt={ppe.name || `Custom PPE ${index + 1}`}
+                            className="w-6 h-6 object-contain"
+                          />
+                        </div>
+                        <div className="text-[9px] text-white uppercase leading-tight">
+                          {ppe.name || `Custom PPE ${index + 1}`}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Hazards / Warnings Section */}
+              {displayHazards.length > 0 && (
+                <div className="px-3 py-2 border-b border-slate-200">
+                  <div style={{ background: config.color, padding: '8px 12px', borderRadius: '4px', marginBottom: '12px' }}>
+                    <div className="text-white text-xs font-bold uppercase">
+                      ⚠ HAZARDS
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {displayHazards.map((hazard, index) => (
+                      <div key={index} className="px-3 py-2 bg-red-50 border-l-4 border-red-600 rounded">
+                        <div className="text-xs text-slate-900">
+                          ⚠ {hazard}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Safety Procedures Section - Compact */}
+              {displayProcedures.length > 0 && (
+                <div className="px-3 py-2 border-b border-slate-200">
+                  <div className="flex items-center gap-2 mb-2 px-2 py-1 bg-green-600 rounded text-xs">
+                    <Shield className="w-3 h-3 text-white" />
+                    <h3 className="text-white uppercase tracking-wide">
+                      Safety Procedures
+                    </h3>
+                  </div>
+                  <div className="space-y-2">
+                    {displayProcedures.map((procedure, index) => (
+                      <div key={index} className="px-2 py-2 bg-green-50 rounded">
+                        <div className="flex items-start gap-2">
+                          <div className="w-4 h-4 bg-green-600 text-white rounded-full flex items-center justify-center flex-shrink-0 text-[9px] mt-0.5">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1 text-xs text-slate-800">
+                            {procedure}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Permit Required Section */}
+              {signageData.permitRequired === 'yes' && (
+                <div className="px-4 py-3 bg-red-700 border-b border-slate-200">
+                  <div className="flex items-center gap-3 text-white">
+                    <div className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center flex-shrink-0">
+                      <Ban className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="uppercase tracking-wider text-sm">Permit Required</div>
+                      {signageData.permitDetails && (
+                        <div className="text-xs mt-0.5 opacity-90">{signageData.permitDetails}</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Emergency Contacts + QR Code - Side by side */}
+              <div className="px-3 py-2 border-b border-slate-200 flex gap-3">
+                {/* Emergency Contacts */}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1 px-2 py-1 bg-orange-500 rounded text-xs">
+                    <Phone className="w-3 h-3 text-white" />
+                    <h3 className="text-white uppercase tracking-wide">Emergency</h3>
+                  </div>
+                  <div className="bg-orange-50 rounded px-2 py-1 space-y-0.5">
+                    {signageData.emergencyContacts.map((contact, index) => (
+                      <div key={index} className="text-xs text-orange-900">
+                        <span className="font-semibold">{contact.label}:</span> {contact.number}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* QR Code */}
+                {showQRCode && (
+                  <div className="flex flex-col items-center justify-center bg-white p-2 rounded border border-slate-200">
+                    {signageData.qrCodeConfig?.type === 'existing' && signageData.qrCodeConfig.existingQRCodeImage ? (
+                      <img 
+                        src={signageData.qrCodeConfig.existingQRCodeImage} 
+                        alt="QR Code" 
+                        className="w-[50px] h-[50px] object-contain"
+                      />
+                    ) : qrCodeValue ? (
+                      <QRCodeSVG value={qrCodeValue} size={50} />
+                    ) : null}
+                    <div className="text-[8px] text-center text-slate-600 mt-1">Scan</div>
+                  </div>
+                )}
               </div>
-            </div>
+            </>
           )}
 
           {/* Footer */}

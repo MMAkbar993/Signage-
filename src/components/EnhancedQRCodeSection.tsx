@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { SignageData, QRCodeConfig, QRCodeType, QRCodeSource, QRCodeContentBox, AuthorizedPerson } from '../types/signage';
 import { Plus, X, ChevronDown, Upload, Image as ImageIcon } from 'lucide-react';
@@ -17,7 +18,7 @@ const getDefaultQRCodeConfig = (): QRCodeConfig => ({
 export function EnhancedQRCodeSection({ signageData, onUpdate }: EnhancedQRCodeSectionProps) {
   const [authorizedPersons, setAuthorizedPersons] = useState<AuthorizedPerson[]>([]);
   const [organizationCharts, setOrganizationCharts] = useState<any[]>([]); // Placeholder for future
-  const [safetyCommittees, setSafetyCommittees] = useState<any[]>([]); // Placeholder for future
+  const [safetyCommittees, setSafetyCommittees] = useState<any[]>([]);
 
   const qrConfig: QRCodeConfig = signageData.qrCodeConfig || getDefaultQRCodeConfig();
 
@@ -37,6 +38,46 @@ export function EnhancedQRCodeSection({ signageData, onUpdate }: EnhancedQRCodeS
     window.addEventListener('authorizedPersonsUpdated', loadAuthorizedPersons);
     return () => window.removeEventListener('authorizedPersonsUpdated', loadAuthorizedPersons);
   }, []);
+
+  // Load safety committee (Emergency Response Team) from localStorage
+  useEffect(() => {
+    const loadSafetyCommittees = () => {
+      const saved = localStorage.getItem('emergencyResponseTeam');
+      if (saved) {
+        try {
+          const committeeData = JSON.parse(saved);
+          // If there's data, create a selectable entry for the Safety Committee
+          if (Array.isArray(committeeData) && committeeData.length > 0) {
+            setSafetyCommittees([{
+              id: 'emergency-response-team',
+              name: 'Safety Committee',
+              data: committeeData
+            }]);
+          } else {
+            setSafetyCommittees([]);
+          }
+        } catch (e) {
+          console.error('Error loading safety committee:', e);
+          setSafetyCommittees([]);
+        }
+      } else {
+        setSafetyCommittees([]);
+      }
+    };
+    loadSafetyCommittees();
+    // Listen for updates from EmergencyResponseTeam component
+    window.addEventListener('emergencyResponseTeamUpdated', loadSafetyCommittees);
+    return () => window.removeEventListener('emergencyResponseTeamUpdated', loadSafetyCommittees);
+  }, []);
+
+  // Auto-select safety committee when source is selected and data is available
+  useEffect(() => {
+    if (qrConfig.sources.includes('safetyCommittee') && 
+        !qrConfig.selectedSafetyCommitteeId && 
+        safetyCommittees.length > 0) {
+      updateQRConfig({ selectedSafetyCommitteeId: 'emergency-response-team' });
+    }
+  }, [qrConfig.sources, qrConfig.selectedSafetyCommitteeId, safetyCommittees.length]);
 
   const updateQRConfig = (updates: Partial<QRCodeConfig>) => {
     const newConfig: QRCodeConfig = { ...qrConfig, ...updates };
@@ -163,13 +204,18 @@ export function EnhancedQRCodeSection({ signageData, onUpdate }: EnhancedQRCodeS
       {/* QR Code Source */}
       <div className="space-y-3">
         <div className="text-sm text-slate-700 font-medium">QR Code Source</div>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+          <p className="text-xs text-blue-800">
+            <strong>Note:</strong> You can select multiple sources (Authorized Person, Organization Chart, Safety Committee) to combine them in one QR code. However, if you enter a manual URL or add content boxes, those will take priority and override the selected sources.
+          </p>
+        </div>
         <div className="space-y-2">
-          {(['custom', 'authorizedPerson', 'organizationChart', 'safetyCommittee'] as QRCodeSource[]).map((source) => {
+          {(['authorizedPerson', 'organizationChart', 'safetyCommittee'] as QRCodeSource[]).map((source) => {
             const labels: Record<QRCodeSource, string> = {
               custom: 'Custom Link / URL',
               authorizedPerson: 'Authorized Person',
               organizationChart: 'Organization Chart',
-              safetyCommittee: 'Safety Committee Team',
+              safetyCommittee: 'Safety Committee',
             };
             return (
               <label key={source} className="flex items-center gap-2 cursor-pointer">
@@ -208,7 +254,7 @@ export function EnhancedQRCodeSection({ signageData, onUpdate }: EnhancedQRCodeS
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
           <p className="text-xs text-slate-500">
-            Click to select an authorized person to generate a QR code linking to their details.
+            Select an authorized person. You can combine this with Organization Chart and Safety Committee selections - all will be included in one QR code.
           </p>
         </div>
       )}
@@ -235,16 +281,16 @@ export function EnhancedQRCodeSection({ signageData, onUpdate }: EnhancedQRCodeS
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
           <p className="text-xs text-slate-500">
-            Click to select an organization chart to generate a QR code linking to the chart.
+            Select an organization chart. You can combine this with Authorized Person and Safety Committee selections - all will be included in one QR code.
           </p>
         </div>
       )}
 
-      {/* Select Safety Committee Team */}
+      {/* Select Safety Committee */}
       {qrConfig.sources.includes('safetyCommittee') && (
         <div className="space-y-2">
           <label className="block text-sm text-slate-700 font-medium">
-            Select Safety Committee Team
+            Select Safety Committee
           </label>
           <div className="relative">
             <select
@@ -252,7 +298,7 @@ export function EnhancedQRCodeSection({ signageData, onUpdate }: EnhancedQRCodeS
               onChange={(e) => updateQRConfig({ selectedSafetyCommitteeId: e.target.value || undefined })}
               className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white cursor-pointer"
             >
-              <option value="">Select Safety Committee Team</option>
+              <option value="">Select Safety Committee</option>
               {safetyCommittees.map((team) => (
                 <option key={team.id} value={team.id}>
                   {team.name}
@@ -262,7 +308,7 @@ export function EnhancedQRCodeSection({ signageData, onUpdate }: EnhancedQRCodeS
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
           <p className="text-xs text-slate-500">
-            Click to select a safety committee team to generate a QR code linking to the team details.
+            Select the Safety Committee. You can combine this with Authorized Person and Organization Chart selections - all will be included in one QR code.
           </p>
         </div>
       )}
@@ -271,10 +317,15 @@ export function EnhancedQRCodeSection({ signageData, onUpdate }: EnhancedQRCodeS
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm text-slate-700 font-medium">Content Boxes</div>
+            <div className="text-sm text-slate-700 font-medium">Content Boxes (Manual Input)</div>
             <p className="text-xs text-slate-500 mt-1">
               Add multiple content boxes with custom URLs or websites. Each box will have its own space in the QR code.
             </p>
+            {(qrConfig.sources.includes('authorizedPerson') || qrConfig.sources.includes('organizationChart') || qrConfig.sources.includes('safetyCommittee')) && (
+              <p className="text-xs text-amber-600 mt-1 font-medium">
+                ⚠️ Manual input will override selected sources above
+              </p>
+            )}
           </div>
           <button
             onClick={handleAddContentBox}
@@ -326,7 +377,7 @@ export function EnhancedQRCodeSection({ signageData, onUpdate }: EnhancedQRCodeS
 
       {/* Or Enter Single URL (Legacy) */}
       <div className="space-y-2 border-t border-slate-200 pt-4">
-        <div className="text-sm text-slate-700 font-medium">Or Enter Single URL (Legacy)</div>
+        <div className="text-sm text-slate-700 font-medium">Or Enter Single URL (Manual Input)</div>
         <input
           type="url"
           value={qrConfig.legacyUrl || ''}
@@ -335,8 +386,13 @@ export function EnhancedQRCodeSection({ signageData, onUpdate }: EnhancedQRCodeS
           className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <p className="text-xs text-slate-500">
-          Enter a single URL or text that will be encoded in the QR code. (This will replace boxes if used)
+          Enter a single URL or text that will be encoded in the QR code.
         </p>
+        {(qrConfig.sources.includes('authorizedPerson') || qrConfig.sources.includes('organizationChart') || qrConfig.sources.includes('safetyCommittee')) && (
+          <p className="text-xs text-amber-600 font-medium">
+            ⚠️ This manual input will override all selected sources above
+          </p>
+        )}
       </div>
 
       {/* Show Only Title and QR Code */}

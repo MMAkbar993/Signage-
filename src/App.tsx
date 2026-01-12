@@ -14,7 +14,6 @@ import { Sidebar } from './components/Sidebar';
 import OrganizationChart from './components/OrganizationChart';
 import { SignageData } from './types/signage';
 import { 
-  Shield, 
   Menu, 
   X, 
   Sparkles,
@@ -92,8 +91,12 @@ function App() {
                 {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
               
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-                <Shield className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center overflow-hidden">
+                <img 
+                  src="/logo.jpeg" 
+                  alt="Logo" 
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div>
                 <h1 className="text-slate-900 text-base sm:text-lg md:text-xl">Universal Smart Signage Generator</h1>

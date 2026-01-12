@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import React from 'react';
 import { InputPanel } from './InputPanel';
 import { SignagePreview } from './SignagePreview';
 import { IdentificationSignage } from './IdentificationSignage';
@@ -143,6 +144,7 @@ export function SignageGenerator({ aiGeneratedData, onDataUsed }: SignageGenerat
               <SignagePreview 
                 signageData={signageData}
                 brandingConfig={brandingConfig}
+                onBrandingConfigChange={setBrandingConfig}
               />
             </div>
           </div>
