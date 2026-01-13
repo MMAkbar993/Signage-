@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { AuthorizedPerson, SignageCategory } from '../types/signage';
-import { Plus, Trash2, Upload, User, Clock, Phone, Image as ImageIcon, Briefcase, Hash, Building2, Award, Calendar, Eye, ChevronDown, Printer, Layout } from 'lucide-react';
+import { Plus, Trash2, Upload, User, Clock, Phone, Image as ImageIcon, Briefcase, Hash, Building2, Award, Calendar, Eye, ChevronDown, Printer, Layout, Edit2 } from 'lucide-react';
 import { getCategoryConfig } from '../utils/categoryConfig';
 
 const SHIFT_OPTIONS = [
@@ -37,6 +37,7 @@ export function AuthorizedPersonsManager() {
   const [selectedPersons, setSelectedPersons] = useState<AuthorizedPerson[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'single' | 'multi' | null>(null);
+  const [editingPerson, setEditingPerson] = useState<AuthorizedPerson | null>(null);
   
   // Manual resize controls
   const [cardScale, setCardScale] = useState<number>(100); // 20-150%
@@ -61,12 +62,13 @@ export function AuthorizedPersonsManager() {
     orientation: 'landscape' as 'landscape' | 'portrait',
     headerText: 'AUTHORIZED PERSONNEL',
     footerText: 'ISO 7010 Compliant • EHS Safety',
+    backgroundColor: '#ffffff',
   });
   
   // Global settings for header and footer (applied to all signage)
   const [headerText, setHeaderText] = useState('AUTHORIZED PERSONNEL');
   const [footerText, setFooterText] = useState('ISO 7010 Compliant • EHS Safety');
-  const [cardBackgroundColor, setCardBackgroundColor] = useState('#ffffff');
+  const [cardBackgroundColor, setCardBackgroundColor] = useState('#ffffff'); // Fallback color if person doesn't have backgroundColor
   const [previewImage, setPreviewImage] = useState<string>('');
   const previewRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -80,6 +82,7 @@ export function AuthorizedPersonsManager() {
         ...person,
         format: 'paper',
         category: person.category || 'mandatory',
+        backgroundColor: person.backgroundColor || '#ffffff',
       }));
       setPersons(updatedPersons);
     }
@@ -120,6 +123,7 @@ export function AuthorizedPersonsManager() {
         photo: formData.photo,
         format: formData.format,
         category: formData.category,
+        backgroundColor: formData.backgroundColor || '#ffffff',
         ...(formData.format === 'paper' && {
           paperSize: formData.paperSize,
           orientation: formData.orientation,
@@ -141,6 +145,7 @@ export function AuthorizedPersonsManager() {
         category: 'mandatory',
         paperSize: 'a4',
         orientation: 'landscape',
+        backgroundColor: '#ffffff',
       });
       setPreviewImage('');
     }
@@ -182,6 +187,112 @@ export function AuthorizedPersonsManager() {
   const handleViewSignage = (person: AuthorizedPerson) => {
     setViewMode('multi');
     setSelectedPersons([person]);
+    // Scroll to preview after a short delay to ensure it's rendered
+    setTimeout(() => {
+      const previewElement = document.getElementById('signage-preview-section');
+      if (previewElement) {
+        previewElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
+
+  const handleEditPerson = (person: AuthorizedPerson) => {
+    setEditingPerson(person);
+    setFormData({
+      name: person.name,
+      shift: person.shift || '',
+      designation: person.designation,
+      employeeId: person.employeeId || '',
+      department: person.department,
+      contact: person.contact,
+      certifications: person.certifications || '',
+      validFrom: person.validFrom || '',
+      validUntil: person.validUntil || '',
+      photo: person.photo || '',
+      format: person.format,
+      category: person.category,
+      paperSize: person.paperSize || 'a4',
+      orientation: person.orientation || 'landscape',
+      headerText: headerText,
+      footerText: footerText,
+      backgroundColor: person.backgroundColor || '#ffffff',
+    });
+    setPreviewImage(person.photo || '');
+    // Scroll to form
+    setTimeout(() => {
+      const formElement = document.getElementById('add-person-form');
+      if (formElement) {
+        formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
+
+  const handleUpdatePerson = () => {
+    if (editingPerson && formData.name && formData.designation && formData.department && formData.contact) {
+      const updatedPerson: AuthorizedPerson = {
+        ...editingPerson,
+        name: formData.name,
+        shift: formData.shift,
+        designation: formData.designation,
+        employeeId: formData.employeeId,
+        department: formData.department,
+        contact: formData.contact,
+        certifications: formData.certifications,
+        validFrom: formData.validFrom,
+        validUntil: formData.validUntil,
+        photo: formData.photo,
+        format: formData.format,
+        category: formData.category,
+        backgroundColor: formData.backgroundColor || '#ffffff',
+        ...(formData.format === 'paper' && {
+          paperSize: formData.paperSize,
+          orientation: formData.orientation,
+        }),
+      };
+      setPersons(persons.map(p => p.id === editingPerson.id ? updatedPerson : p));
+      // Reset form
+      setEditingPerson(null);
+      setFormData({ 
+        name: '', 
+        shift: '', 
+        designation: '', 
+        employeeId: '', 
+        department: '', 
+        contact: '', 
+        certifications: '', 
+        validFrom: '', 
+        validUntil: '', 
+        photo: '',
+        format: 'paper',
+        category: 'mandatory',
+        paperSize: 'a4',
+        orientation: 'landscape',
+        backgroundColor: '#ffffff',
+      });
+      setPreviewImage('');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingPerson(null);
+    setFormData({ 
+      name: '', 
+      shift: '', 
+      designation: '', 
+      employeeId: '', 
+      department: '', 
+      contact: '', 
+      certifications: '', 
+      validFrom: '', 
+      validUntil: '', 
+      photo: '',
+      format: 'paper',
+      category: 'mandatory',
+      paperSize: 'a4',
+      orientation: 'landscape',
+      backgroundColor: '#ffffff',
+    });
+    setPreviewImage('');
   };
 
   const handlePrint = () => {
@@ -190,6 +301,14 @@ export function AuthorizedPersonsManager() {
   };
 
   const renderMultiPersonLandscape = (persons: AuthorizedPerson[]) => {
+    if (!persons || persons.length === 0) {
+      return (
+        <div className="text-center py-12 text-slate-500">
+          <User className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+          <p>No persons selected</p>
+        </div>
+      );
+    }
     const config = getCategoryConfig(persons[0].category);
     const displayPersons = persons.slice(0, 6);
     const personCount = displayPersons.length;
@@ -265,6 +384,7 @@ export function AuthorizedPersonsManager() {
           {/* Header */}
           <div 
             style={{ 
+              flexShrink: 0,
               padding: '15px',
               textAlign: 'center',
               background: config.color,
@@ -285,12 +405,14 @@ export function AuthorizedPersonsManager() {
 
           {/* Grid of Persons - Dynamic Grid Layout with Numbers */}
           <div style={{ 
-            flex: 1,
+            flex: '1 1 0',
+            minHeight: 0,
             padding: '15px',
             display: 'grid',
             gridTemplateColumns: `repeat(${columns}, 1fr)`,
             gridTemplateRows: `repeat(${rows}, 1fr)`,
-            gap: '12px'
+            gap: '12px',
+            overflow: 'auto'
           }}>
             {displayPersons.map((person, index) => (
               <div 
@@ -299,13 +421,14 @@ export function AuthorizedPersonsManager() {
                   border: `3px solid ${config.color}`,
                   borderRadius: '8px',
                   padding: '12px',
-                  backgroundColor: cardBackgroundColor,
+                  backgroundColor: person.backgroundColor || cardBackgroundColor,
                   boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                   display: 'flex',
                   flexDirection: 'column',
                   minHeight: 0,
                   minWidth: 0,
-                  position: 'relative'
+                  position: 'relative',
+                  overflow: 'hidden'
                 }}
               >
                 {/* Number Badge */}
@@ -361,7 +484,7 @@ export function AuthorizedPersonsManager() {
                 </div>
 
                 {/* All Details Below Photo in Order */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '9px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '9px', flex: 1, minHeight: 0 }}>
                   {/* Name */}
                   <div style={{ 
                     textAlign: 'center',
@@ -523,6 +646,7 @@ export function AuthorizedPersonsManager() {
 
           {/* Footer */}
           <div style={{ 
+            flexShrink: 0,
             padding: '10px 15px',
             backgroundColor: '#1e293b',
             color: '#ffffff'
@@ -626,10 +750,19 @@ export function AuthorizedPersonsManager() {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
           {/* Left Panel - Form */}
           <div className="xl:col-span-1 order-2 xl:order-1">
-            <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-4 sm:p-6 xl:sticky xl:top-6 xl:max-h-[calc(100vh-120px)] xl:overflow-y-auto">
+            <div id="add-person-form" className="bg-white rounded-xl shadow-lg border border-slate-200 p-4 sm:p-6 xl:sticky xl:top-6 xl:max-h-[calc(100vh-120px)] xl:overflow-y-auto">
               <h3 className="text-slate-900 mb-4 flex items-center gap-2">
-                <Plus className="w-5 h-5 text-blue-600" />
-                Add New Person
+                {editingPerson ? (
+                  <>
+                    <Edit2 className="w-5 h-5 text-blue-600" />
+                    Edit Person
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-5 h-5 text-blue-600" />
+                    Add New Person
+                  </>
+                )}
               </h3>
 
               <div className="space-y-4">
@@ -661,7 +794,7 @@ export function AuthorizedPersonsManager() {
                   />
                 </div>
 
-                {/* Card Background Color */}
+                {/* Person Background Color */}
                 <div>
                   <label className="block text-sm text-slate-700 mb-2">
                     Card Background Color
@@ -669,20 +802,20 @@ export function AuthorizedPersonsManager() {
                   <div className="flex gap-2">
                     <input
                       type="color"
-                      value={cardBackgroundColor}
-                      onChange={(e) => setCardBackgroundColor(e.target.value)}
+                      value={formData.backgroundColor}
+                      onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
                       className="w-16 h-10 rounded-lg border-2 border-slate-300 cursor-pointer"
                       title="Pick a color"
                     />
                     <input
                       type="text"
-                      value={cardBackgroundColor}
-                      onChange={(e) => setCardBackgroundColor(e.target.value)}
+                      value={formData.backgroundColor}
+                      onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
                       placeholder="#ffffff"
                       className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                     />
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">Color for the person card backgrounds</p>
+                  <p className="text-xs text-slate-500 mt-1">Background color for this person's card</p>
                 </div>
 
                 {/* Paper Size */}
@@ -957,15 +1090,34 @@ export function AuthorizedPersonsManager() {
                   </div>
                 </div>
 
-                {/* Add Button */}
-                <button
-                  onClick={handleAddPerson}
-                  disabled={!formData.name || !formData.designation || !formData.department || !formData.contact}
-                  className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
-                >
-                  <Plus className="w-5 h-5" />
-                  Add Authorized Person
-                </button>
+                {/* Add/Update Button */}
+                {editingPerson ? (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleUpdatePerson}
+                      disabled={!formData.name || !formData.designation || !formData.department || !formData.contact}
+                      className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
+                    >
+                      <Edit2 className="w-5 h-5" />
+                      Update Person
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg flex items-center justify-center transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleAddPerson}
+                    disabled={!formData.name || !formData.designation || !formData.department || !formData.contact}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Add Authorized Person
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1038,6 +1190,34 @@ export function AuthorizedPersonsManager() {
                                   {config.name}
                                 </span>
                               </div>
+                              {/* Background Color Picker */}
+                              <div className="mt-2 flex items-center gap-2">
+                                <label className="text-xs text-slate-600">Card Color:</label>
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="color"
+                                    value={person.backgroundColor || '#ffffff'}
+                                    onChange={(e) => {
+                                      setPersons(persons.map(p => 
+                                        p.id === person.id ? { ...p, backgroundColor: e.target.value } : p
+                                      ));
+                                    }}
+                                    className="w-8 h-8 rounded border border-slate-300 cursor-pointer"
+                                    title="Change card background color"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={person.backgroundColor || '#ffffff'}
+                                    onChange={(e) => {
+                                      setPersons(persons.map(p => 
+                                        p.id === person.id ? { ...p, backgroundColor: e.target.value } : p
+                                      ));
+                                    }}
+                                    className="w-20 px-2 py-1 text-xs border border-slate-300 rounded font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    placeholder="#ffffff"
+                                  />
+                                </div>
+                              </div>
                             </div>
                           </div>
 
@@ -1049,6 +1229,12 @@ export function AuthorizedPersonsManager() {
                             >
                               <Eye className="w-3 h-3" />
                               View Signage
+                            </button>
+                            <button
+                              onClick={() => handleEditPerson(person)}
+                              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs transition-colors"
+                            >
+                              <Edit2 className="w-3 h-3" />
                             </button>
                             <button
                               onClick={() => handleRemovePerson(person.id)}
@@ -1144,7 +1330,7 @@ export function AuthorizedPersonsManager() {
 
             {/* Signage Preview */}
             {viewMode && selectedPersons.length > 0 && (
-              <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+              <div id="signage-preview-section" className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
                   <h3 className="text-slate-900">
                     {viewMode === 'multi' 

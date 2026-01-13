@@ -32,69 +32,182 @@ const getQRCodeValueFromConfig = (signageData: SignageData): { value: string | n
   
   if (!qrConfig) return { value: null, isExistingImage: false };
   
-  // Priority 1: Manual Input - Legacy URL (highest priority, overrides everything)
-  if (qrConfig.legacyUrl && qrConfig.legacyUrl.trim()) {
-    return { value: qrConfig.legacyUrl.trim(), isExistingImage: false };
-  }
-  
-  // Priority 2: Manual Input - Content boxes URLs (overrides auto-selected sources)
-  if (qrConfig.contentBoxes && qrConfig.contentBoxes.length > 0) {
-    const urls = qrConfig.contentBoxes
-      .filter(box => box.url && box.url.trim())
-      .map(box => box.url.trim());
-    if (urls.length > 0) {
-      return { value: urls.join('\n'), isExistingImage: false };
-    }
-  }
-  
-  // Priority 3: Auto-selected sources (only used if no manual input)
   // Combine all selected sources into one QR code
   const selectedSources: string[] = [];
   
-  if (qrConfig.sources.includes('authorizedPerson') && qrConfig.selectedAuthorizedPersonId) {
-    selectedSources.push(`authorized-person:${qrConfig.selectedAuthorizedPersonId}`);
-  }
-  
-  if (qrConfig.sources.includes('organizationChart') && qrConfig.selectedOrganizationChartId) {
-    selectedSources.push(`organization-chart:${qrConfig.selectedOrganizationChartId}`);
-  }
-  
-  if (qrConfig.sources.includes('safetyCommittee')) {
-    // Load actual safety committee data from localStorage
-    try {
-      const savedCommittee = localStorage.getItem('emergencyResponseTeam');
-      if (savedCommittee) {
-        const committeeData = JSON.parse(savedCommittee);
-        if (Array.isArray(committeeData) && committeeData.length > 0) {
-          // Format the safety committee data
-          const committeeInfo: string[] = [];
-          committeeInfo.push('=== SAFETY COMMITTEE ===');
-          committeeData.forEach((member, index) => {
-            if (member.name || member.role || member.phone || member.email) {
-              committeeInfo.push(`\nMember ${index + 1}:`);
-              if (member.name) committeeInfo.push(`Name: ${member.name}`);
-              if (member.role) committeeInfo.push(`Role: ${member.role}`);
-              if (member.phone) committeeInfo.push(`Phone: ${member.phone}`);
-              if (member.email) committeeInfo.push(`Email: ${member.email}`);
-            }
-          });
-          selectedSources.push(committeeInfo.join('\n'));
-        } else if (qrConfig.selectedSafetyCommitteeId) {
-          selectedSources.push(`safety-committee:${qrConfig.selectedSafetyCommitteeId}`);
-        }
-      } else if (qrConfig.selectedSafetyCommitteeId) {
-        selectedSources.push(`safety-committee:${qrConfig.selectedSafetyCommitteeId}`);
+  // Include Custom URLs if 'custom' source is selected
+  if (qrConfig.sources.includes('custom')) {
+    // Add legacy URL if provided
+    if (qrConfig.legacyUrl && qrConfig.legacyUrl.trim()) {
+      selectedSources.push(`=== CUSTOM URL ===\n${qrConfig.legacyUrl.trim()}`);
+    }
+    
+    // Add content boxes URLs if provided
+    if (qrConfig.contentBoxes && qrConfig.contentBoxes.length > 0) {
+      const urls = qrConfig.contentBoxes
+        .filter(box => box.url && box.url.trim())
+        .map(box => {
+          if (box.title) {
+            return `${box.title}: ${box.url.trim()}`;
+          }
+          return box.url.trim();
+        });
+      if (urls.length > 0) {
+        selectedSources.push(`=== CUSTOM LINKS ===\n${urls.join('\n')}`);
       }
-    } catch (error) {
-      console.error('Error loading safety committee data:', error);
-      if (qrConfig.selectedSafetyCommitteeId) {
-        selectedSources.push(`safety-committee:${qrConfig.selectedSafetyCommitteeId}`);
+    }
+  } else {
+    // If 'custom' is not selected but URLs exist, use them as fallback (legacy behavior)
+    if (qrConfig.legacyUrl && qrConfig.legacyUrl.trim()) {
+      return { value: qrConfig.legacyUrl.trim(), isExistingImage: false };
+    }
+    if (qrConfig.contentBoxes && qrConfig.contentBoxes.length > 0) {
+      const urls = qrConfig.contentBoxes
+        .filter(box => box.url && box.url.trim())
+        .map(box => box.url.trim());
+      if (urls.length > 0) {
+        return { value: urls.join('\n'), isExistingImage: false };
+      }
+    }
+  }
+  
+  // Include Authorized Person(s) if selected
+  if (qrConfig.sources.includes('authorizedPerson')) {
+    const selectedPersonIds = qrConfig.selectedAuthorizedPersonIds || 
+      (qrConfig.selectedAuthorizedPersonId ? [qrConfig.selectedAuthorizedPersonId] : []);
+    
+    if (selectedPersonIds.length > 0) {
+      try {
+        // Load authorized persons from localStorage
+        const savedPersons = localStorage.getItem('authorizedPersons');
+        if (savedPersons) {
+          const allPersons = JSON.parse(savedPersons);
+          const selectedPersons = allPersons.filter((p: any) => selectedPersonIds.includes(p.id));
+          
+          if (selectedPersons.length > 0) {
+            const personInfo: string[] = [];
+            personInfo.push(`=== AUTHORIZED PERSON${selectedPersons.length > 1 ? 'S' : ''} ===`);
+            
+            selectedPersons.forEach((person: any, index: number) => {
+              personInfo.push(`\nPerson ${index + 1}:`);
+              if (person.name) personInfo.push(`Name: ${person.name}`);
+              if (person.designation) personInfo.push(`Designation: ${person.designation}`);
+              if (person.department) personInfo.push(`Department: ${person.department}`);
+              if (person.employeeId) personInfo.push(`Employee ID: ${person.employeeId}`);
+              if (person.shift) personInfo.push(`Shift: ${person.shift}`);
+              if (person.contact) personInfo.push(`Contact: ${person.contact}`);
+              if (person.certifications) personInfo.push(`Certifications: ${person.certifications}`);
+              if (person.validFrom) personInfo.push(`Valid From: ${person.validFrom}`);
+              if (person.validUntil) personInfo.push(`Valid Until: ${person.validUntil}`);
+            });
+            
+            selectedSources.push(personInfo.join('\n'));
+          } else {
+            // Fallback to IDs if data not found
+            selectedSources.push(`=== AUTHORIZED PERSON${selectedPersonIds.length > 1 ? 'S' : ''} ===\n${selectedPersonIds.map(id => `authorized-person:${id}`).join('\n')}`);
+          }
+        } else {
+          // Fallback to IDs if localStorage not available
+          selectedSources.push(`=== AUTHORIZED PERSON${selectedPersonIds.length > 1 ? 'S' : ''} ===\n${selectedPersonIds.map(id => `authorized-person:${id}`).join('\n')}`);
+        }
+      } catch (error) {
+        console.error('Error loading authorized persons data:', error);
+        // Fallback to IDs on error
+        selectedSources.push(`=== AUTHORIZED PERSON${selectedPersonIds.length > 1 ? 'S' : ''} ===\n${selectedPersonIds.map(id => `authorized-person:${id}`).join('\n')}`);
+      }
+    }
+  }
+  
+  // Include Organization Chart(s) if selected
+  if (qrConfig.sources.includes('organizationChart')) {
+    const selectedChartIds = qrConfig.selectedOrganizationChartIds || 
+      (qrConfig.selectedOrganizationChartId ? [qrConfig.selectedOrganizationChartId] : []);
+    
+    if (selectedChartIds.length > 0) {
+      try {
+        // Load organization chart data from localStorage
+        const savedMembers = localStorage.getItem('organizationChartMembers');
+        const savedPositions = localStorage.getItem('organizationChartPositions');
+        
+        if (savedMembers) {
+          const allMembers = JSON.parse(savedMembers);
+          const positions = savedPositions ? JSON.parse(savedPositions) : {};
+          
+          if (Array.isArray(allMembers) && allMembers.length > 0) {
+            const chartInfo: string[] = [];
+            chartInfo.push(`=== ORGANIZATION CHART${selectedChartIds.length > 1 ? 'S' : ''} ===`);
+            
+            allMembers.forEach((member: any, index: number) => {
+              chartInfo.push(`\nMember ${index + 1}:`);
+              if (member.name) chartInfo.push(`Name: ${member.name}`);
+              if (member.title || member.position) chartInfo.push(`Position: ${member.title || member.position}`);
+              if (member.department) chartInfo.push(`Department: ${member.department}`);
+              if (member.email) chartInfo.push(`Email: ${member.email}`);
+              if (member.phone) chartInfo.push(`Phone: ${member.phone}`);
+            });
+            
+            selectedSources.push(chartInfo.join('\n'));
+          } else {
+            // Fallback to IDs if data not found
+            selectedSources.push(`=== ORGANIZATION CHART${selectedChartIds.length > 1 ? 'S' : ''} ===\n${selectedChartIds.map(id => `organization-chart:${id}`).join('\n')}`);
+          }
+        } else {
+          // Fallback to IDs if localStorage not available
+          selectedSources.push(`=== ORGANIZATION CHART${selectedChartIds.length > 1 ? 'S' : ''} ===\n${selectedChartIds.map(id => `organization-chart:${id}`).join('\n')}`);
+        }
+      } catch (error) {
+        console.error('Error loading organization chart data:', error);
+        // Fallback to IDs on error
+        selectedSources.push(`=== ORGANIZATION CHART${selectedChartIds.length > 1 ? 'S' : ''} ===\n${selectedChartIds.map(id => `organization-chart:${id}`).join('\n')}`);
+      }
+    }
+  }
+  
+  // Include Safety Committee Team(s) if selected
+  if (qrConfig.sources.includes('safetyCommittee')) {
+    const selectedCommitteeIds = qrConfig.selectedSafetyCommitteeIds || 
+      (qrConfig.selectedSafetyCommitteeId ? [qrConfig.selectedSafetyCommitteeId] : []);
+    
+    if (selectedCommitteeIds.length > 0) {
+      try {
+        // Load actual safety committee data from localStorage
+        const savedCommittee = localStorage.getItem('emergencyResponseTeam');
+        if (savedCommittee) {
+          const committeeData = JSON.parse(savedCommittee);
+          if (Array.isArray(committeeData) && committeeData.length > 0) {
+            // Format the safety committee data
+            const committeeInfo: string[] = [];
+            committeeInfo.push(`=== SAFETY COMMITTEE TEAM${selectedCommitteeIds.length > 1 ? 'S' : ''} ===`);
+            
+            committeeData.forEach((member: any, index: number) => {
+              if (member.name || member.role || member.phone || member.email) {
+                committeeInfo.push(`\nMember ${index + 1}:`);
+                if (member.name) committeeInfo.push(`Name: ${member.name}`);
+                if (member.role) committeeInfo.push(`Role: ${member.role}`);
+                if (member.phone) committeeInfo.push(`Phone: ${member.phone}`);
+                if (member.email) committeeInfo.push(`Email: ${member.email}`);
+              }
+            });
+            
+            selectedSources.push(committeeInfo.join('\n'));
+          } else {
+            // Fallback to IDs if data not found
+            selectedSources.push(`=== SAFETY COMMITTEE TEAM${selectedCommitteeIds.length > 1 ? 'S' : ''} ===\n${selectedCommitteeIds.map(id => `safety-committee:${id}`).join('\n')}`);
+          }
+        } else {
+          // Fallback to IDs if localStorage not available
+          selectedSources.push(`=== SAFETY COMMITTEE TEAM${selectedCommitteeIds.length > 1 ? 'S' : ''} ===\n${selectedCommitteeIds.map(id => `safety-committee:${id}`).join('\n')}`);
+        }
+      } catch (error) {
+        console.error('Error loading safety committee data:', error);
+        // Fallback to IDs on error
+        selectedSources.push(`=== SAFETY COMMITTEE TEAM${selectedCommitteeIds.length > 1 ? 'S' : ''} ===\n${selectedCommitteeIds.map(id => `safety-committee:${id}`).join('\n')}`);
       }
     }
   }
   
   if (selectedSources.length > 0) {
-    return { value: selectedSources.join('\n'), isExistingImage: false };
+    return { value: selectedSources.join('\n\n'), isExistingImage: false };
   }
   
   return { value: null, isExistingImage: false };
@@ -360,29 +473,31 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
         ? signageData.customColor 
         : getCategoryConfig(signageData.category).color;
       
-      const bgColor = signageData.category === 'custom'
-        ? '#FFFFFF'
-        : getCategoryConfig(signageData.category).backgroundColor;
+      // Always use white background for preview
+      const bgColor = '#FFFFFF';
       
       const headerBgStyle = signageData.backgroundImage 
         ? `background-image: url(${signageData.backgroundImage}); background-size: cover; background-position: center;`
         : `background: linear-gradient(135deg, ${headerColor} 0%, ${headerColor}dd 100%);`;
       
-      // Watermark HTML for full page
+      // Watermark HTML - Always single watermark positioned (default: bottom-right)
       const watermarkHTML = brandingConfig?.logo && brandingConfig?.enabled ? `
         <div style="
           position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          pointer-events: none;
-          z-index: 1;
-          background-image: url(${brandingConfig.logo});
-          background-repeat: repeat;
-          background-size: ${(brandingConfig.logoSize || 100) * 2}px ${(brandingConfig.logoSize || 100) * 2}px;
+          ${brandingConfig.logoPosition === 'top-left' ? 'top: 20px; left: 20px;' :
+            brandingConfig.logoPosition === 'top-right' ? 'top: 20px; right: 20px;' :
+            brandingConfig.logoPosition === 'bottom-left' ? 'bottom: 20px; left: 20px;' :
+            brandingConfig.logoPosition === 'center-top' ? 'top: 20px; left: 50%; transform: translateX(-50%);' :
+            brandingConfig.logoPosition === 'center-bottom' ? 'bottom: 20px; left: 50%; transform: translateX(-50%);' :
+            'bottom: 20px; right: 20px;'}
+          width: ${brandingConfig.logoSize || 100}px;
+          height: auto;
           opacity: ${(brandingConfig.logoOpacity || 100) / 100};
-        "></div>
+          z-index: 1;
+          pointer-events: none;
+        ">
+          <img src="${brandingConfig.logo}" alt="Watermark" style="width: 100%; height: auto; object-fit: contain;" />
+        </div>
       ` : '';
       
       // Build clean HTML with inline RGB styles only
@@ -393,7 +508,7 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
           <!-- Full Page QR Code Layout -->
           <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; ${headerBgStyle}">
             <!-- Title -->
-            <div style="color: white; font-size: 36px; font-weight: bold; margin-bottom: 40px; text-align: center;">
+            <div style="color: ${signageData.titleColor || '#ffffff'}; font-size: 36px; font-weight: bold; margin-bottom: 40px; text-align: center;">
               ${signageData.title || 'SIGNAGE TITLE'}
             </div>
             
@@ -437,7 +552,7 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                 </div>
               </div>
             ` : ''}
-            <div style="color: white; font-size: 24px; font-weight: bold; margin-bottom: 8px;">
+            <div style="color: ${signageData.titleColor || '#ffffff'}; font-size: 24px; font-weight: bold; margin-bottom: 8px;">
               ${signageData.title || 'SIGNAGE TITLE'}
             </div>
             ${signageData.purpose ? `
@@ -466,6 +581,26 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
             </div>
           ` : ''}
 
+          <!-- Hazards -->
+          ${displayHazards.length > 0 ? `
+            <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">
+              <div style="background: ${headerColor}; padding: 8px 12px; border-radius: 4px; margin-bottom: 12px;">
+                <div style="color: white; font-size: 12px; font-weight: bold; text-transform: uppercase;">
+                  ⚠ HAZARDS
+                </div>
+              </div>
+              <div style="display: grid; gap: 8px;">
+                ${displayHazards.map(hazard => `
+                  <div style="padding: 8px 12px; background: #fef2f2; border-left: 3px solid #dc2626; border-radius: 4px;">
+                    <div style="font-size: 12px; color: #1e293b;">
+                      ⚠ ${hazard}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+
           <!-- PPE -->
           ${(signageData.ppe.length > 0 || (signageData.customPPEImages && signageData.customPPEImages.length > 0)) ? `
             <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">
@@ -490,26 +625,6 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                     </div>
                   </div>
                 `).join('') : ''}
-              </div>
-            </div>
-          ` : ''}
-
-          <!-- Hazards -->
-          ${displayHazards.length > 0 ? `
-            <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">
-              <div style="background: ${headerColor}; padding: 8px 12px; border-radius: 4px; margin-bottom: 12px;">
-                <div style="color: white; font-size: 12px; font-weight: bold; text-transform: uppercase;">
-                  ⚠ HAZARDS
-                </div>
-              </div>
-              <div style="display: grid; gap: 8px;">
-                ${displayHazards.map(hazard => `
-                  <div style="padding: 8px 12px; background: #fef2f2; border-left: 3px solid #dc2626; border-radius: 4px;">
-                    <div style="font-size: 12px; color: #1e293b;">
-                      ⚠ ${hazard}
-                    </div>
-                  </div>
-                `).join('')}
               </div>
             </div>
           ` : ''}
@@ -691,29 +806,31 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
         ? signageData.customColor 
         : getCategoryConfig(signageData.category).color;
       
-      const bgColor = signageData.category === 'custom'
-        ? '#FFFFFF'
-        : getCategoryConfig(signageData.category).backgroundColor;
+      // Always use white background for preview
+      const bgColor = '#FFFFFF';
       
       const headerBgStyle = signageData.backgroundImage 
         ? `background-image: url(${signageData.backgroundImage}); background-size: cover; background-position: center;`
         : `background: linear-gradient(135deg, ${headerColor} 0%, ${headerColor}dd 100%);`;
       
-      // Watermark HTML for full page (PNG export)
+      // Watermark HTML for PNG export - Always single watermark positioned (default: bottom-right)
       const watermarkHTMLPNG = brandingConfig?.logo && brandingConfig?.enabled ? `
         <div style="
           position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          pointer-events: none;
-          z-index: 1;
-          background-image: url(${brandingConfig.logo});
-          background-repeat: repeat;
-          background-size: ${(brandingConfig.logoSize || 100) * 2}px ${(brandingConfig.logoSize || 100) * 2}px;
+          ${brandingConfig.logoPosition === 'top-left' ? 'top: 20px; left: 20px;' :
+            brandingConfig.logoPosition === 'top-right' ? 'top: 20px; right: 20px;' :
+            brandingConfig.logoPosition === 'bottom-left' ? 'bottom: 20px; left: 20px;' :
+            brandingConfig.logoPosition === 'center-top' ? 'top: 20px; left: 50%; transform: translateX(-50%);' :
+            brandingConfig.logoPosition === 'center-bottom' ? 'bottom: 20px; left: 50%; transform: translateX(-50%);' :
+            'bottom: 20px; right: 20px;'}
+          width: ${brandingConfig.logoSize || 100}px;
+          height: auto;
           opacity: ${(brandingConfig.logoOpacity || 100) / 100};
-        "></div>
+          z-index: 1;
+          pointer-events: none;
+        ">
+          <img src="${brandingConfig.logo}" alt="Watermark" style="width: 100%; height: auto; object-fit: contain;" />
+        </div>
       ` : '';
       
       // Build clean HTML with inline RGB styles only
@@ -724,7 +841,7 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
           <!-- Full Page QR Code Layout -->
           <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; ${headerBgStyle}">
             <!-- Title -->
-            <div style="color: white; font-size: 36px; font-weight: bold; margin-bottom: 40px; text-align: center;">
+            <div style="color: ${signageData.titleColor || '#ffffff'}; font-size: 36px; font-weight: bold; margin-bottom: 40px; text-align: center;">
               ${signageData.title || 'SIGNAGE TITLE'}
             </div>
             
@@ -768,7 +885,7 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                 </div>
               </div>
             ` : ''}
-            <div style="color: white; font-size: 24px; font-weight: bold; margin-bottom: 8px;">
+            <div style="color: ${signageData.titleColor || '#ffffff'}; font-size: 24px; font-weight: bold; margin-bottom: 8px;">
               ${signageData.title || 'SIGNAGE TITLE'}
             </div>
             ${signageData.purpose ? `
@@ -797,6 +914,26 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
             </div>
           ` : ''}
 
+          <!-- Hazards -->
+          ${displayHazards.length > 0 ? `
+            <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">
+              <div style="background: ${headerColor}; padding: 8px 12px; border-radius: 4px; margin-bottom: 12px;">
+                <div style="color: white; font-size: 12px; font-weight: bold; text-transform: uppercase;">
+                  ⚠ HAZARDS
+                </div>
+              </div>
+              <div style="display: grid; gap: 8px;">
+                ${displayHazards.map(hazard => `
+                  <div style="padding: 8px 12px; background: #fef2f2; border-left: 3px solid #dc2626; border-radius: 4px;">
+                    <div style="font-size: 12px; color: #1e293b;">
+                      ⚠ ${hazard}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+
           <!-- PPE -->
           ${(signageData.ppe.length > 0 || (signageData.customPPEImages && signageData.customPPEImages.length > 0)) ? `
             <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">
@@ -821,26 +958,6 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                     </div>
                   </div>
                 `).join('') : ''}
-              </div>
-            </div>
-          ` : ''}
-
-          <!-- Hazards -->
-          ${displayHazards.length > 0 ? `
-            <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">
-              <div style="background: ${headerColor}; padding: 8px 12px; border-radius: 4px; margin-bottom: 12px;">
-                <div style="color: white; font-size: 12px; font-weight: bold; text-transform: uppercase;">
-                  ⚠ HAZARDS
-                </div>
-              </div>
-              <div style="display: grid; gap: 8px;">
-                ${displayHazards.map(hazard => `
-                  <div style="padding: 8px 12px; background: #fef2f2; border-left: 3px solid #dc2626; border-radius: 4px;">
-                    <div style="font-size: 12px; color: #1e293b;">
-                      ⚠ ${hazard}
-                    </div>
-                  </div>
-                `).join('')}
               </div>
             </div>
           ` : ''}
@@ -1039,8 +1156,8 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
         background: `linear-gradient(135deg, ${config.color} 0%, ${config.color}dd 100%)`
       };
   
-  // Overall container background
-  const containerBackgroundStyle = { backgroundColor: config.backgroundColor };
+  // Overall container background - always white
+  const containerBackgroundStyle = { backgroundColor: '#FFFFFF' };
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
@@ -1150,7 +1267,7 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
       </div>
 
       {/* Preview Container - Fit everything on one page */}
-      <div id="printable-signage-container" className="bg-slate-100 rounded-lg p-4 mb-6 overflow-hidden">
+      <div id="printable-signage-container" className="bg-white rounded-lg p-4 mb-6 overflow-hidden">
         <div 
           id="signage-preview-content" 
           className={`max-w-2xl mx-auto shadow-2xl rounded-lg overflow-hidden border-4 border-black bg-white relative ${
@@ -1158,28 +1275,37 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
           }`}
           style={containerBackgroundStyle}
         >
-          {/* Watermark - Full Page Repeating Pattern */}
+          {/* Watermark - Always single watermark positioned (default: bottom-right) */}
           {brandingConfig?.logo && brandingConfig?.enabled && (
             <div 
-              className="absolute inset-0 pointer-events-none z-0"
+              className="absolute pointer-events-none z-0"
               style={{
-                backgroundImage: `url(${brandingConfig.logo})`,
-                backgroundRepeat: 'repeat',
-                backgroundSize: `${(brandingConfig.logoSize || 100) * 2}px ${(brandingConfig.logoSize || 100) * 2}px`,
+                ...(brandingConfig.logoPosition === 'top-left' ? { top: '20px', left: '20px' } :
+                    brandingConfig.logoPosition === 'top-right' ? { top: '20px', right: '20px' } :
+                    brandingConfig.logoPosition === 'bottom-left' ? { bottom: '20px', left: '20px' } :
+                    brandingConfig.logoPosition === 'center-top' ? { top: '20px', left: '50%', transform: 'translateX(-50%)' } :
+                    brandingConfig.logoPosition === 'center-bottom' ? { bottom: '20px', left: '50%', transform: 'translateX(-50%)' } :
+                    { bottom: '20px', right: '20px' }), // Default: bottom-right
+                width: `${brandingConfig.logoSize || 100}px`,
+                height: 'auto',
                 opacity: (brandingConfig.logoOpacity || 100) / 100,
               }}
-            />
+            >
+              <img 
+                src={brandingConfig.logo} 
+                alt="Watermark" 
+                style={{ width: '100%', height: 'auto', objectFit: 'contain' }}
+              />
+            </div>
           )}
           
           {/* Full Page QR Code Layout (when showOnlyTitleAndQR is true) */}
           {signageData.qrCodeConfig?.showOnlyTitleAndQR && showQRCode ? (
             <>
-              {/* Title and QR Code Section - Full Page */}
-              <div className="flex-1 flex flex-col items-center justify-center px-4 py-8" 
-                style={headerBackgroundStyle}
-              >
+              {/* Title and QR Code Section - Full Page with White Background */}
+              <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 bg-white">
                 {/* Title */}
-                <div className="text-white mb-6 tracking-wide text-center">
+                <div className="mb-6 tracking-wide text-center" style={{ color: signageData.titleColor || '#000000' }}>
                   {signageData.title ? (
                     <h1 className="text-3xl md:text-4xl font-bold">{signageData.title}</h1>
                   ) : (
@@ -1187,7 +1313,7 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                   )}
                 </div>
                 
-                {/* QR Code - Large and Centered */}
+                {/* QR Code - Large and Centered on White Background */}
                 <div className="flex flex-col items-center justify-center bg-white p-6 rounded-lg shadow-lg">
                   {signageData.qrCodeConfig.type === 'existing' && signageData.qrCodeConfig.existingQRCodeImage ? (
                     <img 
@@ -1221,13 +1347,20 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                         style={{
                           left: `${brandingConfig.clientLogoPosition?.x || 5}%`,
                           top: `${brandingConfig.clientLogoPosition?.y || 5}%`,
-                          width: `${brandingConfig.clientLogoSize?.width || 96}px`,
-                          height: `${brandingConfig.clientLogoSize?.height || 64}px`,
+                          border: '2px solid rgba(59, 130, 246, 0.3)',
+                          borderRadius: '4px',
+                          padding: '2px',
+                          boxSizing: 'border-box',
                         }}
                         onMouseDown={(e) => handleLogoMouseDown(e, 'client')}
                       >
                         <div 
-                          className="relative w-full h-full bg-white rounded border-2 border-blue-400 p-1 shadow-lg cursor-move"
+                          className="relative cursor-move"
+                          style={{
+                            width: `${brandingConfig.clientLogoSize?.width || 96}px`,
+                            height: `${brandingConfig.clientLogoSize?.height || 64}px`,
+                            background: 'transparent',
+                          }}
                           onMouseDown={(e) => {
                             // Handle drag from inner div
                             if (!(e.target as HTMLElement).closest('.resize-handle')) {
@@ -1239,7 +1372,15 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                           <img 
                             src={brandingConfig.clientLogo} 
                             alt="Client Logo" 
-                            className="w-full h-full object-contain pointer-events-none"
+                            className="pointer-events-none"
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'contain',
+                              display: 'block',
+                              padding: 0,
+                              margin: 0,
+                            }}
                             draggable="false"
                           />
                           {/* Resize handle */}
@@ -1269,13 +1410,20 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                         style={{
                           left: `${brandingConfig.contractorLogoPosition?.x || 95}%`,
                           top: `${brandingConfig.contractorLogoPosition?.y || 5}%`,
-                          width: `${brandingConfig.contractorLogoSize?.width || 96}px`,
-                          height: `${brandingConfig.contractorLogoSize?.height || 64}px`,
+                          border: '2px solid rgba(168, 85, 247, 0.3)',
+                          borderRadius: '4px',
+                          padding: '2px',
+                          boxSizing: 'border-box',
                         }}
                         onMouseDown={(e) => handleLogoMouseDown(e, 'contractor')}
                       >
                         <div 
-                          className="relative w-full h-full bg-white rounded border-2 border-purple-400 p-1 shadow-lg cursor-move"
+                          className="relative cursor-move"
+                          style={{
+                            width: `${brandingConfig.contractorLogoSize?.width || 96}px`,
+                            height: `${brandingConfig.contractorLogoSize?.height || 64}px`,
+                            background: 'transparent',
+                          }}
                           onMouseDown={(e) => {
                             // Handle drag from inner div
                             if (!(e.target as HTMLElement).closest('.resize-handle')) {
@@ -1287,7 +1435,15 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                           <img 
                             src={brandingConfig.contractorLogo} 
                             alt="Contractor Logo" 
-                            className="w-full h-full object-contain pointer-events-none"
+                            className="pointer-events-none"
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'contain',
+                              display: 'block',
+                              padding: 0,
+                              margin: 0,
+                            }}
                             draggable="false"
                           />
                           {/* Resize handle */}
@@ -1325,7 +1481,7 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                 )}
                 
                 {/* Title */}
-                <div className="text-white mb-1 tracking-wide">
+                <div className="mb-1 tracking-wide" style={{ color: signageData.titleColor || '#ffffff' }}>
                   {signageData.title ? (
                     <h1 className="text-xl">{signageData.title}</h1>
                   ) : (
@@ -1363,6 +1519,26 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                 </div>
               )}
 
+
+              {/* Hazards / Warnings Section */}
+              {displayHazards.length > 0 && (
+                <div className="px-3 py-2 border-b border-slate-200">
+                  <div style={{ background: config.color, padding: '8px 12px', borderRadius: '4px', marginBottom: '12px' }}>
+                    <div className="text-white text-xs font-bold uppercase">
+                      ⚠ HAZARDS
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {displayHazards.map((hazard, index) => (
+                      <div key={index} className="px-3 py-2 bg-red-50 border-l-4 border-red-600 rounded">
+                        <div className="text-xs text-slate-900">
+                          ⚠ {hazard}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* PPE Section - Compact */}
               {(signageData.ppe.length > 0 || (signageData.customPPEImages && signageData.customPPEImages.length > 0)) && (
@@ -1402,26 +1578,6 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                         </div>
                         <div className="text-[9px] text-white uppercase leading-tight">
                           {ppe.name || `Custom PPE ${index + 1}`}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Hazards / Warnings Section */}
-              {displayHazards.length > 0 && (
-                <div className="px-3 py-2 border-b border-slate-200">
-                  <div style={{ background: config.color, padding: '8px 12px', borderRadius: '4px', marginBottom: '12px' }}>
-                    <div className="text-white text-xs font-bold uppercase">
-                      ⚠ HAZARDS
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    {displayHazards.map((hazard, index) => (
-                      <div key={index} className="px-3 py-2 bg-red-50 border-l-4 border-red-600 rounded">
-                        <div className="text-xs text-slate-900">
-                          ⚠ {hazard}
                         </div>
                       </div>
                     ))}

@@ -325,6 +325,34 @@ export function InputPanel({ signageData, onUpdate }: InputPanelProps) {
             placeholder="e.g., INLET AREA - HIGH RISK ZONE"
             className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          {/* Title Color Picker */}
+          <div className="mt-3 flex items-center gap-3">
+            <label className="block text-sm text-slate-700">
+              Title Color:
+            </label>
+            <input
+              type="color"
+              value={signageData.titleColor || (signageData.qrCodeConfig?.showOnlyTitleAndQR ? '#000000' : '#ffffff')}
+              onChange={(e) => onUpdate({ titleColor: e.target.value })}
+              className="w-12 h-10 rounded-lg cursor-pointer border-2 border-slate-300"
+              title="Select title color"
+            />
+            <input
+              type="text"
+              value={signageData.titleColor || (signageData.qrCodeConfig?.showOnlyTitleAndQR ? '#000000' : '#ffffff')}
+              onChange={(e) => {
+                const color = e.target.value;
+                if (/^#[0-9A-Fa-f]{6}$/.test(color)) {
+                  onUpdate({ titleColor: color });
+                }
+              }}
+              placeholder={signageData.qrCodeConfig?.showOnlyTitleAndQR ? "#000000" : "#ffffff"}
+              className="w-24 px-2 py-1.5 border border-slate-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {signageData.qrCodeConfig?.showOnlyTitleAndQR && (
+              <span className="text-xs text-slate-500">Changeable - QR code mode</span>
+            )}
+          </div>
         </div>
 
         {/* Purpose */}

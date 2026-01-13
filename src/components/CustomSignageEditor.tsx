@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   Upload, Type, Image as ImageIcon, Square, Circle, Download, Trash2, Bold, Italic, 
@@ -194,7 +195,7 @@ export function CustomSignageEditor() {
   // UI State
   const [activeTool, setActiveTool] = useState<Tool>('select');
   const [zoom, setZoom] = useState(100);
-  const [showGrid, setShowGrid] = useState(true);
+  const [showGrid, setShowGrid] = useState(false);
   const [showRulers, setShowRulers] = useState(true);
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
@@ -1196,7 +1197,7 @@ export function CustomSignageEditor() {
         )}
 
         {/* Canvas Area */}
-        <div className="flex-1 bg-slate-900 overflow-auto relative">
+        <div className="flex-1 bg-white overflow-auto relative">
           <div className="min-h-full flex items-center justify-center p-12">
             <div
               ref={canvasRef}
@@ -1215,7 +1216,7 @@ export function CustomSignageEditor() {
               {/* Grid overlay */}
               {showGrid && (
                 <div className="absolute inset-0 pointer-events-none" style={{
-                  backgroundImage: 'linear-gradient(rgba(100,100,100,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(100,100,100,0.1) 1px, transparent 1px)',
+                  backgroundImage: 'linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)',
                   backgroundSize: '20px 20px'
                 }} />
               )}

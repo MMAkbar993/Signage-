@@ -182,6 +182,7 @@ export interface AuthorizedPerson {
   category: SignageCategory; // Color category
   paperSize?: 'a5' | 'a4' | 'a3' | 'letter' | 'legal'; // Paper size (only for paper format)
   orientation?: 'landscape' | 'portrait'; // Orientation (only for paper format)
+  backgroundColor?: string; // Background color for the person's card
 }
 
 export interface EmergencyContact {
@@ -206,9 +207,12 @@ export type QRCodeSource = 'custom' | 'authorizedPerson' | 'organizationChart' |
 export interface QRCodeConfig {
   type: QRCodeType;
   sources: QRCodeSource[];
-  selectedAuthorizedPersonId?: string;
-  selectedOrganizationChartId?: string;
-  selectedSafetyCommitteeId?: string;
+  selectedAuthorizedPersonId?: string; // Legacy support - single person
+  selectedAuthorizedPersonIds?: string[]; // Multiple persons support
+  selectedOrganizationChartId?: string; // Legacy support - single chart
+  selectedOrganizationChartIds?: string[]; // Multiple charts support
+  selectedSafetyCommitteeId?: string; // Legacy support - single committee
+  selectedSafetyCommitteeIds?: string[]; // Multiple committees support
   contentBoxes: QRCodeContentBox[];
   legacyUrl?: string; // Single URL (legacy mode)
   showOnlyTitleAndQR?: boolean;
@@ -239,6 +243,7 @@ export interface SignageData {
   warningIcon?: string | null; // Optional warning icon (image URL or base64)
   backgroundImage?: string | null; // Optional background image (image URL or base64)
   footerText?: string; // Footer text (editable)
+  titleColor?: string; // Title text color (default: white)
 }
 
 export interface CategoryConfig {
