@@ -952,7 +952,7 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                 `).join('')}
                 ${signageData.customPPEImages ? signageData.customPPEImages.map((ppe, index) => `
                   <div style="background: #2563eb; border-radius: 4px; padding: 12px; text-align: center;">
-                    <img src="${ppe.image}" alt="${ppe.name || `Custom PPE ${index + 1}`}" style="width: 30px; height: 30px; object-fit: contain; margin: 0 auto 4px auto;" />
+                    <img src="${ppe.image}" alt="${ppe.name || `Custom PPE ${index + 1}`}" style="width: 50px; height: 50px; object-fit: contain; margin: 0 auto 4px auto;" />
                     <div style="color: white; font-size: 10px; text-transform: uppercase; line-height: 1.2;">
                       ${ppe.name || `Custom PPE ${index + 1}`}
                     </div>
@@ -1573,7 +1573,7 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                           <img 
                             src={ppe.image} 
                             alt={ppe.name || `Custom PPE ${index + 1}`}
-                            className="w-6 h-6 object-contain"
+                            className="w-20 h-20 object-contain"
                           />
                         </div>
                         <div className="text-[9px] text-white uppercase leading-tight">

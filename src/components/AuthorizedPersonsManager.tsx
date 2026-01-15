@@ -41,7 +41,7 @@ export function AuthorizedPersonsManager() {
   
   // Manual resize controls
   const [cardScale, setCardScale] = useState<number>(100); // 20-150%
-  const [photoScale, setPhotoScale] = useState<number>(100); // 50-150%
+  const [photoScale, setPhotoScale] = useState<number>(50); // 50-150% (50% default for landscape)
   const [multiPaperSize, setMultiPaperSize] = useState<'a5' | 'a4' | 'a3' | 'letter' | 'legal'>('a4');
   const [multiOrientation, setMultiOrientation] = useState<'landscape' | 'portrait'>('landscape');
   
@@ -72,6 +72,7 @@ export function AuthorizedPersonsManager() {
   const [previewImage, setPreviewImage] = useState<string>('');
   const previewRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const prevOrientationRef = useRef<'landscape' | 'portrait'>(multiOrientation);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -93,6 +94,14 @@ export function AuthorizedPersonsManager() {
     localStorage.setItem('authorizedPersons', JSON.stringify(persons));
     window.dispatchEvent(new CustomEvent('authorizedPersonsUpdated', { detail: persons }));
   }, [persons]);
+
+  // Set photo size to 50% when landscape orientation is selected
+  useEffect(() => {
+    if (multiOrientation === 'landscape' && prevOrientationRef.current !== 'landscape') {
+      setPhotoScale(50);
+    }
+    prevOrientationRef.current = multiOrientation;
+  }, [multiOrientation]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1445,7 +1454,7 @@ export function AuthorizedPersonsManager() {
                       <button
                         onClick={() => {
                           setCardScale(100);
-                          setPhotoScale(100);
+                          setPhotoScale(50);
                           setMultiPaperSize('a4');
                           setMultiOrientation('landscape');
                         }}
