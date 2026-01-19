@@ -13,7 +13,7 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
     const [dragOverMember, setDragOverMember] = useState(null)
     const [memberPositions, setMemberPositions] = useState({})
     const [chartImage, setChartImage] = useState(null)
-    const [chartStyle, setChartStyle] = useState('modern') // modern, classic, minimal, colorful, professional
+    const [chartStyle, setChartStyle] = useState('modern') // modern, classic, minimal, colorful, professional, twolevel, threelevel, fourlevel, colorcoded
     const [paperSize, setPaperSize] = useState('A4') // A4, A3, A5, Legal
     const [orientation, setOrientation] = useState('landscape') // portrait, landscape
     const chartContainerRef = useRef(null)
@@ -126,6 +126,130 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                 y: Math.random() * 200 + 100
             }
         }))
+    }
+
+    const handleImportFromData = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        const reader = new FileReader()
+        reader.onload = (event) => {
+            try {
+                const text = event.target?.result as string
+                let importedMembers: any[] = []
+
+                // Try to parse as JSON first
+                try {
+                    const data = JSON.parse(text)
+                    // Check if it's an array or has a members property
+                    importedMembers = Array.isArray(data) ? data : (data.members || [])
+                } catch {
+                    // If JSON fails, try CSV parsing
+                    const lines = text.split('\n').filter(line => line.trim())
+                    const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+                    
+                    for (let i = 1; i < lines.length; i++) {
+                        const values = lines[i].split(',').map(v => v.trim())
+                        const member: any = {
+                            id: Date.now() + i,
+                            name: '',
+                            role: '',
+                            phone: '',
+                            email: '',
+                            parentId: null,
+                            photo: null,
+                            parentName: null
+                        }
+                        
+                        headers.forEach((header, index) => {
+                            const value = values[index] || ''
+                            if (header.includes('name')) member.name = value
+                            else if (header.includes('role') || header.includes('designation') || header.includes('title')) member.role = value
+                            else if (header.includes('phone') || header.includes('contact')) member.phone = value
+                            else if (header.includes('email')) member.email = value
+                            else if (header.includes('parent') || header.includes('reports')) {
+                                // Try to find parent by name
+                                const parentName = value
+                                if (parentName) {
+                                    // Will be resolved after all members are imported
+                                    member.parentName = parentName
+                                }
+                            }
+                        })
+                        
+                        importedMembers.push(member)
+                    }
+                }
+
+                // Process imported members
+                if (importedMembers.length > 0) {
+                    interface ProcessedMember {
+                        id: string | number
+                        name: string
+                        role: string
+                        phone: string
+                        email: string
+                        parentId: string | null
+                        parentName?: string | null
+                        photo: string | null
+                    }
+
+                    const processedMembers: ProcessedMember[] = importedMembers.map((member: any, index: number) => ({
+                        id: member.id || Date.now() + index,
+                        name: member.name || '',
+                        role: member.role || member.designation || '',
+                        phone: member.phone || member.contact || '',
+                        email: member.email || '',
+                        parentId: null as string | null, // Will be resolved below
+                        parentName: member.parentName || member.parent || member.reportsTo || null,
+                        photo: member.photo || null
+                    }))
+
+                    // Resolve parent relationships by name
+                    const nameToIdMap = new Map<string, string | number>()
+                    processedMembers.forEach(m => {
+                        if (m.name) nameToIdMap.set(m.name.toLowerCase(), m.id)
+                    })
+
+                    processedMembers.forEach(member => {
+                        if (member.parentName) {
+                            const parentId = nameToIdMap.get(member.parentName.toLowerCase())
+                            if (parentId) {
+                                member.parentId = parentId as string
+                            }
+                        }
+                        delete member.parentName
+                    })
+
+                    // Add imported members to existing members
+                    // Remove parentName before adding to state
+                    const finalMembers = processedMembers.map(({ parentName, ...member }) => member)
+                    setOrgMembers((prev: any[]) => [...prev, ...finalMembers])
+                    
+                    // Set positions for new members
+                    processedMembers.forEach(member => {
+                        setMemberPositions(prev => ({
+                            ...prev,
+                            [member.id]: {
+                                x: Math.random() * 300 + 100,
+                                y: Math.random() * 200 + 100
+                            }
+                        }))
+                    })
+
+                    alert(`Successfully imported ${processedMembers.length} member(s)!`)
+                } else {
+                    alert('No valid members found in the file.')
+                }
+            } catch (error) {
+                console.error('Error importing data:', error)
+                alert('Error importing data. Please check the file format.')
+            }
+        }
+        reader.readAsText(file)
+        
+        // Reset file input
+        e.target.value = ''
     }
 
     const handleMemberPhotoUpload = (memberId, file) => {
@@ -749,6 +873,42 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                 avatar: 'bg-gray-700 border-2 border-white',
                 lineColor: '#9ca3af', // Light gray for professional style
                 headerBg: '#64646F'
+            },
+            twolevel: {
+                card: 'bg-white border border-gray-300 rounded-lg shadow-sm',
+                border: 'border-gray-300',
+                text: 'text-gray-900',
+                role: 'text-gray-600',
+                avatar: 'bg-gray-100 border border-gray-300',
+                lineColor: '#d1d5db', // Light gray lines for 2-level style
+                avatarIcon: 'text-gray-500'
+            },
+            threelevel: {
+                card: 'bg-white border border-gray-300 rounded-lg shadow-sm',
+                border: 'border-gray-300',
+                text: 'text-gray-900',
+                role: 'text-gray-600',
+                avatar: 'bg-gray-100 border border-gray-300',
+                lineColor: '#d1d5db', // Light gray lines for 3-level style
+                avatarIcon: 'text-gray-500'
+            },
+            fourlevel: {
+                card: 'bg-white border border-gray-300 rounded-lg shadow-sm',
+                border: 'border-gray-300',
+                text: 'text-gray-900',
+                role: 'text-gray-600',
+                avatar: 'bg-gray-100 border border-gray-300',
+                lineColor: '#d1d5db', // Light gray lines for 4-level style
+                avatarIcon: 'text-gray-500'
+            },
+            colorcoded: {
+                card: 'bg-white border-2 rounded-lg shadow-md',
+                border: 'border-gray-300',
+                text: 'text-white',
+                role: 'text-white',
+                avatar: 'bg-white border-2 border-white',
+                lineColor: '#6b7280', // Gray lines for colorcoded style
+                avatarIcon: 'text-gray-600'
             }
         }
         return styles[chartStyle] || styles.modern
@@ -1136,6 +1296,146 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
             }
         }
 
+        // Get 2-level style colors - minimalistic with light gray outlines
+        const getTwoLevelCardStyle = () => {
+            if (hierarchyLevel === 0) {
+                // Top level - parent node
+                return {
+                    card: 'bg-white border border-gray-300 rounded-lg shadow-sm',
+                    border: 'border-gray-300',
+                    text: 'text-gray-900',
+                    role: 'text-gray-600',
+                    avatar: 'bg-gray-100 border border-gray-300',
+                    avatarIcon: 'text-gray-500'
+                }
+            } else {
+                // Second level and below - children nodes
+                return {
+                    card: 'bg-white border border-gray-300 rounded-lg shadow-sm',
+                    border: 'border-gray-300',
+                    text: 'text-gray-900',
+                    role: 'text-gray-600',
+                    avatar: 'bg-gray-100 border border-gray-300',
+                    avatarIcon: 'text-gray-500'
+                }
+            }
+        }
+
+        // Get 3-level style colors - minimalistic with light gray outlines
+        const getThreeLevelCardStyle = () => {
+            if (hierarchyLevel === 0) {
+                // Top level - parent node
+                return {
+                    card: 'bg-white border border-gray-300 rounded-lg shadow-sm',
+                    border: 'border-gray-300',
+                    text: 'text-gray-900',
+                    role: 'text-gray-600',
+                    avatar: 'bg-gray-100 border border-gray-300',
+                    avatarIcon: 'text-gray-500'
+                }
+            } else if (hierarchyLevel === 1) {
+                // Second level - middle nodes
+                return {
+                    card: 'bg-white border border-gray-300 rounded-lg shadow-sm',
+                    border: 'border-gray-300',
+                    text: 'text-gray-900',
+                    role: 'text-gray-600',
+                    avatar: 'bg-gray-100 border border-gray-300',
+                    avatarIcon: 'text-gray-500'
+                }
+            } else {
+                // Third level and below - children nodes
+                return {
+                    card: 'bg-white border border-gray-300 rounded-lg shadow-sm',
+                    border: 'border-gray-300',
+                    text: 'text-gray-900',
+                    role: 'text-gray-600',
+                    avatar: 'bg-gray-100 border border-gray-300',
+                    avatarIcon: 'text-gray-500'
+                }
+            }
+        }
+
+        // Get 4-level style colors - minimalistic with light gray outlines
+        const getFourLevelCardStyle = () => {
+            if (hierarchyLevel === 0) {
+                // Top level - parent node
+                return {
+                    card: 'bg-white border border-gray-300 rounded-lg shadow-sm',
+                    border: 'border-gray-300',
+                    text: 'text-gray-900',
+                    role: 'text-gray-600',
+                    avatar: 'bg-gray-100 border border-gray-300',
+                    avatarIcon: 'text-gray-500'
+                }
+            } else if (hierarchyLevel === 1) {
+                // Second level - middle nodes
+                return {
+                    card: 'bg-white border border-gray-300 rounded-lg shadow-sm',
+                    border: 'border-gray-300',
+                    text: 'text-gray-900',
+                    role: 'text-gray-600',
+                    avatar: 'bg-gray-100 border border-gray-300',
+                    avatarIcon: 'text-gray-500'
+                }
+            } else if (hierarchyLevel === 2) {
+                // Third level - middle nodes
+                return {
+                    card: 'bg-white border border-gray-300 rounded-lg shadow-sm',
+                    border: 'border-gray-300',
+                    text: 'text-gray-900',
+                    role: 'text-gray-600',
+                    avatar: 'bg-gray-100 border border-gray-300',
+                    avatarIcon: 'text-gray-500'
+                }
+            } else {
+                // Fourth level and below - children nodes
+                return {
+                    card: 'bg-white border border-gray-300 rounded-lg shadow-sm',
+                    border: 'border-gray-300',
+                    text: 'text-gray-900',
+                    role: 'text-gray-600',
+                    avatar: 'bg-gray-100 border border-gray-300',
+                    avatarIcon: 'text-gray-500'
+                }
+            }
+        }
+
+        // Get color-coded style colors - Blue for levels 0,2; Green for levels 1,3; Orange for level 4+
+        const getColorCodedCardStyle = () => {
+            if (hierarchyLevel === 0 || hierarchyLevel === 2) {
+                // Top level and third level - Blue (Board of Directors, Executive Assistant)
+                return {
+                    card: 'bg-blue-600 border-2 border-blue-700 rounded-lg shadow-md',
+                    border: 'border-blue-700',
+                    text: 'text-white',
+                    role: 'text-white',
+                    avatar: 'bg-white border-2 border-white',
+                    avatarIcon: 'text-blue-600'
+                }
+            } else if (hierarchyLevel === 1 || hierarchyLevel === 3) {
+                // Second and fourth level - Green (Executive Director, Directors)
+                return {
+                    card: 'bg-green-600 border-2 border-green-700 rounded-lg shadow-md',
+                    border: 'border-green-700',
+                    text: 'text-white',
+                    role: 'text-white',
+                    avatar: 'bg-white border-2 border-white',
+                    avatarIcon: 'text-green-600'
+                }
+            } else {
+                // Fifth level and below - Orange (Subordinates)
+                return {
+                    card: 'bg-orange-500 border-2 border-orange-600 rounded-lg shadow-md',
+                    border: 'border-orange-600',
+                    text: 'text-white',
+                    role: 'text-white',
+                    avatar: 'bg-white border-2 border-white',
+                    avatarIcon: 'text-orange-600'
+                }
+            }
+        }
+
         // Get the actual style classes to use
         const getCardStyle = (): {
             card: string;
@@ -1158,6 +1458,18 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
             }
             if (chartStyle === 'professional') {
                 return getProfessionalCardStyle()
+            }
+            if (chartStyle === 'twolevel') {
+                return getTwoLevelCardStyle()
+            }
+            if (chartStyle === 'threelevel') {
+                return getThreeLevelCardStyle()
+            }
+            if (chartStyle === 'fourlevel') {
+                return getFourLevelCardStyle()
+            }
+            if (chartStyle === 'colorcoded') {
+                return getColorCodedCardStyle()
             }
             // Modern style or default
             return {
@@ -1193,6 +1505,14 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                 return 'ring-yellow-400'
             }
             if (chartStyle === 'professional') return 'ring-gray-400'
+            if (chartStyle === 'twolevel') return 'ring-gray-300'
+            if (chartStyle === 'threelevel') return 'ring-gray-300'
+            if (chartStyle === 'fourlevel') return 'ring-gray-300'
+            if (chartStyle === 'colorcoded') {
+                if (hierarchyLevel === 0 || hierarchyLevel === 2) return 'ring-blue-400'
+                if (hierarchyLevel === 1 || hierarchyLevel === 3) return 'ring-green-400'
+                return 'ring-orange-400'
+            }
             return 'ring-blue-400' // modern
         }
 
@@ -1215,6 +1535,14 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                 return 'bg-orange-500 hover:bg-orange-600'
             }
             if (chartStyle === 'professional') return 'bg-gray-600 hover:bg-gray-700'
+            if (chartStyle === 'twolevel') return 'bg-gray-400 hover:bg-gray-500'
+            if (chartStyle === 'threelevel') return 'bg-gray-400 hover:bg-gray-500'
+            if (chartStyle === 'fourlevel') return 'bg-gray-400 hover:bg-gray-500'
+            if (chartStyle === 'colorcoded') {
+                if (hierarchyLevel === 0 || hierarchyLevel === 2) return 'bg-blue-700 hover:bg-blue-800'
+                if (hierarchyLevel === 1 || hierarchyLevel === 3) return 'bg-green-700 hover:bg-green-800'
+                return 'bg-orange-600 hover:bg-orange-700'
+            }
             return 'bg-blue-600 hover:bg-blue-700' // modern
         }
 
@@ -1235,6 +1563,14 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                 return 'bg-transparent'
             }
             if (chartStyle === 'professional') return 'bg-gray-700'
+            if (chartStyle === 'twolevel') return 'bg-gray-200'
+            if (chartStyle === 'threelevel') return 'bg-gray-200'
+            if (chartStyle === 'fourlevel') return 'bg-gray-200'
+            if (chartStyle === 'colorcoded') {
+                if (hierarchyLevel === 0 || hierarchyLevel === 2) return 'bg-blue-700'
+                if (hierarchyLevel === 1 || hierarchyLevel === 3) return 'bg-green-700'
+                return 'bg-orange-600'
+            }
             if (chartStyle === 'modern') return 'bg-blue-100'
             return 'bg-blue-50' // default
         }
@@ -1702,6 +2038,10 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                                         <option value="minimal">Minimal</option>
                                         <option value="colorful">Colorful</option>
                                         <option value="professional">Professional</option>
+                                        <option value="twolevel">Org Chart (2 Level)</option>
+                                        <option value="threelevel">Org Chart (3 Level)</option>
+                                        <option value="fourlevel">Org Chart (4 Level)</option>
+                                        <option value="colorcoded">Color-Coded Hierarchy</option>
                                     </select>
                                 </div>
 
@@ -1744,6 +2084,62 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                             <p className="text-sm text-gray-600 mb-6">
                                 Add members with <span className="font-semibold">name, designation, and contact number</span>. Photo is optional.
                             </p>
+
+                            {/* Import From Data Card */}
+                            <div className="mb-6 bg-white rounded-xl border-2 border-gray-200 shadow-sm overflow-hidden">
+                                {/* Icon Section */}
+                                <div className="p-6 flex items-center justify-center" style={{ minHeight: '180px' }}>
+                                    <div className="relative w-full max-w-xs">
+                                        {/* Database Icon */}
+                                        <div className="absolute left-0 top-0">
+                                            <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+                                            </svg>
+                                        </div>
+                                        
+                                        {/* Arrow */}
+                                        <div className="absolute left-20 top-6">
+                                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
+                                            </svg>
+                                        </div>
+                                        
+                                        {/* Hierarchical Chart Icon */}
+                                        <div className="absolute right-0 top-8">
+                                            <svg className="w-20 h-20 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                                                {/* Top rectangle */}
+                                                <rect x="10" y="1" width="4" height="4" rx="0.5" />
+                                                {/* Middle rectangles */}
+                                                <rect x="5" y="8" width="4" height="4" rx="0.5" />
+                                                <rect x="15" y="8" width="4" height="4" rx="0.5" />
+                                                {/* Bottom rectangles */}
+                                                <rect x="2" y="15" width="3.5" height="4" rx="0.5" />
+                                                <rect x="8.5" y="15" width="3.5" height="4" rx="0.5" />
+                                                <rect x="18.5" y="15" width="3.5" height="4" rx="0.5" />
+                                                {/* Connection lines */}
+                                                <line x1="12" y1="5" x2="7" y2="8" strokeWidth="1.5" />
+                                                <line x1="12" y1="5" x2="17" y2="8" strokeWidth="1.5" />
+                                                <line x1="7" y1="12" x2="3.75" y2="15" strokeWidth="1.5" />
+                                                <line x1="7" y1="12" x2="10.25" y2="15" strokeWidth="1.5" />
+                                                <line x1="17" y1="12" x2="20.25" y2="15" strokeWidth="1.5" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {/* Button Section */}
+                                <label className="block cursor-pointer">
+                                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 px-6 py-4 text-center hover:from-yellow-500 hover:to-orange-600 transition-all">
+                                        <span className="text-gray-900 font-semibold text-sm lg:text-base">Import From Data</span>
+                                    </div>
+                                    <input
+                                        type="file"
+                                        accept=".json,.csv,.txt"
+                                        onChange={handleImportFromData}
+                                        className="hidden"
+                                    />
+                                </label>
+                            </div>
 
                             <div>
                                 <div className="flex items-center justify-between mb-4">
