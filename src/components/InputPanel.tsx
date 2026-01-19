@@ -699,7 +699,10 @@ export function InputPanel({ signageData, onUpdate }: InputPanelProps) {
           <div className="space-y-2">
             {signageData.hazards.map((hazard, index) => (
               <div key={index} className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex-1 text-sm text-slate-800">{hazard}</div>
+                <div className="w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-xs flex-shrink-0">
+                  {index + 1}
+                </div>
+                <span className="flex-1 text-sm text-slate-800">{hazard}</span>
                 <button onClick={() => removeHazard(index)} className="text-red-600 hover:text-red-800">
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -1420,13 +1423,25 @@ export function InputPanel({ signageData, onUpdate }: InputPanelProps) {
           </label>
           <div className="p-4 bg-slate-50 border border-slate-300 rounded-lg space-y-2">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-              <span className="text-sm text-slate-600 sm:w-32">Emergency:</span>
               <input
                 type="text"
-                value={signageData.emergencyContacts[0]?.number || ''}
+                value={signageData.emergencyContacts[0]?.label ?? 'Emergency'}
                 onChange={(e) => {
-                  const contacts = [...signageData.emergencyContacts];
-                  contacts[0] = { label: 'Emergency', number: e.target.value };
+                  const contacts = [...(signageData.emergencyContacts || [])];
+                  if (!contacts[0]) contacts[0] = { label: '', number: '' };
+                  contacts[0] = { ...contacts[0], label: e.target.value };
+                  onUpdate({ emergencyContacts: contacts });
+                }}
+                placeholder="Label"
+                className="w-full sm:w-32 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+              />
+              <input
+                type="text"
+                value={signageData.emergencyContacts[0]?.number ?? ''}
+                onChange={(e) => {
+                  const contacts = [...(signageData.emergencyContacts || [])];
+                  if (!contacts[0]) contacts[0] = { label: 'Emergency', number: '' };
+                  contacts[0] = { ...contacts[0], number: e.target.value };
                   onUpdate({ emergencyContacts: contacts });
                 }}
                 placeholder="911"
@@ -1434,13 +1449,25 @@ export function InputPanel({ signageData, onUpdate }: InputPanelProps) {
               />
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-              <span className="text-sm text-slate-600 sm:w-32">Safety Officer:</span>
               <input
                 type="text"
-                value={signageData.emergencyContacts[1]?.number || ''}
+                value={signageData.emergencyContacts[1]?.label ?? 'Safety Officer'}
                 onChange={(e) => {
-                  const contacts = [...signageData.emergencyContacts];
-                  contacts[1] = { label: 'Safety Officer', number: e.target.value };
+                  const contacts = [...(signageData.emergencyContacts || [])];
+                  if (!contacts[1]) contacts[1] = { label: '', number: '' };
+                  contacts[1] = { ...contacts[1], label: e.target.value };
+                  onUpdate({ emergencyContacts: contacts });
+                }}
+                placeholder="Label"
+                className="w-full sm:w-32 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+              />
+              <input
+                type="text"
+                value={signageData.emergencyContacts[1]?.number ?? ''}
+                onChange={(e) => {
+                  const contacts = [...(signageData.emergencyContacts || [])];
+                  if (!contacts[1]) contacts[1] = { label: 'Safety Officer', number: '' };
+                  contacts[1] = { ...contacts[1], number: e.target.value };
                   onUpdate({ emergencyContacts: contacts });
                 }}
                 placeholder="+1 (555) 123-4567"
@@ -1451,15 +1478,26 @@ export function InputPanel({ signageData, onUpdate }: InputPanelProps) {
             {/* Additional contacts */}
             {signageData.emergencyContacts.slice(2).map((contact, index) => (
               <div key={index + 2} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 p-2 bg-white rounded border border-slate-200">
-                <span className="text-sm text-slate-600 sm:w-32">{contact.label}:</span>
                 <input
                   type="text"
-                  value={contact.number}
+                  value={contact.label ?? ''}
+                  onChange={(e) => {
+                    const contacts = [...signageData.emergencyContacts];
+                    contacts[index + 2] = { ...contact, label: e.target.value };
+                    onUpdate({ emergencyContacts: contacts });
+                  }}
+                  placeholder="Label"
+                  className="w-full sm:w-32 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+                <input
+                  type="text"
+                  value={contact.number ?? ''}
                   onChange={(e) => {
                     const contacts = [...signageData.emergencyContacts];
                     contacts[index + 2] = { ...contact, number: e.target.value };
                     onUpdate({ emergencyContacts: contacts });
                   }}
+                  placeholder="Phone Number"
                   className="w-full flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
                 <button
@@ -1526,7 +1564,7 @@ export function InputPanel({ signageData, onUpdate }: InputPanelProps) {
           </label>
           <input
             type="text"
-            value={signageData.footerText || 'ISO 7010 Compliant • Last Updated: December 2025 • Review Annually'}
+            value={signageData.footerText ?? ''}
             onChange={(e) => onUpdate({ footerText: e.target.value })}
             placeholder="ISO 7010 Compliant • Last Updated: December 2025 • Review Annually"
             className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"

@@ -1,12 +1,32 @@
 // Utility functions for managing localStorage data
+import { SignageData } from '../types/signage';
 
 export interface RecentSignage {
   id: string;
-  type: 'safety' | 'identification' | 'authorized' | 'emergency';
+  type: 'safety' | 'identification' | 'authorized' | 'emergency' | 'custom';
   title: string;
   category: string;
   timestamp: number;
   thumbnail?: string;
+}
+
+// Full saved signage with complete data
+export interface SavedSignage {
+  id: string;
+  type: 'safety' | 'identification' | 'authorized' | 'emergency' | 'custom';
+  title: string;
+  category: string;
+  timestamp: number;
+  lastModified: number;
+  thumbnail?: string;
+  signageData?: SignageData; // Full SignageData for regular signage
+  customEditorData?: {
+    elements: any[]; // CanvasElement[] from CustomSignageEditor
+    canvasWidth: number;
+    canvasHeight: number;
+    canvasBackground: string;
+    backgroundImage?: string | null;
+  }; // Custom editor data
 }
 
 // Save recent signage
@@ -103,4 +123,81 @@ export function getStorageStats() {
     favorites: getFavoriteTemplates().length,
     totalSize: new Blob([JSON.stringify(localStorage)]).size
   };
+}
+
+// Save full signage data to library
+export function saveSignageToLibrary(signage: SavedSignage): string {
+  try {
+    const existing = getSavedSignages();
+    // If updating existing, remove old one
+    const filtered = existing.filter(s => s.id !== signage.id);
+    const updated = [signage, ...filtered];
+    localStorage.setItem('savedSignagesLibrary', JSON.stringify(updated));
+    
+    // Also update recent signages for quick access
+    const recentSignage: RecentSignage = {
+      id: signage.id,
+      type: signage.type,
+      title: signage.title,
+      category: signage.category,
+      timestamp: signage.timestamp,
+      thumbnail: signage.thumbnail
+    };
+    saveRecentSignage(recentSignage);
+    
+    window.dispatchEvent(new CustomEvent('signagesUpdated'));
+    window.dispatchEvent(new CustomEvent('libraryUpdated'));
+    return signage.id;
+  } catch (error) {
+    console.error('Error saving signage to library:', error);
+    throw error;
+  }
+}
+
+// Get all saved signages from library
+export function getSavedSignages(): SavedSignage[] {
+  try {
+    const data = localStorage.getItem('savedSignagesLibrary');
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error('Error loading saved signages:', error);
+    return [];
+  }
+}
+
+// Get a specific saved signage by ID
+export function getSavedSignageById(id: string): SavedSignage | null {
+  try {
+    const signages = getSavedSignages();
+    return signages.find(s => s.id === id) || null;
+  } catch (error) {
+    console.error('Error loading signage by ID:', error);
+    return null;
+  }
+}
+
+// Delete a saved signage from library
+export function deleteSavedSignage(id: string): boolean {
+  try {
+    const existing = getSavedSignages();
+    const updated = existing.filter(s => s.id !== id);
+    localStorage.setItem('savedSignagesLibrary', JSON.stringify(updated));
+    
+    // Also remove from recent signages
+    const recent = getRecentSignages();
+    const updatedRecent = recent.filter(s => s.id !== id);
+    localStorage.setItem('recentSignages', JSON.stringify(updatedRecent));
+    
+    window.dispatchEvent(new CustomEvent('signagesUpdated'));
+    window.dispatchEvent(new CustomEvent('libraryUpdated'));
+    return true;
+  } catch (error) {
+    console.error('Error deleting signage:', error);
+    return false;
+  }
+}
+
+// Generate a unique ID for signage
+export function generateSignageId(): string {
+  return `signage_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }

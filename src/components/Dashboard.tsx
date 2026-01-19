@@ -14,7 +14,9 @@ import {
   Search,
   Filter
 } from 'lucide-react';
-import { getRecentSignages, getUploadedImages, getFavoriteTemplates, saveUploadedImage } from '../utils/storageManager';
+import { getRecentSignages, getUploadedImages, getFavoriteTemplates, saveUploadedImage, getSavedSignages, deleteSavedSignage } from '../utils/storageManager';
+import { SavedSignage } from '../utils/storageManager';
+import { Edit, Trash2 } from 'lucide-react';
 
 interface RecentSignage {
   id: string;
@@ -26,11 +28,12 @@ interface RecentSignage {
 }
 
 interface DashboardProps {
-  onNavigate: (section: 'signage' | 'authorized' | 'emergency' | 'templates' | 'ai-generator') => void;
+  onNavigate: (section: 'signage' | 'authorized' | 'emergency' | 'templates' | 'ai-generator' | 'custom-editor', data?: any) => void;
 }
 
 export function Dashboard({ onNavigate }: DashboardProps) {
   const [recentSignages, setRecentSignages] = useState<RecentSignage[]>([]);
+  const [savedSignages, setSavedSignages] = useState<SavedSignage[]>([]);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,31 +41,57 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   useEffect(() => {
     // Load from localStorage
     setRecentSignages(getRecentSignages());
+    setSavedSignages(getSavedSignages());
     setUploadedImages(getUploadedImages());
     setFavorites(getFavoriteTemplates());
     
     // Listen for updates
     const handleUpdate = () => {
       setRecentSignages(getRecentSignages());
+      setSavedSignages(getSavedSignages());
       setUploadedImages(getUploadedImages());
       setFavorites(getFavoriteTemplates());
     };
     
     window.addEventListener('signagesUpdated', handleUpdate);
+    window.addEventListener('libraryUpdated', handleUpdate);
     window.addEventListener('imagesUpdated', handleUpdate);
     window.addEventListener('favoritesUpdated', handleUpdate);
     
     return () => {
       window.removeEventListener('signagesUpdated', handleUpdate);
+      window.removeEventListener('libraryUpdated', handleUpdate);
       window.removeEventListener('imagesUpdated', handleUpdate);
       window.removeEventListener('favoritesUpdated', handleUpdate);
     };
   }, []);
 
+  const handleEditSignage = (signage: SavedSignage) => {
+    if (signage.type === 'custom' && signage.customEditorData) {
+      // Load custom editor data with ID for updates
+      onNavigate('custom-editor', { ...signage.customEditorData, id: signage.id });
+    } else if (signage.signageData) {
+      // Load regular signage data with ID for updates
+      onNavigate('signage', { ...signage.signageData, id: signage.id });
+    }
+  };
+
+  const handleDeleteSignage = (id: string) => {
+    if (confirm('Are you sure you want to delete this signage?')) {
+      deleteSavedSignage(id);
+      setSavedSignages(getSavedSignages());
+    }
+  };
+
+  const filteredSignages = savedSignages.filter(signage => 
+    signage.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    signage.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const stats = [
     {
-      label: 'Total Signages',
-      value: recentSignages.length,
+      label: 'Saved Signages',
+      value: savedSignages.length,
       icon: FileText,
       color: 'blue',
       bgColor: 'bg-blue-50',
@@ -215,37 +244,34 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           </div>
         </div>
 
-        {/* Recent Signages */}
+        {/* Saved Signages Library */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-blue-600" />
-              <h2 className="text-slate-900">Recent Signages</h2>
+              <FileText className="w-5 h-5 text-blue-600" />
+              <h2 className="text-slate-900">My Signage Library</h2>
+              <span className="text-sm text-slate-500">({savedSignages.length} saved)</span>
             </div>
             <div className="flex gap-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search library..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <button className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm hover:bg-slate-50 flex items-center gap-2">
-                <Filter className="w-4 h-4" />
-                Filter
-              </button>
             </div>
           </div>
 
-          {recentSignages.length === 0 ? (
+          {savedSignages.length === 0 ? (
             <div className="bg-white rounded-xl border-2 border-dashed border-slate-300 p-12 text-center">
               <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-slate-900 mb-2">No signages yet</h3>
+              <h3 className="text-slate-900 mb-2">No saved signages yet</h3>
               <p className="text-slate-500 mb-6">
-                Start creating professional safety signage now
+                Create and save signages to access them here for later editing
               </p>
               <button
                 onClick={() => onNavigate('signage')}
@@ -257,12 +283,12 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {recentSignages.slice(0, 6).map((signage) => (
+              {filteredSignages.map((signage) => (
                 <div
                   key={signage.id}
-                  className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all group cursor-pointer"
+                  className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all group"
                 >
-                  <div className="h-40 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center border-b border-slate-200">
+                  <div className="h-40 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center border-b border-slate-200 relative">
                     {signage.thumbnail ? (
                       <img
                         src={signage.thumbnail}
@@ -272,24 +298,43 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                     ) : (
                       <FileText className="w-16 h-16 text-slate-400" />
                     )}
+                    <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => handleEditSignage(signage)}
+                        className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg"
+                        title="Edit"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSignage(signage.id)}
+                        className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-lg"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                   <div className="p-4">
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-slate-900 text-sm truncate flex-1">
+                      <h3 className="text-slate-900 text-sm font-medium truncate flex-1">
                         {signage.title}
                       </h3>
-                      <button className="text-slate-400 hover:text-amber-500 transition-colors">
-                        <Star className="w-4 h-4" />
-                      </button>
+                      <span className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded">
+                        {signage.type}
+                      </span>
                     </div>
-                    <p className="text-xs text-slate-500 mb-3">{signage.category}</p>
+                    <p className="text-xs text-slate-500 mb-3 capitalize">{signage.category}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-slate-400">
-                        {new Date(signage.timestamp).toLocaleDateString()}
+                        {new Date(signage.lastModified).toLocaleDateString()}
                       </span>
-                      <button className="text-blue-600 hover:text-blue-700 text-xs flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                        <Download className="w-3 h-3" />
-                        Export
+                      <button
+                        onClick={() => handleEditSignage(signage)}
+                        className="text-blue-600 hover:text-blue-700 text-xs flex items-center gap-1 font-medium"
+                      >
+                        <Edit className="w-3 h-3" />
+                        Edit
                       </button>
                     </div>
                   </div>

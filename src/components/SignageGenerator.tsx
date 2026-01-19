@@ -4,8 +4,11 @@ import { InputPanel } from './InputPanel';
 import { SignagePreview } from './SignagePreview';
 import { IdentificationSignage } from './IdentificationSignage';
 import { SignageData } from '../types/signage';
-import { AlertTriangle, MapPin, Palette } from 'lucide-react';
+import { AlertTriangle, MapPin, Palette, Save } from 'lucide-react';
 import { CompanyBranding, BrandingConfig, defaultBrandingConfig } from './CompanyBranding';
+import { saveSignageToLibrary, generateSignageId } from '../utils/storageManager';
+import { toast } from 'sonner';
+import html2canvas from 'html2canvas';
 
 type SignageType = 'safety' | 'identification';
 
@@ -17,6 +20,7 @@ interface SignageGeneratorProps {
 export function SignageGenerator({ aiGeneratedData, onDataUsed }: SignageGeneratorProps) {
   const [signageType, setSignageType] = useState<SignageType>('safety');
   const [brandingConfig, setBrandingConfig] = useState<BrandingConfig>(defaultBrandingConfig);
+  const [currentSignageId, setCurrentSignageId] = useState<string | null>(null);
   const [signageData, setSignageData] = useState<SignageData>({
     title: '',
     purpose: '',
@@ -45,13 +49,24 @@ export function SignageGenerator({ aiGeneratedData, onDataUsed }: SignageGenerat
     footerText: 'ISO 7010 Compliant • Last Updated: December 2025 • Review Annually',
   });
 
-  // Load AI generated data when available
+  // Load AI generated data or saved signage data when available
   useEffect(() => {
     if (aiGeneratedData) {
-      setSignageData(prev => ({
-        ...prev,
-        ...aiGeneratedData
-      }));
+      // Check if this is a loaded saved signage (has an id property)
+      if ((aiGeneratedData as any).id) {
+        setCurrentSignageId((aiGeneratedData as any).id);
+        // Remove id from data before setting
+        const { id, ...dataWithoutId } = aiGeneratedData as any;
+        setSignageData(prev => ({
+          ...prev,
+          ...dataWithoutId
+        }));
+      } else {
+        setSignageData(prev => ({
+          ...prev,
+          ...aiGeneratedData
+        }));
+      }
       if (onDataUsed) {
         onDataUsed();
       }
@@ -60,6 +75,54 @@ export function SignageGenerator({ aiGeneratedData, onDataUsed }: SignageGenerat
 
   const handleUpdate = (updates: Partial<SignageData>) => {
     setSignageData(prev => ({ ...prev, ...updates }));
+  };
+
+  const handleSaveToLibrary = async () => {
+    try {
+      // Generate thumbnail from preview
+      const previewElement = document.getElementById('signage-preview');
+      let thumbnail: string | undefined;
+      
+      if (previewElement) {
+        try {
+          const canvas = await html2canvas(previewElement as HTMLElement, {
+            scale: 0.3,
+            useCORS: true,
+            backgroundColor: '#ffffff'
+          });
+          thumbnail = canvas.toDataURL('image/png');
+        } catch (error) {
+          console.warn('Could not generate thumbnail:', error);
+        }
+      }
+
+      const savedSignage = {
+        id: currentSignageId || generateSignageId(),
+        type: 'safety' as const,
+        title: signageData.title || 'Untitled Signage',
+        category: signageData.category || 'danger',
+        timestamp: currentSignageId ? Date.now() : Date.now(), // Keep original timestamp if updating
+        lastModified: Date.now(),
+        thumbnail,
+        signageData: { ...signageData }
+      };
+
+      if (currentSignageId) {
+        setCurrentSignageId(savedSignage.id); // Ensure we keep the same ID
+      } else {
+        setCurrentSignageId(savedSignage.id); // Store new ID for future updates
+      }
+
+      saveSignageToLibrary(savedSignage);
+      toast.success(currentSignageId ? 'Signage updated in library!' : 'Signage saved to library!', {
+        description: 'You can access it from the Dashboard anytime.'
+      });
+    } catch (error) {
+      console.error('Error saving signage:', error);
+      toast.error('Failed to save signage', {
+        description: 'Please try again.'
+      });
+    }
   };
 
   return (
@@ -123,6 +186,19 @@ export function SignageGenerator({ aiGeneratedData, onDataUsed }: SignageGenerat
               </button>
             </div>
           </div>
+
+          {/* Save to Library Button */}
+          {signageType === 'safety' && (
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex items-center justify-end">
+              <button
+                onClick={handleSaveToLibrary}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+              >
+                <Save className="w-4 h-4" />
+                Save to Library
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Render based on signage type */}

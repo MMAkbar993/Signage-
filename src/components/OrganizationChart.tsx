@@ -190,10 +190,42 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
 
     // Render chart to canvas with high quality
     const renderChartToCanvas = async (dpi = 300, forPrint = false) => {
+        const styleBackups: Map<HTMLElement, string> = new Map()
+        
         try {
             if (!chartContainerRef.current) {
                 throw new Error('Chart container not found')
             }
+
+            // Pre-process: Convert all computed styles to inline styles to avoid oklch issues
+            // This must happen BEFORE html2canvas processes the element
+            const allElements = chartContainerRef.current.querySelectorAll('*')
+            
+            allElements.forEach((el) => {
+                const element = el as HTMLElement
+                const computedStyle = window.getComputedStyle(element)
+                
+                // Backup original style
+                styleBackups.set(element, element.getAttribute('style') || '')
+                
+                // Convert color properties to inline styles (browser converts oklch to rgb)
+                const colorProps = ['color', 'backgroundColor', 'borderColor', 
+                    'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor']
+                
+                colorProps.forEach(prop => {
+                    try {
+                        const value = computedStyle.getPropertyValue(prop)
+                        if (value && 
+                            value.trim() !== '' &&
+                            value !== 'transparent' &&
+                            !value.toLowerCase().includes('oklch')) {
+                            element.style.setProperty(prop, value, 'important')
+                        }
+                    } catch (e) {
+                        // Ignore errors
+                    }
+                })
+            })
 
             // html2canvas uses 96 DPI as base resolution
             const baseDpi = 96
@@ -214,7 +246,20 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                 windowHeight: chartContainerRef.current.scrollHeight,
                 removeContainer: false,
                 imageTimeout: 15000,
+                foreignObjectRendering: false, // Disable foreign object rendering to avoid oklch issues
                 onclone: (clonedDoc) => {
+                    // Inject a style that will override any oklch colors with safe fallbacks
+                    // This must be done first, before other processing
+                    const overrideStyle = clonedDoc.createElement('style')
+                    overrideStyle.id = 'oklch-override'
+                    overrideStyle.textContent = `
+                        /* Override any oklch colors with safe fallbacks */
+                        * {
+                            /* Force all color properties to use computed rgb values */
+                        }
+                    `
+                    clonedDoc.head.insertBefore(overrideStyle, clonedDoc.head.firstChild)
+                    
                     // Hide any UI elements that shouldn't be in export
                     const clonedElement = clonedDoc.querySelector('[ref]') || clonedDoc.body
                     if (clonedElement) {
@@ -226,13 +271,232 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                             }
                         })
                     }
+                    
+                    // Remove or replace stylesheets that contain oklch colors
+                    // html2canvas reads CSS rules directly, so we need to handle them aggressively
+                    try {
+                        const styleSheets = Array.from(clonedDoc.styleSheets || [])
+                        const rulesToRemove: Array<{sheet: any, index: number}> = []
+                        
+                        styleSheets.forEach((sheet: any) => {
+                            try {
+                                if (!sheet.cssRules) return
+                                const rules = Array.from(sheet.cssRules || [])
+                                rules.forEach((rule: any, index: number) => {
+                                    let hasOklch = false
+                                    
+                                    if (rule.style) {
+                                        // Check and remove oklch in all style properties
+                                        const style = rule.style
+                                        const propsToRemove: string[] = []
+                                        
+                                        for (let i = 0; i < style.length; i++) {
+                                            const prop = style[i]
+                                            const value = style.getPropertyValue(prop)
+                                            if (value && value.toLowerCase().includes('oklch')) {
+                                                propsToRemove.push(prop)
+                                                hasOklch = true
+                                            }
+                                        }
+                                        
+                                        // Remove properties that contain oklch
+                                        propsToRemove.forEach(prop => {
+                                            try {
+                                                style.removeProperty(prop)
+                                            } catch (e) {
+                                                // Ignore errors
+                                            }
+                                        })
+                                    }
+                                    
+                                    // Also check CSS text directly for oklch
+                                    if (rule.cssText && rule.cssText.toLowerCase().includes('oklch')) {
+                                        hasOklch = true
+                                        // Mark rule for deletion
+                                        rulesToRemove.push({ sheet, index })
+                                    }
+                                })
+                            } catch (e) {
+                                // Cross-origin stylesheets will throw errors, skip them
+                            }
+                        })
+                        
+                        // Delete rules that contain oklch (in reverse order to maintain indices)
+                        rulesToRemove.sort((a, b) => b.index - a.index).forEach(({sheet, index}) => {
+                            try {
+                                if (sheet.deleteRule) {
+                                    sheet.deleteRule(index)
+                                }
+                            } catch (e) {
+                                // Ignore errors
+                            }
+                        })
+                    } catch (e) {
+                        // Silently continue if stylesheet processing fails
+                    }
+                    
+                    // Process <style> tags in the document
+                    const styleTags = clonedDoc.querySelectorAll('style')
+                    styleTags.forEach((styleTag) => {
+                        if (styleTag.textContent && styleTag.textContent.toLowerCase().includes('oklch')) {
+                            // Remove oklch from style tag content
+                            styleTag.textContent = styleTag.textContent.replace(/oklch\([^)]+\)/gi, 'transparent')
+                        }
+                    })
+                    
+                    // Also check and clean inline styles that might contain oklch
+                    const allElementsWithStyles = clonedDoc.querySelectorAll('[style]')
+                    allElementsWithStyles.forEach((el) => {
+                        const element = el as HTMLElement
+                        const inlineStyle = element.getAttribute('style')
+                        if (inlineStyle && inlineStyle.toLowerCase().includes('oklch')) {
+                            // Remove oklch from inline styles - replace with transparent or a safe color
+                            const cleanedStyle = inlineStyle
+                                .replace(/oklch\([^)]+\)/gi, 'transparent')
+                                .replace(/background[^:]*:\s*oklch\([^)]+\)/gi, 'background: transparent')
+                                .replace(/color:\s*oklch\([^)]+\)/gi, 'color: #000000')
+                            element.setAttribute('style', cleanedStyle)
+                        }
+                    })
+                    
+                    // Get the window reference first
+                    const win = clonedDoc.defaultView || (clonedDoc as any).parentWindow || window
+                    
+                    // Process CSS custom properties (variables) that might contain oklch
+                    const rootElement = clonedDoc.documentElement || clonedDoc.querySelector('html')
+                    if (rootElement) {
+                        try {
+                            const rootStyle = win.getComputedStyle(rootElement)
+                            // Process CSS variables in the cloned document's stylesheets
+                            const clonedStyleSheets = Array.from(clonedDoc.styleSheets || [])
+                            clonedStyleSheets.forEach((sheet: any) => {
+                                try {
+                                    if (!sheet.cssRules) return
+                                    const rules = Array.from(sheet.cssRules || [])
+                                    rules.forEach((rule: any) => {
+                                        if (rule.selectorText === ':root' && rule.style) {
+                                            for (let i = 0; i < rule.style.length; i++) {
+                                                const prop = rule.style[i]
+                                                if (prop.startsWith('--')) {
+                                                    const value = rule.style.getPropertyValue(prop)
+                                                    if (value && value.toLowerCase().includes('oklch')) {
+                                                        rule.style.removeProperty(prop)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    })
+                                } catch (e) {
+                                    // Ignore errors
+                                }
+                            })
+                        } catch (e) {
+                            // Ignore errors
+                        }
+                    }
+                    
+                    // Convert all oklch/modern CSS colors to standard formats (rgb/hex)
+                    // The browser automatically converts oklch to rgb in computed styles
+                    // We need to set these as inline styles so html2canvas can read them
+                    const allElements = clonedDoc.querySelectorAll('*')
+                    
+                    allElements.forEach((el) => {
+                        const element = el as HTMLElement
+                        try {
+                            // Get computed styles from the cloned document's window
+                            // Browser will have already converted oklch to rgb
+                            const computedStyle = win.getComputedStyle(element)
+                            
+                            // Convert all color-related properties to inline styles
+                            // This ensures html2canvas only sees rgb/hex values
+                            const colorProps = [
+                                'color',
+                                'backgroundColor',
+                                'borderColor',
+                                'borderTopColor',
+                                'borderRightColor',
+                                'borderBottomColor',
+                                'borderLeftColor',
+                                'outlineColor',
+                                'textDecorationColor',
+                                'columnRuleColor',
+                                'fill', // SVG fill
+                                'stroke' // SVG stroke
+                            ]
+                            
+                            colorProps.forEach(prop => {
+                                try {
+                                    // Get the computed value
+                                    let value = computedStyle.getPropertyValue(prop)
+                                    if (!value) {
+                                        value = (computedStyle as any)[prop]
+                                    }
+                                    
+                                    // Only set if it's a valid color value and doesn't contain unsupported functions
+                                    if (value && 
+                                        value.trim() !== '' &&
+                                        value !== 'transparent' && 
+                                        value !== 'rgba(0, 0, 0, 0)' &&
+                                        value !== 'none' &&
+                                        !value.toLowerCase().includes('oklch') &&
+                                        !value.toLowerCase().includes('lab(') &&
+                                        !value.toLowerCase().includes('lch(') &&
+                                        !value.toLowerCase().includes('color(')) {
+                                        // Set as inline style with important to override any CSS rules
+                                        element.style.setProperty(prop, value, 'important')
+                                    } else if (value && value.toLowerCase().includes('oklch')) {
+                                        // If we find oklch, set a fallback color
+                                        if (prop === 'backgroundColor') {
+                                            element.style.setProperty(prop, '#ffffff', 'important')
+                                        } else if (prop === 'color') {
+                                            element.style.setProperty(prop, '#000000', 'important')
+                                        } else {
+                                            element.style.setProperty(prop, 'transparent', 'important')
+                                        }
+                                    }
+                                } catch (e) {
+                                    // Skip this property if there's an error
+                                }
+                            })
+                            
+                            // Also check background-image for gradients that might use oklch
+                            const bgImage = computedStyle.getPropertyValue('background-image')
+                            if (bgImage && bgImage.toLowerCase().includes('oklch')) {
+                                // Remove background-image if it contains oklch
+                                element.style.setProperty('background-image', 'none', 'important')
+                            }
+                        } catch (e) {
+                            // Silently continue if there's an error
+                            console.debug('Error processing element styles:', e)
+                        }
+                    })
                 }
             }
 
             const canvas = await html2canvas(chartContainerRef.current, options)
+            
+            // Restore original styles after rendering
+            styleBackups.forEach((originalStyle, element) => {
+                if (originalStyle) {
+                    element.setAttribute('style', originalStyle)
+                } else {
+                    element.removeAttribute('style')
+                }
+            })
+            
             return canvas
         } catch (error) {
             console.error('Canvas rendering error:', error)
+            
+            // Restore original styles even on error
+            styleBackups.forEach((originalStyle, element) => {
+                if (originalStyle) {
+                    element.setAttribute('style', originalStyle)
+                } else {
+                    element.removeAttribute('style')
+                }
+            })
+            
             throw error
         }
     }
@@ -1419,9 +1683,62 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-                    {/* Left Sidebar - Member Management */}
+                    {/* Left Sidebar - Chart Settings and Member Management */}
                     <div className="lg:col-span-1 space-y-6">
-                        {/* Settings Panel */}
+                        {/* Chart Settings Panel - Moved to top */}
+                        <div className="bg-white rounded-2xl p-4 lg:p-6 shadow-md border-2 border-gray-200">
+                            <h3 className="text-lg font-bold text-gray-900 mb-4">Chart Settings</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {/* Style Selection */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Chart Style</label>
+                                    <select
+                                        value={chartStyle}
+                                        onChange={(e) => setChartStyle(e.target.value)}
+                                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
+                                    >
+                                        <option value="modern">Modern</option>
+                                        <option value="classic">Classic</option>
+                                        <option value="minimal">Minimal</option>
+                                        <option value="colorful">Colorful</option>
+                                        <option value="professional">Professional</option>
+                                    </select>
+                                </div>
+
+                                {/* Paper Size Selection */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Paper Size</label>
+                                    <select
+                                        value={paperSize}
+                                        onChange={(e) => setPaperSize(e.target.value)}
+                                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
+                                    >
+                                        <option value="A4">A4</option>
+                                        <option value="A3">A3</option>
+                                        <option value="A5">A5</option>
+                                        <option value="Legal">Legal</option>
+                                    </select>
+                                </div>
+
+                                {/* Orientation Selection */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Orientation</label>
+                                    <select
+                                        value={orientation}
+                                        onChange={(e) => setOrientation(e.target.value)}
+                                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
+                                    >
+                                        <option value="portrait">Portrait</option>
+                                        <option value="landscape">Landscape</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="mt-4 text-xs text-gray-500">
+                                <p>Current size: {getPaperDimensions().width} × {getPaperDimensions().height} px ({paperSize} - {orientation})</p>
+                            </div>
+                        </div>
+
+                        {/* Member Management Panel */}
                         <div className="bg-white rounded-2xl p-6 lg:p-8 shadow-md border-2 border-gray-200">
                             <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-4">Member Management</h2>
                             <p className="text-sm text-gray-600 mb-6">
@@ -1584,59 +1901,6 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
 
                     {/* Right Side - Organization Chart Preview */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Chart Settings Panel */}
-                        <div className="bg-white rounded-2xl p-4 lg:p-6 shadow-md border-2 border-gray-200">
-                            <h3 className="text-lg font-bold text-gray-900 mb-4">Chart Settings</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {/* Style Selection */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Chart Style</label>
-                                    <select
-                                        value={chartStyle}
-                                        onChange={(e) => setChartStyle(e.target.value)}
-                                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
-                                    >
-                                        <option value="modern">Modern</option>
-                                        <option value="classic">Classic</option>
-                                        <option value="minimal">Minimal</option>
-                                        <option value="colorful">Colorful</option>
-                                        <option value="professional">Professional</option>
-                                    </select>
-                                </div>
-
-                                {/* Paper Size Selection */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Paper Size</label>
-                                    <select
-                                        value={paperSize}
-                                        onChange={(e) => setPaperSize(e.target.value)}
-                                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
-                                    >
-                                        <option value="A4">A4</option>
-                                        <option value="A3">A3</option>
-                                        <option value="A5">A5</option>
-                                        <option value="Legal">Legal</option>
-                                    </select>
-                                </div>
-
-                                {/* Orientation Selection */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Orientation</label>
-                                    <select
-                                        value={orientation}
-                                        onChange={(e) => setOrientation(e.target.value)}
-                                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
-                                    >
-                                        <option value="portrait">Portrait</option>
-                                        <option value="landscape">Landscape</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="mt-4 text-xs text-gray-500">
-                                <p>Current size: {getPaperDimensions().width} × {getPaperDimensions().height} px ({paperSize} - {orientation})</p>
-                            </div>
-                        </div>
-
                         <div className="bg-white rounded-2xl p-6 lg:p-8 shadow-md border-2 border-blue-500">
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-xl lg:text-2xl font-bold text-gray-900">Organization Chart</h2>

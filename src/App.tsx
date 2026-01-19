@@ -13,6 +13,7 @@ import { CustomSignageEditor } from './components/CustomSignageEditor';
 import { Sidebar } from './components/Sidebar';
 import OrganizationChart from './components/OrganizationChart';
 import { SignageData } from './types/signage';
+import { mapPPEStringsToTypes } from './utils/ppeMapper';
 import { 
   Menu, 
   X, 
@@ -27,10 +28,29 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [aiGeneratedData, setAiGeneratedData] = useState<Partial<SignageData> | null>(null);
   const [templateData, setTemplateData] = useState<Partial<SignageData> | null>(null);
+  const [loadedSignageData, setLoadedSignageData] = useState<Partial<SignageData> | null>(null);
+  const [loadedCustomEditorData, setLoadedCustomEditorData] = useState<any>(null);
 
-  const handleNavigate = (tab: TabType) => {
+  const handleNavigate = (tab: TabType, data?: any) => {
     setActiveTab(tab);
     setMenuOpen(false);
+    
+    // Handle loading saved signage data
+    if (data) {
+      if (tab === 'signage' && data.title !== undefined) {
+        // Regular signage data
+        setLoadedSignageData(data);
+        setAiGeneratedData(null);
+        setTemplateData(null);
+      } else if (tab === 'custom-editor') {
+        // Custom editor data
+        setLoadedCustomEditorData(data);
+      }
+    } else {
+      // Clear loaded data when navigating without data
+      setLoadedSignageData(null);
+      setLoadedCustomEditorData(null);
+    }
   };
 
   const handleAIGenerate = (generatedData: Partial<SignageData>) => {
@@ -62,12 +82,9 @@ function App() {
       ]
     };
 
-    // Convert string PPE requirements to PPE types (best effort mapping)
+    // Convert string PPE requirements to PPE types
     if (template.requiredPPE && Array.isArray(template.requiredPPE)) {
-      // We'll store the string descriptions in the procedures or create a custom field
-      // For now, add them as text to help user understand what PPE is needed
-      signageData.description = (signageData.description || '') + 
-        '\n\nRequired PPE: ' + template.requiredPPE.join(', ');
+      signageData.ppe = mapPPEStringsToTypes(template.requiredPPE);
     }
 
     setTemplateData(signageData);
@@ -143,13 +160,13 @@ function App() {
           {activeTab === 'dashboard' && (
             <Dashboard onNavigate={(section: any) => handleNavigate(section)} />
           )}
-          {activeTab === 'signage' && <SignageGenerator aiGeneratedData={aiGeneratedData || templateData} onDataUsed={() => { setAiGeneratedData(null); setTemplateData(null); }} />}
+          {activeTab === 'signage' && <SignageGenerator aiGeneratedData={loadedSignageData || aiGeneratedData || templateData} onDataUsed={() => { setAiGeneratedData(null); setTemplateData(null); setLoadedSignageData(null); }} />}
           {activeTab === 'authorized' && <AuthorizedPersonsManager />}
           {activeTab === 'emergency' && <EmergencyResponseTeam />}
           {activeTab === 'organization-chart' && <OrganizationChart />}
           {activeTab === 'templates' && <TemplateLibraryV2 onSelectTemplate={handleTemplateSelect} onClose={() => handleNavigate('dashboard')} />}
           {activeTab === 'ai-generator' && <AISignageGenerator onGenerate={handleAIGenerate} onClose={() => handleNavigate('dashboard')} />}
-          {activeTab === 'custom-editor' && <CustomSignageEditor />}
+          {activeTab === 'custom-editor' && <CustomSignageEditor initialData={loadedCustomEditorData} onDataLoaded={() => setLoadedCustomEditorData(null)} />}
           {activeTab === 'blog' && <BlogTutorials />}
           {activeTab === 'admin' && (
             <AdminAuth>

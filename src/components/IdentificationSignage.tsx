@@ -1105,26 +1105,31 @@ export function IdentificationSignage() {
               {data.paperSize.toUpperCase()} • {data.orientation} • 300 DPI
             </div>
           </div>
-          <div className="overflow-auto border border-slate-300 rounded-lg bg-slate-100 p-6">
-            <div
-              id="printable-identification-signage"
-              ref={previewRef}
-              style={{
-                width: `${pageWidth}px`,
-                height: `${pageHeight}px`,
-                transform: `scale(${scale})`,
-                transformOrigin: 'top left',
-                backgroundColor: data.bgColor,
-                borderRadius: `${data.borderRadius}px`,
-                display: 'flex',
-                flexDirection: 'column',
-                position: 'relative',
-                overflow: 'hidden',
-                border: data.showBorder ? `${data.borderWidth}px solid ${data.borderColor}` : 'none'
-              }}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-            >
+          <div className="border border-slate-300 rounded-lg bg-slate-100 p-1 flex items-center justify-center" style={{ minHeight: `${pageHeight * scale + 8}px` }}>
+            <div style={{ 
+              width: `${pageWidth * scale}px`, 
+              height: `${pageHeight * scale}px`,
+              position: 'relative'
+            }}>
+              <div
+                id="printable-identification-signage"
+                ref={previewRef}
+                style={{
+                  width: `${pageWidth}px`,
+                  height: `${pageHeight}px`,
+                  transform: `scale(${scale})`,
+                  transformOrigin: 'top left',
+                  backgroundColor: data.bgColor,
+                  borderRadius: `${data.borderRadius}px`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  border: data.showBorder ? `${data.borderWidth}px solid ${data.borderColor}` : 'none'
+                }}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+              >
               {/* Background Image */}
               {data.showImage && data.uploadedImage && data.imagePosition === 'background' && (
                 <div
@@ -1329,6 +1334,7 @@ export function IdentificationSignage() {
                   </span>
                 </div>
               )}
+            </div>
             </div>
           </div>
         </div>

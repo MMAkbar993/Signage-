@@ -133,64 +133,77 @@ export function AISignageGenerator({ onGenerate, onClose }: AISignageGeneratorPr
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 via-blue-50 to-cyan-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-white" />
+        <div className="mb-8 lg:mb-12">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30">
+                <Sparkles className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-slate-900 mb-1">AI Signage Generator</h1>
-                <p className="text-slate-600">
-                  Describe your signage and let AI create it for you
+                <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-2 bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                  AI Signage Generator
+                </h1>
+                <p className="text-slate-600 text-base lg:text-lg">
+                  Describe your signage and let AI create professional safety signs for you
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+              className="px-6 py-3 bg-white border-2 border-slate-300 rounded-xl hover:bg-slate-50 hover:border-purple-300 transition-all shadow-sm font-medium text-slate-700"
             >
-              Back to Dashboard
+              ← Back to Dashboard
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Input Area */}
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+          {/* Main Input Area - Takes more space */}
+          <div className="lg:col-span-8 space-y-6">
             {/* Prompt Input */}
-            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-lg">
-              <label className="block text-slate-900 mb-3 flex items-center gap-2">
-                <Wand2 className="w-5 h-5 text-purple-600" />
-                Describe Your Signage
-              </label>
+            <div className="bg-white rounded-2xl border-2 border-slate-200 p-8 shadow-xl shadow-purple-500/10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+                  <Wand2 className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <label className="block text-xl font-bold text-slate-900">
+                    Describe Your Signage
+                  </label>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Be specific about the type, language, and requirements
+                  </p>
+                </div>
+              </div>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Example: Create a warning sign for high voltage area with picture and Arabic text"
-                className="w-full h-32 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                className="w-full h-40 px-5 py-4 border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none text-slate-700 placeholder-slate-400 transition-all"
               />
-              <div className="mt-3 flex items-center justify-between">
-                <span className="text-sm text-slate-500">
-                  {prompt.length} / 500 characters
-                </span>
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-medium ${prompt.length > 450 ? 'text-amber-600' : 'text-slate-500'}`}>
+                    {prompt.length} / 500 characters
+                  </span>
+                </div>
                 <button
                   onClick={handleGenerate}
                   disabled={!prompt || generating}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all"
+                  className="px-8 py-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 transition-all shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 font-semibold text-base"
                 >
                   {generating ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Generating...
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Generating...</span>
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-4 h-4" />
-                      Generate Signage
+                      <Sparkles className="w-5 h-5" />
+                      <span>Generate Signage</span>
                     </>
                   )}
                 </button>
@@ -198,40 +211,69 @@ export function AISignageGenerator({ onGenerate, onClose }: AISignageGeneratorPr
             </div>
 
             {/* Example Prompts */}
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h3 className="text-slate-900 mb-4 flex items-center gap-2">
-                <Zap className="w-4 h-4 text-amber-500" />
-                Example Prompts
-              </h3>
-              <div className="space-y-2">
+            <div className="bg-white rounded-2xl border-2 border-slate-200 p-6 lg:p-8 shadow-lg">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-md">
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900">Example Prompts</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {examplePrompts.map((example, index) => (
                   <button
                     key={index}
                     onClick={() => setPrompt(example)}
-                    className="w-full text-left px-4 py-3 bg-slate-50 hover:bg-purple-50 border border-slate-200 hover:border-purple-300 rounded-lg transition-colors group"
+                    className="text-left px-5 py-4 bg-gradient-to-br from-slate-50 to-slate-100 hover:from-purple-50 hover:to-indigo-50 border-2 border-slate-200 hover:border-purple-300 rounded-xl transition-all group shadow-sm hover:shadow-md"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-700 group-hover:text-purple-700">
+                      <span className="text-sm font-medium text-slate-700 group-hover:text-purple-700 pr-2">
                         {example}
                       </span>
-                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-purple-600" />
+                      <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-purple-600 group-hover:translate-x-1 transition-transform flex-shrink-0" />
                     </div>
                   </button>
                 ))}
               </div>
             </div>
 
+          </div>
+
+          {/* Right Sidebar - Settings & Options */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* Language Selection */}
+            <div className="bg-white rounded-2xl border-2 border-slate-200 p-6 shadow-lg">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-md">
+                  <Type className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900">Language</h3>
+              </div>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-slate-700 font-medium"
+              >
+                {languages.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.flag} {lang.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Advanced Options */}
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h3 className="text-slate-900 mb-4">Advanced Options</h3>
+            <div className="bg-white rounded-2xl border-2 border-slate-200 p-6 shadow-lg">
+              <h3 className="text-lg font-bold text-slate-900 mb-6">Advanced Options</h3>
               <div className="space-y-4">
                 {/* Auto Layout */}
-                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl border border-slate-200">
                   <div className="flex items-center gap-3">
-                    <Layout className="w-5 h-5 text-blue-600" />
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Layout className="w-5 h-5 text-blue-600" />
+                    </div>
                     <div>
-                      <div className="text-slate-900 text-sm">Auto Layout</div>
-                      <div className="text-xs text-slate-500">AI optimizes layout automatically</div>
+                      <div className="text-slate-900 font-semibold text-sm">Auto Layout</div>
+                      <div className="text-xs text-slate-500">AI optimizes layout</div>
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -246,12 +288,14 @@ export function AISignageGenerator({ onGenerate, onClose }: AISignageGeneratorPr
                 </div>
 
                 {/* Include Image */}
-                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-br from-slate-50 to-green-50 rounded-xl border border-slate-200">
                   <div className="flex items-center gap-3">
-                    <ImageIcon className="w-5 h-5 text-green-600" />
+                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                      <ImageIcon className="w-5 h-5 text-green-600" />
+                    </div>
                     <div>
-                      <div className="text-slate-900 text-sm">Include Image/Icon</div>
-                      <div className="text-xs text-slate-500">Add relevant safety icons</div>
+                      <div className="text-slate-900 font-semibold text-sm">Include Icons</div>
+                      <div className="text-xs text-slate-500">Add safety icons</div>
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -266,12 +310,14 @@ export function AISignageGenerator({ onGenerate, onClose }: AISignageGeneratorPr
                 </div>
 
                 {/* Auto Contrast */}
-                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-br from-slate-50 to-amber-50 rounded-xl border border-slate-200">
                   <div className="flex items-center gap-3">
-                    <Palette className="w-5 h-5 text-amber-600" />
+                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                      <Palette className="w-5 h-5 text-amber-600" />
+                    </div>
                     <div>
-                      <div className="text-slate-900 text-sm">Auto Contrast Adjustment</div>
-                      <div className="text-xs text-slate-500">Optimize for readability</div>
+                      <div className="text-slate-900 font-semibold text-sm">Auto Contrast</div>
+                      <div className="text-xs text-slate-500">Optimize readability</div>
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -285,12 +331,14 @@ export function AISignageGenerator({ onGenerate, onClose }: AISignageGeneratorPr
                 </div>
 
                 {/* Auto Text Resizing */}
-                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-br from-slate-50 to-indigo-50 rounded-xl border border-slate-200">
                   <div className="flex items-center gap-3">
-                    <Type className="w-5 h-5 text-indigo-600" />
+                    <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                      <Type className="w-5 h-5 text-indigo-600" />
+                    </div>
                     <div>
-                      <div className="text-slate-900 text-sm">Auto Text Resizing</div>
-                      <div className="text-xs text-slate-500">Fit text to available space</div>
+                      <div className="text-slate-900 font-semibold text-sm">Auto Text Size</div>
+                      <div className="text-xs text-slate-500">Fit to space</div>
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -304,42 +352,69 @@ export function AISignageGenerator({ onGenerate, onClose }: AISignageGeneratorPr
                 </div>
               </div>
             </div>
+
+            {/* Quick Tips */}
+            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl border-2 border-purple-200 p-6 shadow-lg">
+              <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-600" />
+                Pro Tips
+              </h3>
+              <ul className="space-y-3 text-sm text-slate-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-600 font-bold mt-0.5">•</span>
+                  <span>Be specific about the hazard or requirement</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-600 font-bold mt-0.5">•</span>
+                  <span>Mention the language if you need translations</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-600 font-bold mt-0.5">•</span>
+                  <span>Include location or area details for context</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-600 font-bold mt-0.5">•</span>
+                  <span>Specify if you need icons or images</span>
+                </li>
+              </ul>
+            </div>
           </div>
-
-
         </div>
 
         {/* How it Works */}
-        <div className="mt-8 bg-white rounded-xl border border-slate-200 p-6">
-          <h3 className="text-slate-900 mb-4">How AI Generation Works</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Type className="w-6 h-6 text-purple-600" />
+        <div className="mt-12 bg-white rounded-2xl border-2 border-slate-200 p-8 lg:p-10 shadow-xl">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl lg:text-3xl font-bold text-slate-900 mb-2">How AI Generation Works</h3>
+            <p className="text-slate-600">Simple, fast, and intelligent signage creation</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+            <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl border-2 border-purple-200 hover:shadow-lg transition-all">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <Type className="w-8 h-8 text-white" />
               </div>
-              <div className="text-sm text-slate-900 mb-1">1. Describe</div>
-              <div className="text-xs text-slate-500">Tell AI what you need</div>
+              <div className="text-lg font-bold text-slate-900 mb-2">1. Describe</div>
+              <div className="text-sm text-slate-600">Tell AI what you need in plain language</div>
             </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Sparkles className="w-6 h-6 text-indigo-600" />
+            <div className="text-center p-6 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl border-2 border-indigo-200 hover:shadow-lg transition-all">
+              <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <Sparkles className="w-8 h-8 text-white" />
               </div>
-              <div className="text-sm text-slate-900 mb-1">2. AI Analyzes</div>
-              <div className="text-xs text-slate-500">Understands requirements</div>
+              <div className="text-lg font-bold text-slate-900 mb-2">2. AI Analyzes</div>
+              <div className="text-sm text-slate-600">AI understands your requirements</div>
             </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Layout className="w-6 h-6 text-blue-600" />
+            <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border-2 border-blue-200 hover:shadow-lg transition-all">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <Layout className="w-8 h-8 text-white" />
               </div>
-              <div className="text-sm text-slate-900 mb-1">3. Auto-Design</div>
-              <div className="text-xs text-slate-500">Generates layout & content</div>
+              <div className="text-lg font-bold text-slate-900 mb-2">3. Auto-Design</div>
+              <div className="text-sm text-slate-600">Generates professional layout & content</div>
             </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Zap className="w-6 h-6 text-green-600" />
+            <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl border-2 border-green-200 hover:shadow-lg transition-all">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <Zap className="w-8 h-8 text-white" />
               </div>
-              <div className="text-sm text-slate-900 mb-1">4. Export</div>
-              <div className="text-xs text-slate-500">Download ready signage</div>
+              <div className="text-lg font-bold text-slate-900 mb-2">4. Export</div>
+              <div className="text-sm text-slate-600">Download ready-to-print signage</div>
             </div>
           </div>
         </div>

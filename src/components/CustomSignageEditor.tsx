@@ -15,11 +15,12 @@ import {
   Film, Music, Folder, ChevronRight, Play, Pause, SkipBack, SkipForward,
   Volume2, Layout, Database, Cpu, Code, Terminal, Gauge, Target, Flag,
   MapPin, Navigation, Crosshair, Focus, Scan, Maximize, Box, Package,
-  Layers2, FolderTree, GitBranch, Binary, Workflow, Zap as Lightning
+  Layers2, FolderTree, GitBranch, Binary, Workflow, Zap as Lightning, Slash
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { toast } from 'sonner';
+import { saveSignageToLibrary, generateSignageId } from '../utils/storageManager';
 
 // Types
 interface CanvasElement {
@@ -183,14 +184,134 @@ const GRADIENTS = [
 
 const BLEND_MODES: BlendMode[] = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten'];
 
-export function CustomSignageEditor() {
+// Comprehensive Shape Library
+const SHAPE_CATEGORIES = {
+  basic: [
+    { id: 'rectangle', name: 'Rectangle', icon: Square },
+    { id: 'circle', name: 'Circle', icon: Circle },
+    { id: 'oval', name: 'Oval', icon: Circle },
+    { id: 'triangle', name: 'Triangle', icon: Triangle },
+    { id: 'parallelogram', name: 'Parallelogram', icon: Square },
+    { id: 'diamond', name: 'Diamond', icon: Square },
+    { id: 'pentagon', name: 'Pentagon', icon: Square },
+    { id: 'hexagon', name: 'Hexagon', icon: Hexagon },
+    { id: 'octagon', name: 'Octagon', icon: Square },
+    { id: 'trapezoid', name: 'Trapezoid', icon: Square },
+    { id: 'crescent', name: 'Crescent', icon: Circle },
+    { id: 'half-circle', name: 'Half Circle', icon: Circle },
+    { id: 'l-shape', name: 'L-Shape', icon: Square },
+    { id: 'plus', name: 'Plus', icon: Plus },
+    { id: 'cross', name: 'Cross', icon: X },
+  ],
+  rectangles: [
+    { id: 'rectangle-rounded', name: 'Rounded Rectangle', icon: Square },
+    { id: 'rectangle-chamfer', name: 'Chamfered Rectangle', icon: Square },
+    { id: 'rectangle-single-round', name: 'Single Round Corner', icon: Square },
+  ],
+  arrows: [
+    { id: 'arrow-right', name: 'Right Arrow', icon: ArrowRight },
+    { id: 'arrow-left', name: 'Left Arrow', icon: ArrowLeft },
+    { id: 'arrow-up', name: 'Up Arrow', icon: ArrowUp },
+    { id: 'arrow-down', name: 'Down Arrow', icon: ArrowDown },
+    { id: 'arrow-double-h', name: 'Double Arrow H', icon: ArrowRight },
+    { id: 'arrow-double-v', name: 'Double Arrow V', icon: ArrowUp },
+    { id: 'arrow-l-up-right', name: 'L Arrow Up-Right', icon: ArrowRight },
+    { id: 'arrow-l-up-left', name: 'L Arrow Up-Left', icon: ArrowLeft },
+    { id: 'arrow-l-down-right', name: 'L Arrow Down-Right', icon: ArrowRight },
+    { id: 'arrow-l-down-left', name: 'L Arrow Down-Left', icon: ArrowLeft },
+    { id: 'arrow-u-turn-right', name: 'U-Turn Right', icon: ArrowRight },
+    { id: 'arrow-u-turn-left', name: 'U-Turn Left', icon: ArrowLeft },
+    { id: 'arrow-curved-up', name: 'Curved Up', icon: ArrowUp },
+    { id: 'arrow-curved-down', name: 'Curved Down', icon: ArrowDown },
+    { id: 'arrow-block-right', name: 'Block Right', icon: ArrowRight },
+    { id: 'arrow-block-left', name: 'Block Left', icon: ArrowLeft },
+    { id: 'arrow-block-up', name: 'Block Up', icon: ArrowUp },
+    { id: 'arrow-block-down', name: 'Block Down', icon: ArrowDown },
+  ],
+  stars: [
+    { id: 'star-4', name: '4-Point Star', icon: Star },
+    { id: 'star-5', name: '5-Point Star', icon: Star },
+    { id: 'star-6', name: '6-Point Star', icon: Star },
+    { id: 'star-7', name: '7-Point Star', icon: Star },
+    { id: 'star-8', name: '8-Point Star', icon: Star },
+    { id: 'star-10', name: '10-Point Star', icon: Star },
+    { id: 'star-12', name: '12-Point Star', icon: Star },
+    { id: 'star-16', name: '16-Point Star', icon: Star },
+    { id: 'star-24', name: '24-Point Star', icon: Star },
+    { id: 'star-32', name: '32-Point Star', icon: Star },
+  ],
+  lines: [
+    { id: 'line-straight', name: 'Straight Line', icon: Minus },
+    { id: 'line-diagonal', name: 'Diagonal Line', icon: Minus },
+    { id: 'line-arrow', name: 'Line with Arrow', icon: ArrowRight },
+    { id: 'line-l', name: 'L-Shaped Line', icon: Square },
+    { id: 'line-curved', name: 'Curved Line', icon: Minus },
+    { id: 'line-squiggly', name: 'Squiggly Line', icon: Minus },
+    { id: 'line-freeform', name: 'Freeform Line', icon: Pencil },
+  ],
+  flowchart: [
+    { id: 'flowchart-process', name: 'Process', icon: Square },
+    { id: 'flowchart-decision', name: 'Decision', icon: Square },
+    { id: 'flowchart-input', name: 'Input/Output', icon: Square },
+    { id: 'flowchart-predefined', name: 'Predefined Process', icon: Square },
+    { id: 'flowchart-data', name: 'Data Storage', icon: Square },
+    { id: 'flowchart-document', name: 'Document', icon: Square },
+    { id: 'flowchart-terminator', name: 'Terminator', icon: Circle },
+    { id: 'flowchart-connector', name: 'Connector', icon: Circle },
+    { id: 'flowchart-manual', name: 'Manual Operation', icon: Shield },
+    { id: 'flowchart-delay', name: 'Delay', icon: Square },
+    { id: 'flowchart-or', name: 'OR', icon: Square },
+    { id: 'flowchart-preparation', name: 'Preparation', icon: Triangle },
+    { id: 'flowchart-merge', name: 'Merge', icon: Triangle },
+  ],
+  equation: [
+    { id: 'eq-plus', name: 'Plus', icon: Plus },
+    { id: 'eq-minus', name: 'Minus', icon: Minus },
+    { id: 'eq-multiply', name: 'Multiply', icon: X },
+    { id: 'eq-divide', name: 'Divide', icon: Slash },
+    { id: 'eq-equals', name: 'Equals', icon: Minus },
+    { id: 'eq-not-equals', name: 'Not Equals', icon: X },
+  ],
+  banners: [
+    { id: 'banner-ribbon', name: 'Ribbon', icon: Flag },
+    { id: 'banner-folded', name: 'Folded Banner', icon: Flag },
+    { id: 'banner-wave', name: 'Wave Banner', icon: Flag },
+  ],
+  symbols: [
+    { id: 'heart', name: 'Heart', icon: Heart },
+    { id: 'lightning', name: 'Lightning', icon: Zap },
+    { id: 'sun', name: 'Sun', icon: Sun },
+    { id: 'cloud', name: 'Cloud', icon: Circle },
+    { id: 'bracket-open', name: 'Open Bracket', icon: Square },
+    { id: 'bracket-close', name: 'Close Bracket', icon: Square },
+    { id: 'brace-open', name: 'Open Brace', icon: Square },
+    { id: 'brace-close', name: 'Close Brace', icon: Square },
+    { id: 'cylinder', name: 'Cylinder', icon: Circle },
+    { id: 'cube', name: 'Cube', icon: Box },
+  ],
+};
+
+interface CustomSignageEditorProps {
+  initialData?: {
+    elements?: CanvasElement[];
+    canvasWidth?: number;
+    canvasHeight?: number;
+    canvasBackground?: string;
+    backgroundImage?: string | null;
+    id?: string; // ID for updating existing signage
+  } | null;
+  onDataLoaded?: () => void;
+}
+
+export function CustomSignageEditor({ initialData, onDataLoaded }: CustomSignageEditorProps = {} as CustomSignageEditorProps) {
   // Core State
-  const [elements, setElements] = useState<CanvasElement[]>([]);
+  const [currentSignageId, setCurrentSignageId] = useState<string | null>(initialData?.id || null);
+  const [elements, setElements] = useState<CanvasElement[]>(initialData?.elements || []);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
-  const [canvasWidth, setCanvasWidth] = useState(1080);
-  const [canvasHeight, setCanvasHeight] = useState(1080);
-  const [canvasBackground, setCanvasBackground] = useState('#ffffff');
-  const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
+  const [canvasWidth, setCanvasWidth] = useState(initialData?.canvasWidth || 1080);
+  const [canvasHeight, setCanvasHeight] = useState(initialData?.canvasHeight || 1080);
+  const [canvasBackground, setCanvasBackground] = useState(initialData?.canvasBackground || '#ffffff');
+  const [backgroundImage, setBackgroundImage] = useState<string | null>(initialData?.backgroundImage || null);
   
   // UI State
   const [activeTool, setActiveTool] = useState<Tool>('select');
@@ -205,8 +326,8 @@ export function CustomSignageEditor() {
   // Tool State
   const [brushColor, setBrushColor] = useState('#000000');
   const [brushSize, setBrushSize] = useState(5);
-  const [fillColor, setFillColor] = useState('#3B82F6');
-  const [strokeColor, setStrokeColor] = useState('#1E40AF');
+  const [fillColor, setFillColor] = useState('#6B7280');
+  const [strokeColor, setStrokeColor] = useState('#374151');
   const [strokeWidth, setStrokeWidth] = useState(2);
   
   // Interaction State
@@ -229,11 +350,46 @@ export function CustomSignageEditor() {
   
   // Search
   const [iconSearch, setIconSearch] = useState('');
+  const [shapeSearch, setShapeSearch] = useState('');
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
+    basic: true,
+    rectangles: false,
+    arrows: false,
+    stars: false,
+    lines: false,
+    flowchart: false,
+    equation: false,
+    banners: false,
+    symbols: false,
+  });
   
   // Refs
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Load initial data if provided
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.id) {
+        setCurrentSignageId(initialData.id);
+      }
+      if (initialData.elements) {
+        setElements(initialData.elements);
+        setHistory([initialData.elements]);
+        setHistoryIndex(0);
+      }
+      if (initialData.canvasWidth) setCanvasWidth(initialData.canvasWidth);
+      if (initialData.canvasHeight) setCanvasHeight(initialData.canvasHeight);
+      if (initialData.canvasBackground) setCanvasBackground(initialData.canvasBackground);
+      if (initialData.backgroundImage !== undefined) setBackgroundImage(initialData.backgroundImage);
+      
+      if (onDataLoaded) {
+        onDataLoaded();
+      }
+      toast.success('Design loaded from library!');
+    }
+  }, []);
 
   // Save to history
   const saveToHistory = useCallback(() => {
@@ -477,6 +633,58 @@ export function CustomSignageEditor() {
     saveToHistory();
   };
 
+  // Save to library
+  const handleSaveToLibrary = async () => {
+    try {
+      // Generate thumbnail from canvas
+      let thumbnail: string | undefined;
+      
+      if (canvasRef.current) {
+        try {
+          const canvas = await html2canvas(canvasRef.current as HTMLElement, {
+            scale: 0.3,
+            useCORS: true,
+            backgroundColor: canvasBackground
+          });
+          thumbnail = canvas.toDataURL('image/png');
+        } catch (error) {
+          console.warn('Could not generate thumbnail:', error);
+        }
+      }
+
+      const savedSignage = {
+        id: currentSignageId || generateSignageId(),
+        type: 'custom' as const,
+        title: `Custom Design ${new Date().toLocaleDateString()}`,
+        category: 'custom',
+        timestamp: currentSignageId ? Date.now() : Date.now(), // Keep original timestamp if updating
+        lastModified: Date.now(),
+        thumbnail,
+        customEditorData: {
+          elements: JSON.parse(JSON.stringify(elements)), // Deep copy
+          canvasWidth,
+          canvasHeight,
+          canvasBackground,
+          backgroundImage
+        }
+      };
+
+      if (!currentSignageId) {
+        setCurrentSignageId(savedSignage.id); // Store new ID for future updates
+      }
+
+      saveSignageToLibrary(savedSignage);
+      toast.success(currentSignageId ? 'Design updated in library!' : 'Design saved to library!', {
+        description: 'You can access it from the Dashboard anytime.'
+      });
+    } catch (error) {
+      console.error('Error saving design:', error);
+      toast.error('Failed to save design', {
+        description: 'Please try again.'
+      });
+    }
+  };
+
   // Export functions
   const exportAsPDF = async () => {
     if (!canvasRef.current) return;
@@ -591,6 +799,18 @@ export function CustomSignageEditor() {
   };
 
   const selected = elements.find(el => el.id === selectedElement);
+
+  // Sync color pickers with selected shape
+  useEffect(() => {
+    if (selected && selected.type === 'shape') {
+      if (selected.backgroundColor) {
+        setFillColor(selected.backgroundColor);
+      }
+      if (selected.borderColor) {
+        setStrokeColor(selected.borderColor);
+      }
+    }
+  }, [selectedElement]);
 
   // Handle element dragging
   const handleElementMouseDown = (e: React.MouseEvent, element: CanvasElement) => {
@@ -763,33 +983,166 @@ export function CustomSignageEditor() {
 
   const filteredIcons = getFilteredIcons();
 
-  // Render shape
+  // Render shape with comprehensive SVG support
   const renderShape = (element: CanvasElement) => {
-    const style = {
+    const w = element.width;
+    const h = element.height;
+    const fill = element.backgroundColor || '#000000';
+    const stroke = element.borderColor || '#000000';
+    const strokeWidth = element.borderWidth || 0;
+    const viewBox = `0 0 ${w} ${h}`;
+
+    const svgProps = {
       width: '100%',
       height: '100%',
-      backgroundColor: element.backgroundColor,
-      border: `${element.borderWidth}px solid ${element.borderColor}`,
-      borderRadius: element.borderRadius ? `${element.borderRadius}px` : '0'
+      viewBox,
+      preserveAspectRatio: 'none',
+      style: { display: 'block' }
     };
 
-    switch (element.content) {
-      case 'circle':
-        return <div style={{ ...style, borderRadius: '50%' }} />;
-      case 'triangle':
-        return (
-          <div style={{ width: 0, height: 0, borderLeft: `${element.width / 2}px solid transparent`, borderRight: `${element.width / 2}px solid transparent`, borderBottom: `${element.height}px solid ${element.backgroundColor}` }} />
-        );
-      case 'star':
-        return <div style={{ fontSize: element.width, lineHeight: '1' }}>⭐</div>;
-      case 'heart':
-        return <div style={{ fontSize: element.width, lineHeight: '1' }}>❤️</div>;
-      case 'hexagon':
-        return <div style={{ ...style, clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }} />;
-      default:
-        return <div style={style} />;
-    }
+    const getPath = (shapeId: string): string => {
+      const shapes: Record<string, string> = {
+        // Basic Shapes
+        'rectangle': `M 0,0 L ${w},0 L ${w},${h} L 0,${h} Z`,
+        'circle': `M ${w/2},0 A ${w/2},${h/2} 0 1,1 ${w/2},${h} A ${w/2},${h/2} 0 1,1 ${w/2},0`,
+        'oval': `M ${w*0.1},${h/2} A ${w*0.4},${h/2} 0 1,1 ${w*0.9},${h/2} A ${w*0.4},${h/2} 0 1,1 ${w*0.1},${h/2}`,
+        'triangle': `M ${w/2},0 L ${w},${h} L 0,${h} Z`,
+        'parallelogram': `M ${w*0.2},0 L ${w},0 L ${w*0.8},${h} L 0,${h} Z`,
+        'diamond': `M ${w/2},0 L ${w},${h/2} L ${w/2},${h} L 0,${h/2} Z`,
+        'pentagon': `M ${w/2},0 L ${w},${h*0.35} L ${w*0.8},${h} L ${w*0.2},${h} L 0,${h*0.35} Z`,
+        'hexagon': `M ${w*0.25},0 L ${w*0.75},0 L ${w},${h/2} L ${w*0.75},${h} L ${w*0.25},${h} L 0,${h/2} Z`,
+        'octagon': `M ${w*0.3},0 L ${w*0.7},0 L ${w},${h*0.3} L ${w},${h*0.7} L ${w*0.7},${h} L ${w*0.3},${h} L 0,${h*0.7} L 0,${h*0.3} Z`,
+        'trapezoid': `M ${w*0.2},0 L ${w*0.8},0 L ${w},${h} L 0,${h} Z`,
+        'crescent': `M ${w*0.3},${h/2} A ${w*0.35},${h/2} 0 1,1 ${w*0.3},${h/2} A ${w*0.2},${h/2} 0 1,0 ${w*0.3},${h/2}`,
+        'half-circle': `M 0,${h/2} A ${w/2},${h/2} 0 0,1 ${w},${h/2} L ${w},${h} L 0,${h} Z`,
+        'l-shape': `M 0,0 L ${w*0.6},0 L ${w*0.6},${h*0.4} L ${w},${h*0.4} L ${w},${h} L 0,${h} Z`,
+        'plus': `M ${w*0.4},0 L ${w*0.6},0 L ${w*0.6},${h*0.4} L ${w},${h*0.4} L ${w},${h*0.6} L ${w*0.6},${h*0.6} L ${w*0.6},${h} L ${w*0.4},${h} L ${w*0.4},${h*0.6} L 0,${h*0.6} L 0,${h*0.4} L ${w*0.4},${h*0.4} Z`,
+        'cross': `M ${w*0.3},0 L ${w*0.7},0 L ${w*0.7},${h*0.3} L ${w},${h*0.3} L ${w},${h*0.7} L ${w*0.7},${h*0.7} L ${w*0.7},${h} L ${w*0.3},${h} L ${w*0.3},${h*0.7} L 0,${h*0.7} L 0,${h*0.3} L ${w*0.3},${h*0.3} Z`,
+        
+        // Rectangles
+        'rectangle-rounded': `M ${w*0.1},0 L ${w*0.9},0 Q ${w},0 ${w},${h*0.1} L ${w},${h*0.9} Q ${w},${h} ${w*0.9},${h} L ${w*0.1},${h} Q 0,${h} 0,${h*0.9} L 0,${h*0.1} Q 0,0 ${w*0.1},0 Z`,
+        'rectangle-chamfer': `M ${w*0.15},0 L ${w*0.85},0 L ${w},${h*0.15} L ${w},${h*0.85} L ${w*0.85},${h} L ${w*0.15},${h} L 0,${h*0.85} L 0,${h*0.15} Z`,
+        
+        // Arrows
+        'arrow-right': `M 0,${h/2} L ${w*0.7},${h/2} L ${w*0.7},0 L ${w},${h/2} L ${w*0.7},${h} L ${w*0.7},${h/2} Z`,
+        'arrow-left': `M ${w},${h/2} L ${w*0.3},${h/2} L ${w*0.3},0 L 0,${h/2} L ${w*0.3},${h} L ${w*0.3},${h/2} Z`,
+        'arrow-up': `M ${w/2},${h} L ${w/2},${h*0.3} L 0,${h*0.3} L ${w/2},0 L ${w},${h*0.3} L ${w/2},${h*0.3} Z`,
+        'arrow-down': `M ${w/2},0 L ${w/2},${h*0.7} L 0,${h*0.7} L ${w/2},${h} L ${w},${h*0.7} L ${w/2},${h*0.7} Z`,
+        'arrow-double-h': `M 0,${h/2} L ${w*0.2},${h/2} L ${w*0.2},0 L ${w*0.4},${h/2} L ${w*0.2},${h} L ${w*0.2},${h/2} M ${w*0.6},${h/2} L ${w*0.8},${h/2} L ${w*0.8},0 L ${w},${h/2} L ${w*0.8},${h} L ${w*0.8},${h/2} Z`,
+        'arrow-double-v': `M ${w/2},0 L ${w/2},${h*0.2} L 0,${h*0.2} L ${w/2},${h*0.4} L ${w},${h*0.2} L ${w/2},${h*0.2} M ${w/2},${h*0.6} L ${w/2},${h*0.8} L 0,${h*0.8} L ${w/2},${h} L ${w},${h*0.8} L ${w/2},${h*0.8} Z`,
+        'arrow-l-up-right': `M 0,${h} L ${w*0.6},${h} L ${w*0.6},${h*0.4} L ${w},${h*0.4} L ${w},0 L ${w*0.6},0 L ${w*0.6},${h*0.4} L 0,${h*0.4} Z`,
+        'arrow-l-up-left': `M ${w},${h} L ${w*0.4},${h} L ${w*0.4},${h*0.4} L 0,${h*0.4} L 0,0 L ${w*0.4},0 L ${w*0.4},${h*0.4} L ${w},${h*0.4} Z`,
+        'arrow-l-down-right': `M 0,0 L ${w*0.6},0 L ${w*0.6},${h*0.6} L ${w},${h*0.6} L ${w},${h} L ${w*0.6},${h} L ${w*0.6},${h*0.6} L 0,${h*0.6} Z`,
+        'arrow-l-down-left': `M ${w},0 L ${w*0.4},0 L ${w*0.4},${h*0.6} L 0,${h*0.6} L 0,${h} L ${w*0.4},${h} L ${w*0.4},${h*0.6} L ${w},${h*0.6} Z`,
+        'arrow-u-turn-right': `M ${w*0.2},${h} Q 0,${h} 0,${h*0.8} Q 0,${h*0.6} ${w*0.2},${h*0.6} L ${w*0.6},${h*0.6} L ${w*0.6},0 L ${w},0 L ${w},${h*0.4} L ${w*0.6},${h*0.4} L ${w*0.6},${h*0.8} Q ${w*0.6},${h} ${w*0.4},${h} Z`,
+        'arrow-u-turn-left': `M ${w*0.8},${h} Q ${w},${h} ${w},${h*0.8} Q ${w},${h*0.6} ${w*0.8},${h*0.6} L ${w*0.4},${h*0.6} L ${w*0.4},0 L 0,0 L 0,${h*0.4} L ${w*0.4},${h*0.4} L ${w*0.4},${h*0.8} Q ${w*0.4},${h} ${w*0.6},${h} Z`,
+        'arrow-curved-up': `M 0,${h} Q ${w/2},${h*0.3} ${w},${h} L ${w*0.7},${h*0.7} L ${w},${h*0.4} L ${w*0.6},0 L ${w*0.3},${h*0.4} L ${w*0.6},${h*0.7} Z`,
+        'arrow-curved-down': `M 0,0 Q ${w/2},${h*0.7} ${w},0 L ${w*0.7},${h*0.3} L ${w},${h*0.6} L ${w*0.6},${h} L ${w*0.3},${h*0.6} L ${w*0.6},${h*0.3} Z`,
+        'arrow-block-right': `M 0,0 L ${w*0.7},0 L ${w*0.7},${h*0.3} L ${w},${h/2} L ${w*0.7},${h*0.7} L ${w*0.7},${h} L 0,${h} Z`,
+        'arrow-block-left': `M ${w},0 L ${w*0.3},0 L ${w*0.3},${h*0.3} L 0,${h/2} L ${w*0.3},${h*0.7} L ${w*0.3},${h} L ${w},${h} Z`,
+        'arrow-block-up': `M 0,${h} L 0,${h*0.3} L ${w*0.3},${h*0.3} L ${w/2},0 L ${w*0.7},${h*0.3} L ${w},${h*0.3} L ${w},${h} Z`,
+        'arrow-block-down': `M 0,0 L 0,${h*0.7} L ${w*0.3},${h*0.7} L ${w/2},${h} L ${w*0.7},${h*0.7} L ${w},${h*0.7} L ${w},0 Z`,
+        
+        // Stars
+        'star-4': generateStarPath(w, h, 4),
+        'star-5': generateStarPath(w, h, 5),
+        'star-6': generateStarPath(w, h, 6),
+        'star-7': generateStarPath(w, h, 7),
+        'star-8': generateStarPath(w, h, 8),
+        'star-10': generateStarPath(w, h, 10),
+        'star-12': generateStarPath(w, h, 12),
+        'star-16': generateStarPath(w, h, 16),
+        'star-24': generateStarPath(w, h, 24),
+        'star-32': generateStarPath(w, h, 32),
+        'star': generateStarPath(w, h, 5),
+        
+        // Lines
+        'line-straight': `M 0,${h/2} L ${w},${h/2}`,
+        'line-diagonal': `M 0,0 L ${w},${h}`,
+        'line-arrow': `M 0,${h/2} L ${w*0.8},${h/2} M ${w*0.7},${h*0.3} L ${w},${h/2} L ${w*0.7},${h*0.7}`,
+        'line-l': `M 0,${h/2} L ${w/2},${h/2} L ${w/2},${h}`,
+        'line-curved': `M 0,${h/2} Q ${w/2},0 ${w},${h/2}`,
+        'line-squiggly': `M 0,${h/2} Q ${w*0.2},${h*0.3} ${w*0.4},${h/2} T ${w*0.8},${h/2} T ${w},${h/2}`,
+        
+        // Flowchart
+        'flowchart-process': `M 0,0 L ${w},0 L ${w},${h} L 0,${h} Z`,
+        'flowchart-decision': `M ${w/2},0 L ${w},${h/2} L ${w/2},${h} L 0,${h/2} Z`,
+        'flowchart-input': `M ${w*0.15},0 L ${w*0.85},0 L ${w},${h/2} L ${w*0.85},${h} L ${w*0.15},${h} L 0,${h/2} Z`,
+        'flowchart-predefined': `M 0,0 L ${w*0.85},0 L ${w},${h/2} L ${w*0.85},${h} L 0,${h} Z M ${w*0.85},0 L ${w*0.85},${h}`,
+        'flowchart-data': `M ${w*0.2},0 Q ${w*0.1},0 ${w*0.1},${h*0.1} L ${w*0.1},${h*0.9} Q ${w*0.1},${h} ${w*0.2},${h} L ${w*0.8},${h} Q ${w*0.9},${h} ${w*0.9},${h*0.9} L ${w*0.9},${h*0.1} Q ${w*0.9},0 ${w*0.8},0 Z`,
+        'flowchart-document': `M 0,0 L ${w*0.7},0 L ${w},${h*0.3} L ${w},${h} L 0,${h} Z M ${w*0.7},0 L ${w*0.7},${h*0.3} L ${w},${h*0.3}`,
+        'flowchart-terminator': `M ${w*0.2},0 Q 0,0 0,${h*0.2} L 0,${h*0.8} Q 0,${h} ${w*0.2},${h} L ${w*0.8},${h} Q ${w},${h} ${w},${h*0.8} L ${w},${h*0.2} Q ${w},0 ${w*0.8},0 Z`,
+        'flowchart-connector': `M ${w/2},0 A ${w/2},${h/2} 0 1,1 ${w/2},${h} A ${w/2},${h/2} 0 1,1 ${w/2},0`,
+        'flowchart-manual': `M ${w/2},0 L ${w},${h*0.3} L ${w*0.8},${h} L ${w*0.2},${h} L 0,${h*0.3} Z`,
+        'flowchart-delay': `M 0,0 L ${w},0 L ${w*0.7},${h/2} L ${w},${h} L 0,${h} L ${w*0.3},${h/2} Z`,
+        'flowchart-or': `M ${w/2},0 L ${w},${h/2} L ${w/2},${h} L 0,${h/2} Z M ${w*0.3},${h*0.3} L ${w*0.7},${h*0.7} M ${w*0.7},${h*0.3} L ${w*0.3},${h*0.7}`,
+        'flowchart-preparation': `M ${w/2},0 L ${w},${h} L 0,${h} Z`,
+        'flowchart-merge': `M 0,0 L ${w},0 L ${w/2},${h} Z`,
+        
+        // Equation
+        'eq-plus': `M ${w*0.4},0 L ${w*0.6},0 L ${w*0.6},${h*0.4} L ${w},${h*0.4} L ${w},${h*0.6} L ${w*0.6},${h*0.6} L ${w*0.6},${h} L ${w*0.4},${h} L ${w*0.4},${h*0.6} L 0,${h*0.6} L 0,${h*0.4} L ${w*0.4},${h*0.4} Z`,
+        'eq-minus': `M 0,${h*0.45} L ${w},${h*0.45} L ${w},${h*0.55} L 0,${h*0.55} Z`,
+        'eq-multiply': `M 0,0 L ${w},${h} M ${w},0 L 0,${h}`,
+        'eq-divide': `M 0,${h/2} L ${w},${h/2} M ${w/2},${h*0.2} A ${w*0.15},${w*0.15} 0 1,1 ${w/2},${h*0.8} A ${w*0.15},${w*0.15} 0 1,1 ${w/2},${h*0.2} M ${w/2},${h*0.8} A ${w*0.15},${w*0.15} 0 1,1 ${w/2},${h*0.2}`,
+        'eq-equals': `M 0,${h*0.35} L ${w},${h*0.35} M 0,${h*0.65} L ${w},${h*0.65}`,
+        'eq-not-equals': `M 0,${h*0.35} L ${w},${h*0.35} M 0,${h*0.65} L ${w},${h*0.65} M ${w*0.5},0 L ${w*0.5},${h*0.25} M ${w*0.5},${h*0.75} L ${w*0.5},${h}`,
+        
+        // Banners
+        'banner-ribbon': `M 0,${h*0.3} L ${w*0.2},0 L ${w*0.8},0 L ${w},${h*0.3} L ${w},${h} L 0,${h} Z`,
+        'banner-folded': `M 0,${h*0.4} L ${w*0.15},0 L ${w*0.85},0 L ${w},${h*0.4} L ${w*0.85},${h*0.6} L ${w*0.15},${h*0.6} Z M ${w*0.15},${h*0.6} L ${w*0.85},${h*0.6} L ${w},${h} L 0,${h} Z`,
+        'banner-wave': `M 0,${h*0.3} Q ${w*0.2},${h*0.1} ${w*0.4},${h*0.3} T ${w*0.8},${h*0.3} T ${w},${h*0.3} L ${w},${h} L 0,${h} Z`,
+        
+        // Symbols
+        'heart': `M ${w/2},${h*0.7} C ${w/2},${h*0.7} ${w*0.1},${h*0.5} ${w*0.1},${h*0.35} C ${w*0.1},${h*0.2} ${w*0.25},${h*0.15} ${w*0.4},${h*0.25} C ${w*0.55},${h*0.15} ${w*0.7},${h*0.2} ${w*0.7},${h*0.35} C ${w*0.7},${h*0.5} ${w/2},${h*0.7} ${w/2},${h*0.7} Z`,
+        'lightning': `M ${w*0.4},0 L ${w*0.6},${h*0.4} L ${w*0.5},${h*0.4} L ${w*0.7},${h} L ${w*0.3},${h*0.6} L ${w*0.4},${h*0.6} Z`,
+        'sun': `M ${w/2},0 L ${w/2},${h*0.15} M ${w/2},${h*0.85} L ${w/2},${h} M 0,${h/2} L ${w*0.15},${h/2} M ${w*0.85},${h/2} L ${w},${h/2} M ${w*0.15},${h*0.15} L ${w*0.25},${h*0.25} M ${w*0.75},${h*0.75} L ${w*0.85},${h*0.85} M ${w*0.85},${h*0.15} L ${w*0.75},${h*0.25} M ${w*0.25},${h*0.75} L ${w*0.15},${h*0.85} M ${w/2},${h/2} A ${w*0.3},${h*0.3} 0 1,1 ${w/2},${h/2}`,
+        'cloud': `M ${w*0.2},${h*0.5} Q ${w*0.1},${h*0.4} ${w*0.2},${h*0.3} Q ${w*0.2},${h*0.15} ${w*0.35},${h*0.15} Q ${w*0.4},${h*0.05} ${w*0.5},${h*0.1} Q ${w*0.6},${h*0.05} ${w*0.7},${h*0.15} Q ${w*0.85},${h*0.15} ${w*0.85},${h*0.3} Q ${w*0.9},${h*0.4} ${w*0.8},${h*0.5} L ${w*0.2},${h*0.5} Z`,
+        'bracket-open': `M ${w*0.8},0 L ${w*0.2},0 Q 0,0 0,${h/2} Q 0,${h} ${w*0.2},${h} L ${w*0.8},${h}`,
+        'bracket-close': `M ${w*0.2},0 L ${w*0.8},0 Q ${w},0 ${w},${h/2} Q ${w},${h} ${w*0.8},${h} L ${w*0.2},${h}`,
+        'brace-open': `M ${w*0.9},0 Q ${w*0.7},0 ${w*0.7},${h*0.2} Q ${w*0.7},${h*0.4} ${w*0.5},${h*0.4} Q ${w*0.3},${h*0.4} ${w*0.3},${h*0.6} Q ${w*0.3},${h*0.8} ${w*0.5},${h*0.8} Q ${w*0.7},${h*0.8} ${w*0.7},${h} Q ${w*0.7},${h} ${w*0.9},${h}`,
+        'brace-close': `M ${w*0.1},0 Q ${w*0.3},0 ${w*0.3},${h*0.2} Q ${w*0.3},${h*0.4} ${w*0.5},${h*0.4} Q ${w*0.7},${h*0.4} ${w*0.7},${h*0.6} Q ${w*0.7},${h*0.8} ${w*0.5},${h*0.8} Q ${w*0.3},${h*0.8} ${w*0.3},${h} Q ${w*0.3},${h} ${w*0.1},${h}`,
+        'cylinder': `M ${w*0.2},${h*0.1} Q ${w*0.1},${h*0.1} ${w*0.1},${h*0.2} L ${w*0.1},${h*0.8} Q ${w*0.1},${h*0.9} ${w*0.2},${h*0.9} L ${w*0.8},${h*0.9} Q ${w*0.9},${h*0.9} ${w*0.9},${h*0.8} L ${w*0.9},${h*0.2} Q ${w*0.9},${h*0.1} ${w*0.8},${h*0.1} Z M ${w*0.1},${h*0.2} Q ${w*0.2},${h*0.15} ${w*0.3},${h*0.2} Q ${w*0.5},${h*0.2} ${w*0.7},${h*0.2} Q ${w*0.8},${h*0.15} ${w*0.9},${h*0.2}`,
+        'cube': `M ${w*0.2},0 L ${w*0.8},0 L ${w},${h*0.3} L ${w},${h*0.7} L ${w*0.8},${h} L ${w*0.2},${h} L 0,${h*0.7} L 0,${h*0.3} Z M ${w*0.2},0 L 0,${h*0.3} L 0,${h*0.7} L ${w*0.2},${h} M ${w*0.8},0 L ${w},${h*0.3} L ${w},${h*0.7} L ${w*0.8},${h}`,
+      };
+      return shapes[shapeId] || shapes['rectangle'];
+    };
+
+    const path = getPath(element.content);
+    const isLine = element.content.startsWith('line-');
+    const isEquation = element.content.startsWith('eq-');
+
+    return (
+      <svg {...svgProps}>
+        <path
+          d={path}
+          fill={isLine || isEquation ? 'none' : fill}
+          stroke={stroke}
+          strokeWidth={isLine || isEquation || strokeWidth > 0 ? (isLine || isEquation ? Math.max(2, strokeWidth) : strokeWidth) : 0}
+          fillRule="evenodd"
+        />
+      </svg>
+    );
   };
+
+  // Helper function to generate star paths
+  function generateStarPath(w: number, h: number, points: number): string {
+    const centerX = w / 2;
+    const centerY = h / 2;
+    const outerRadius = Math.min(w, h) / 2;
+    const innerRadius = outerRadius * 0.4;
+    const angleStep = (Math.PI * 2) / points;
+    let path = '';
+
+    for (let i = 0; i < points * 2; i++) {
+      const angle = i * angleStep / 2 - Math.PI / 2;
+      const radius = i % 2 === 0 ? outerRadius : innerRadius;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+      path += i === 0 ? `M ${x},${y}` : ` L ${x},${y}`;
+    }
+    path += ' Z';
+    return path;
+  }
 
   // Get filter CSS
   const getFilterCSS = (element: CanvasElement) => {
@@ -837,6 +1190,13 @@ export function CustomSignageEditor() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleSaveToLibrary}
+            className="px-4 py-1.5 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium flex items-center gap-2"
+          >
+            <Save className="w-4 h-4" />
+            Save to Library
+          </button>
           <button
             onClick={() => setShowAIModal(true)}
             className="px-4 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg text-sm font-medium flex items-center gap-2"
@@ -896,14 +1256,28 @@ export function CustomSignageEditor() {
               <input
                 type="color"
                 value={fillColor}
-                onChange={(e) => setFillColor(e.target.value)}
+                onChange={(e) => {
+                  const newColor = e.target.value;
+                  setFillColor(newColor);
+                  // Update selected shape if it's a shape
+                  if (selected && selected.type === 'shape') {
+                    updateElement(selected.id, { backgroundColor: newColor });
+                  }
+                }}
                 className="w-10 h-5 rounded cursor-pointer border border-slate-600"
                 title="Fill Color"
               />
               <input
                 type="color"
                 value={strokeColor}
-                onChange={(e) => setStrokeColor(e.target.value)}
+                onChange={(e) => {
+                  const newColor = e.target.value;
+                  setStrokeColor(newColor);
+                  // Update selected shape if it's a shape
+                  if (selected && selected.type === 'shape') {
+                    updateElement(selected.id, { borderColor: newColor });
+                  }
+                }}
                 className="w-10 h-5 rounded cursor-pointer border border-slate-600"
                 title="Stroke Color"
               />
@@ -993,25 +1367,63 @@ export function CustomSignageEditor() {
                     </div>
                   </div>
 
-                  {/* Shapes */}
-                  <div>
-                    <h3 className="text-sm font-semibold mb-3">Shapes</h3>
-                    <div className="grid grid-cols-4 gap-2">
-                      {['rectangle', 'circle', 'triangle', 'star', 'heart', 'hexagon'].map((shape) => (
-                        <button
-                          key={shape}
-                          onClick={() => addShape(shape)}
-                          className="aspect-square bg-slate-700 hover:bg-slate-600 rounded-lg flex items-center justify-center border border-slate-600 hover:border-blue-500"
-                        >
-                          {shape === 'rectangle' && <Square className="w-6 h-6" />}
-                          {shape === 'circle' && <Circle className="w-6 h-6" />}
-                          {shape === 'triangle' && <Triangle className="w-6 h-6" />}
-                          {shape === 'star' && <Star className="w-6 h-6" />}
-                          {shape === 'heart' && <Heart className="w-6 h-6" />}
-                          {shape === 'hexagon' && <Hexagon className="w-6 h-6" />}
-                        </button>
-                      ))}
+                  {/* Shapes - Comprehensive Library */}
+                  <div className="space-y-4">
+                    <div className="relative mb-4">
+                      <Search className="w-4 h-4 absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={shapeSearch}
+                        onChange={(e) => setShapeSearch(e.target.value)}
+                        placeholder="Search shapes..."
+                        className="w-full pl-8 pr-3 py-2 bg-slate-700 border border-slate-600 rounded text-sm focus:outline-none focus:border-blue-500"
+                      />
                     </div>
+                    
+                    {Object.entries(SHAPE_CATEGORIES).map(([category, shapes]) => {
+                      // Filter shapes based on search
+                      const filteredShapes = shapeSearch
+                        ? shapes.filter(shape => 
+                            shape.name.toLowerCase().includes(shapeSearch.toLowerCase()) ||
+                            shape.id.toLowerCase().includes(shapeSearch.toLowerCase())
+                          )
+                        : shapes;
+                      
+                      if (filteredShapes.length === 0) return null;
+                      
+                      const isExpanded = expandedCategories[category] ?? true;
+                      const categoryName = category.replace(/([A-Z])/g, ' $1').trim();
+                      
+                      return (
+                        <div key={category} className="border-b border-slate-700 pb-3 last:border-0">
+                          <button
+                            onClick={() => setExpandedCategories(prev => ({ ...prev, [category]: !isExpanded }))}
+                            className="w-full flex items-center justify-between mb-3 text-sm font-semibold hover:text-blue-400 transition-colors"
+                          >
+                            <span className="capitalize">{categoryName}</span>
+                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </button>
+                          
+                          {isExpanded && (
+                            <div className="grid grid-cols-4 gap-2">
+                              {filteredShapes.map((shape) => {
+                                const Icon = shape.icon;
+                                return (
+                                  <button
+                                    key={shape.id}
+                                    onClick={() => addShape(shape.id)}
+                                    className="aspect-square bg-slate-700 hover:bg-slate-600 rounded-lg flex items-center justify-center border border-slate-600 hover:border-blue-500 group relative"
+                                    title={shape.name}
+                                  >
+                                    <Icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Icons Library */}

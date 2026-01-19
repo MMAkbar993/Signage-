@@ -13,6 +13,8 @@ export const EmergencyResponseTeam = ({ activeNav, setActiveNav, sidebarOpen, se
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [headerTitle, setHeaderTitle] = useState('EMERGENCY RESPONSE TEAM')
   const [headerSubtitle, setHeaderSubtitle] = useState('Safety Committee Members')
+  const [draggedMember, setDraggedMember] = useState(null)
+  const [dragOverIndex, setDragOverIndex] = useState(null)
   const previewRef = useRef(null)
 
   // Load from localStorage on mount
@@ -98,6 +100,52 @@ export const EmergencyResponseTeam = ({ activeNav, setActiveNav, sidebarOpen, se
         member.parentId === id ? { ...member, parentId: null } : member
       )
     })
+  }
+
+  const handleDragStart = (e, index) => {
+    setDraggedMember(index)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/html', e.target.outerHTML)
+    e.target.style.opacity = '0.5'
+  }
+
+  const handleDragEnd = (e) => {
+    e.target.style.opacity = '1'
+    setDraggedMember(null)
+    setDragOverIndex(null)
+  }
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (draggedMember !== null && draggedMember !== index) {
+      setDragOverIndex(index)
+    }
+  }
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null)
+  }
+
+  const handleDrop = (e, dropIndex) => {
+    e.preventDefault()
+    if (draggedMember === null || draggedMember === dropIndex) {
+      setDragOverIndex(null)
+      return
+    }
+
+    const newCommittee = [...safetyCommittee]
+    const draggedItem = newCommittee[draggedMember]
+    
+    // Remove the dragged item
+    newCommittee.splice(draggedMember, 1)
+    
+    // Insert at new position
+    newCommittee.splice(dropIndex, 0, draggedItem)
+    
+    setSafetyCommittee(newCommittee)
+    setDraggedMember(null)
+    setDragOverIndex(null)
   }
 
   const roles = [
@@ -278,8 +326,29 @@ export const EmergencyResponseTeam = ({ activeNav, setActiveNav, sidebarOpen, se
                   </div>
                   {safetyCommittee.length > 0 && (
                     <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {safetyCommittee.map((member) => (
-                        <div key={member.id} className="p-3 border-2 border-gray-200 rounded-lg">
+                      {safetyCommittee.map((member, index) => (
+                        <div
+                          key={member.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, index)}
+                          onDragOver={(e) => handleDragOver(e, index)}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => handleDrop(e, index)}
+                          onDragEnd={handleDragEnd}
+                          className={`p-3 border-2 rounded-lg transition-all cursor-move relative ${
+                            dragOverIndex === index ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                          } ${draggedMember === index ? 'opacity-50' : ''}`}
+                        >
+                          {/* Order Number Badge */}
+                          <div className="absolute top-2 left-2 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                            {index + 1}
+                          </div>
+                          {/* Drag Handle */}
+                          <div className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                            </svg>
+                          </div>
                           {/* Photo Upload */}
                           <div className="mb-3 flex justify-center">
                             {member.photo ? (
@@ -387,9 +456,13 @@ export const EmergencyResponseTeam = ({ activeNav, setActiveNav, sidebarOpen, se
                   ref={previewRef}
                   className="bg-white border-4 border-black rounded-lg overflow-hidden preview-container relative"
                   style={{
-                    aspectRatio: '4/3',
                     minHeight: '500px',
-                    maxHeight: '700px',
+                    height: safetyCommittee.length === 0 
+                      ? '500px'
+                      : safetyCommittee.length <= 3
+                      ? '600px'
+                      : `${Math.ceil(safetyCommittee.length / 3) * 300 + 250}px`,
+                    maxHeight: 'none',
                     background: 'linear-gradient(to bottom, #f3f4f6, #ffffff)'
                   }}
                 >
@@ -406,9 +479,9 @@ export const EmergencyResponseTeam = ({ activeNav, setActiveNav, sidebarOpen, se
                   </div>
 
                   {/* Content Section */}
-                  <div className="p-4 sm:p-6 flex-1 overflow-y-auto">
+                  <div className="p-4 sm:p-6" style={{ minHeight: '300px' }}>
                     {safetyCommittee.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                      <div className="flex flex-col items-center justify-center h-full text-gray-400" style={{ minHeight: '300px' }}>
                         <svg className="w-24 h-24 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
@@ -417,11 +490,23 @@ export const EmergencyResponseTeam = ({ activeNav, setActiveNav, sidebarOpen, se
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                        {safetyCommittee.map((member) => (
+                        {safetyCommittee.map((member, index) => (
                           <div
                             key={member.id}
-                            className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-md hover:shadow-lg transition-shadow"
+                            className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-md hover:shadow-lg transition-shadow relative group"
                           >
+                            {/* Order Number Badge */}
+                            <div className="absolute top-2 right-2 w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-md z-10">
+                              {index + 1}
+                            </div>
+                            {/* Remove Button */}
+                            <button
+                              onClick={() => removeCommitteeMember(member.id)}
+                              className="absolute top-2 left-2 w-7 h-7 bg-red-600 text-white rounded-full flex items-center justify-center text-lg font-bold shadow-md hover:bg-red-700 transition-colors z-10"
+                              title="Remove member"
+                            >
+                              ×
+                            </button>
                             <div className="text-center">
                               {/* Photo */}
                               <div className="mb-3 flex justify-center">

@@ -294,7 +294,7 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
   const [isDragging, setIsDragging] = useState<string | null>(null);
   const [isResizing, setIsResizing] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, offsetX: 0, offsetY: 0 });
-  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0, aspectRatio: 1 });
   
   const config = signageData.category === 'custom' 
     ? {
@@ -374,7 +374,16 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
     const x = e.clientX;
     const y = e.clientY;
     
-    setResizeStart({ x, y, width: logoConfig.size.width, height: logoConfig.size.height });
+    // Calculate aspect ratio to maintain during resize
+    const aspectRatio = logoConfig.size.width / logoConfig.size.height;
+    
+    setResizeStart({ 
+      x, 
+      y, 
+      width: logoConfig.size.width, 
+      height: logoConfig.size.height,
+      aspectRatio 
+    });
   };
 
   // Handle mouse move for dragging and resizing
@@ -416,22 +425,61 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
           });
         }
       } else if (isResizing) {
-        const rect = headerRef.current.getBoundingClientRect();
+        // Resize from bottom-right corner only - top-left position stays fixed
         const deltaX = e.clientX - resizeStart.x;
         const deltaY = e.clientY - resizeStart.y;
         
-        const newWidth = Math.max(40, Math.min(300, resizeStart.width + deltaX));
-        const newHeight = Math.max(30, Math.min(200, resizeStart.height + deltaY));
+        // Calculate new size based on mouse movement from the resize handle
+        // Use the larger delta to determine scale, maintaining aspect ratio
+        const scaleX = (resizeStart.width + deltaX) / resizeStart.width;
+        const scaleY = (resizeStart.height + deltaY) / resizeStart.height;
         
+        // Use the average of both scales to maintain aspect ratio
+        const scale = (scaleX + scaleY) / 2;
+        
+        // Calculate new dimensions maintaining aspect ratio
+        let newWidth = resizeStart.width * scale;
+        let newHeight = newWidth / resizeStart.aspectRatio;
+        
+        // Apply constraints while maintaining aspect ratio
+        const minWidth = 40;
+        const minHeight = 30;
+        const maxWidth = 300;
+        const maxHeight = 200;
+        
+        // Clamp to min/max while maintaining aspect ratio
+        if (newWidth < minWidth) {
+          newWidth = minWidth;
+          newHeight = newWidth / resizeStart.aspectRatio;
+        } else if (newWidth > maxWidth) {
+          newWidth = maxWidth;
+          newHeight = newWidth / resizeStart.aspectRatio;
+        }
+        
+        // Check height constraints and adjust if needed
+        if (newHeight < minHeight) {
+          newHeight = minHeight;
+          newWidth = newHeight * resizeStart.aspectRatio;
+        } else if (newHeight > maxHeight) {
+          newHeight = maxHeight;
+          newWidth = newHeight * resizeStart.aspectRatio;
+        }
+        
+        // IMPORTANT: Only update size, NOT position - position stays fixed at top-left
+        // Explicitly preserve the current position to ensure it doesn't change
         if (isResizing === 'client') {
           onBrandingConfigChange({
             ...brandingConfig,
-            clientLogoSize: { width: newWidth, height: newHeight }
+            // Explicitly preserve position - only size changes from bottom-right
+            clientLogoPosition: brandingConfig.clientLogoPosition || { x: 5, y: 5 },
+            clientLogoSize: { width: Math.round(newWidth), height: Math.round(newHeight) }
           });
         } else {
           onBrandingConfigChange({
             ...brandingConfig,
-            contractorLogoSize: { width: newWidth, height: newHeight }
+            // Explicitly preserve position - only size changes from bottom-right
+            contractorLogoPosition: brandingConfig.contractorLogoPosition || { x: 95, y: 5 },
+            contractorLogoSize: { width: Math.round(newWidth), height: Math.round(newHeight) }
           });
         }
       }
@@ -589,10 +637,19 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                   ⚠ HAZARDS
                 </div>
               </div>
-              <div style="display: grid; gap: 8px;">
-                ${displayHazards.map(hazard => `
-                  <div style="padding: 8px 12px; background: #fef2f2; border-left: 3px solid #dc2626; border-radius: 4px;">
-                    <div style="font-size: 12px; color: #1e293b;">
+              <div style="display: grid; grid-template-columns: repeat(${
+                displayHazards.length <= 4 ? 4 :
+                displayHazards.length <= 6 ? 3 :
+                displayHazards.length <= 12 ? 4 :
+                displayHazards.length <= 20 ? 5 :
+                6
+              }, 1fr); gap: 8px;">
+                ${displayHazards.map((hazard, index) => `
+                  <div style="background: #dc2626; border-radius: 4px; padding: 8px; text-align: center;">
+                    <div style="width: 20px; height: 20px; background: white; color: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 4px auto; font-size: 10px; font-weight: bold;">
+                      ${index + 1}
+                    </div>
+                    <div style="font-size: 9px; color: white; text-transform: uppercase; line-height: 1.2;">
                       ⚠ ${hazard}
                     </div>
                   </div>
@@ -637,13 +694,19 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                   ✓ SAFETY PROCEDURES
                 </div>
               </div>
-              <div style="display: grid; gap: 8px;">
+              <div style="display: grid; grid-template-columns: repeat(${
+                displayProcedures.length <= 4 ? 4 :
+                displayProcedures.length <= 6 ? 3 :
+                displayProcedures.length <= 12 ? 4 :
+                displayProcedures.length <= 20 ? 5 :
+                6
+              }, 1fr); gap: 8px;">
                 ${displayProcedures.map((procedure, index) => `
-                  <div style="padding: 8px 12px; background: #f0fdf4; border-radius: 4px;">
-                    <div style="font-size: 12px; color: #1e293b;">
-                      <span style="display: inline-block; width: 20px; height: 20px; background: #16a34a; color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 10px; margin-right: 8px;">
-                        ${index + 1}
-                      </span>
+                  <div style="background: #16a34a; border-radius: 4px; padding: 8px; text-align: center;">
+                    <div style="width: 20px; height: 20px; background: white; color: #16a34a; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 4px auto; font-size: 10px; font-weight: bold;">
+                      ${index + 1}
+                    </div>
+                    <div style="font-size: 9px; color: white; text-transform: uppercase; line-height: 1.2;">
                       ${procedure}
                     </div>
                   </div>
@@ -922,10 +985,19 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                   ⚠ HAZARDS
                 </div>
               </div>
-              <div style="display: grid; gap: 8px;">
-                ${displayHazards.map(hazard => `
-                  <div style="padding: 8px 12px; background: #fef2f2; border-left: 3px solid #dc2626; border-radius: 4px;">
-                    <div style="font-size: 12px; color: #1e293b;">
+              <div style="display: grid; grid-template-columns: repeat(${
+                displayHazards.length <= 4 ? 4 :
+                displayHazards.length <= 6 ? 3 :
+                displayHazards.length <= 12 ? 4 :
+                displayHazards.length <= 20 ? 5 :
+                6
+              }, 1fr); gap: 8px;">
+                ${displayHazards.map((hazard, index) => `
+                  <div style="background: #dc2626; border-radius: 4px; padding: 8px; text-align: center;">
+                    <div style="width: 20px; height: 20px; background: white; color: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 4px auto; font-size: 10px; font-weight: bold;">
+                      ${index + 1}
+                    </div>
+                    <div style="font-size: 9px; color: white; text-transform: uppercase; line-height: 1.2;">
                       ⚠ ${hazard}
                     </div>
                   </div>
@@ -970,13 +1042,19 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                   ✓ SAFETY PROCEDURES
                 </div>
               </div>
-              <div style="display: grid; gap: 8px;">
+              <div style="display: grid; grid-template-columns: repeat(${
+                displayProcedures.length <= 4 ? 4 :
+                displayProcedures.length <= 6 ? 3 :
+                displayProcedures.length <= 12 ? 4 :
+                displayProcedures.length <= 20 ? 5 :
+                6
+              }, 1fr); gap: 8px;">
                 ${displayProcedures.map((procedure, index) => `
-                  <div style="padding: 8px 12px; background: #f0fdf4; border-radius: 4px;">
-                    <div style="font-size: 12px; color: #1e293b;">
-                      <span style="display: inline-block; width: 20px; height: 20px; background: #16a34a; color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 10px; margin-right: 8px;">
-                        ${index + 1}
-                      </span>
+                  <div style="background: #16a34a; border-radius: 4px; padding: 8px; text-align: center;">
+                    <div style="width: 20px; height: 20px; background: white; color: #16a34a; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 4px auto; font-size: 10px; font-weight: bold;">
+                      ${index + 1}
+                    </div>
+                    <div style="font-size: 9px; color: white; text-transform: uppercase; line-height: 1.2;">
                       ${procedure}
                     </div>
                   </div>
@@ -1351,6 +1429,7 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                           borderRadius: '4px',
                           padding: '2px',
                           boxSizing: 'border-box',
+                          transformOrigin: 'top left', // Resize from top-left, keeping it fixed
                         }}
                         onMouseDown={(e) => handleLogoMouseDown(e, 'client')}
                       >
@@ -1414,6 +1493,7 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                           borderRadius: '4px',
                           padding: '2px',
                           boxSizing: 'border-box',
+                          transformOrigin: 'top left', // Resize from top-left, keeping it fixed
                         }}
                         onMouseDown={(e) => handleLogoMouseDown(e, 'contractor')}
                       >
@@ -1528,10 +1608,19 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                       ⚠ HAZARDS
                     </div>
                   </div>
-                  <div className="space-y-2">
+                  <div className={`grid gap-2 ${
+                    displayHazards.length <= 4 ? 'grid-cols-4' :
+                    displayHazards.length <= 6 ? 'grid-cols-3' :
+                    displayHazards.length <= 12 ? 'grid-cols-4' :
+                    displayHazards.length <= 20 ? 'grid-cols-5' :
+                    'grid-cols-6'
+                  }`}>
                     {displayHazards.map((hazard, index) => (
-                      <div key={index} className="px-3 py-2 bg-red-50 border-l-4 border-red-600 rounded">
-                        <div className="text-xs text-slate-900">
+                      <div key={index} className="bg-red-600 rounded p-2 text-center">
+                        <div className="w-5 h-5 bg-white text-red-600 rounded-full flex items-center justify-center mx-auto mb-1 text-[9px] font-bold">
+                          {index + 1}
+                        </div>
+                        <div className="text-[9px] text-white uppercase leading-tight line-clamp-2">
                           ⚠ {hazard}
                         </div>
                       </div>
@@ -1594,16 +1683,20 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                       Safety Procedures
                     </h3>
                   </div>
-                  <div className="space-y-2">
+                  <div className={`grid gap-2 ${
+                    displayProcedures.length <= 4 ? 'grid-cols-4' :
+                    displayProcedures.length <= 6 ? 'grid-cols-3' :
+                    displayProcedures.length <= 12 ? 'grid-cols-4' :
+                    displayProcedures.length <= 20 ? 'grid-cols-5' :
+                    'grid-cols-6'
+                  }`}>
                     {displayProcedures.map((procedure, index) => (
-                      <div key={index} className="px-2 py-2 bg-green-50 rounded">
-                        <div className="flex items-start gap-2">
-                          <div className="w-4 h-4 bg-green-600 text-white rounded-full flex items-center justify-center flex-shrink-0 text-[9px] mt-0.5">
-                            {index + 1}
-                          </div>
-                          <div className="flex-1 text-xs text-slate-800">
-                            {procedure}
-                          </div>
+                      <div key={index} className="bg-green-600 rounded p-2 text-center">
+                        <div className="w-5 h-5 bg-white text-green-600 rounded-full flex items-center justify-center mx-auto mb-1 text-[9px] font-bold">
+                          {index + 1}
+                        </div>
+                        <div className="text-[9px] text-white uppercase leading-tight line-clamp-2">
+                          {procedure}
                         </div>
                       </div>
                     ))}

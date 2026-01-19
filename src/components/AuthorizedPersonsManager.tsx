@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { AuthorizedPerson, SignageCategory } from '../types/signage';
-import { Plus, Trash2, Upload, User, Clock, Phone, Image as ImageIcon, Briefcase, Hash, Building2, Award, Calendar, Eye, ChevronDown, Printer, Layout, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Upload, User, Clock, Phone, Image as ImageIcon, Briefcase, Hash, Building2, Award, Calendar, Eye, ChevronDown, Printer, Layout, Edit2, X, Download } from 'lucide-react';
 import { getCategoryConfig } from '../utils/categoryConfig';
 
 const SHIFT_OPTIONS = [
@@ -41,9 +41,23 @@ export function AuthorizedPersonsManager() {
   
   // Manual resize controls
   const [cardScale, setCardScale] = useState<number>(100); // 20-150%
-  const [photoScale, setPhotoScale] = useState<number>(50); // 50-150% (50% default for landscape)
+  const [photoScales, setPhotoScales] = useState<Map<string, number>>(new Map()); // Individual photo scales per person ID
   const [multiPaperSize, setMultiPaperSize] = useState<'a5' | 'a4' | 'a3' | 'letter' | 'legal'>('a4');
   const [multiOrientation, setMultiOrientation] = useState<'landscape' | 'portrait'>('landscape');
+  
+  // Helper function to get photo scale for a person (defaults to 50% if not set)
+  const getPhotoScale = (personId: string): number => {
+    return photoScales.get(personId) ?? 50;
+  };
+  
+  // Helper function to set photo scale for a person
+  const setPhotoScale = (personId: string, scale: number) => {
+    setPhotoScales(prev => {
+      const newMap = new Map(prev);
+      newMap.set(personId, scale);
+      return newMap;
+    });
+  };
   
   const [formData, setFormData] = useState({
     name: '',
@@ -95,13 +109,7 @@ export function AuthorizedPersonsManager() {
     window.dispatchEvent(new CustomEvent('authorizedPersonsUpdated', { detail: persons }));
   }, [persons]);
 
-  // Set photo size to 50% when landscape orientation is selected
-  useEffect(() => {
-    if (multiOrientation === 'landscape' && prevOrientationRef.current !== 'landscape') {
-      setPhotoScale(50);
-    }
-    prevOrientationRef.current = multiOrientation;
-  }, [multiOrientation]);
+  // Note: Photo scales are now individual per person, no global reset needed
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -227,13 +235,6 @@ export function AuthorizedPersonsManager() {
       backgroundColor: person.backgroundColor || '#ffffff',
     });
     setPreviewImage(person.photo || '');
-    // Scroll to form
-    setTimeout(() => {
-      const formElement = document.getElementById('add-person-form');
-      if (formElement) {
-        formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 100);
   };
 
   const handleUpdatePerson = () => {
@@ -259,30 +260,11 @@ export function AuthorizedPersonsManager() {
         }),
       };
       setPersons(persons.map(p => p.id === editingPerson.id ? updatedPerson : p));
-      // Reset form
-      setEditingPerson(null);
-      setFormData({ 
-        name: '', 
-        shift: '', 
-        designation: '', 
-        employeeId: '', 
-        department: '', 
-        contact: '', 
-        certifications: '', 
-        validFrom: '', 
-        validUntil: '', 
-        photo: '',
-        format: 'paper',
-        category: 'mandatory',
-        paperSize: 'a4',
-        orientation: 'landscape',
-        backgroundColor: '#ffffff',
-      });
-      setPreviewImage('');
+      handleCloseEditModal();
     }
   };
 
-  const handleCancelEdit = () => {
+  const handleCloseEditModal = () => {
     setEditingPerson(null);
     setFormData({ 
       name: '', 
@@ -304,9 +286,97 @@ export function AuthorizedPersonsManager() {
     setPreviewImage('');
   };
 
+  const handleCancelEdit = () => {
+    handleCloseEditModal();
+  };
+
   const handlePrint = () => {
     // Use the native print functionality with proper media queries
     window.print();
+  };
+
+  const handleDownloadPerson = async (person: AuthorizedPerson) => {
+    // Set view mode to show single person
+    setViewMode('multi');
+    setSelectedPersons([person]);
+    
+    // Wait for render, then download
+    setTimeout(async () => {
+      const previewElement = document.getElementById('authorized-preview-content');
+      if (!previewElement) {
+        alert('Preview not ready. Please try again.');
+        return;
+      }
+
+      try {
+        // Use html2canvas to capture the preview
+        const html2canvas = (await import('html2canvas')).default;
+        const canvas = await html2canvas(previewElement, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          allowTaint: true,
+        });
+        
+        const link = document.createElement('a');
+        link.download = `${person.name.replace(/[^a-z0-9]/gi, '_')}_Authorized_Person_Signage.png`;
+        link.href = canvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (error) {
+        console.error('Download failed:', error);
+        // Fallback: trigger print dialog which allows saving as PDF
+        alert('Image download failed. Opening print dialog - you can save as PDF from there.');
+        window.print();
+      }
+    }, 800);
+  };
+
+  const handlePrintPerson = (person: AuthorizedPerson) => {
+    // Set view mode to show single person
+    setViewMode('multi');
+    setSelectedPersons([person]);
+    
+    // Wait for render, then print
+    setTimeout(() => {
+      window.print();
+    }, 500);
+  };
+
+  const handleDownloadPreview = async () => {
+    const previewElement = document.getElementById('authorized-preview-content');
+    if (!previewElement) {
+      alert('Preview not ready. Please try again.');
+      return;
+    }
+
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(previewElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        allowTaint: true,
+      });
+      
+      const link = document.createElement('a');
+      const fileName = selectedPersons.length === 1 
+        ? `${selectedPersons[0].name.replace(/[^a-z0-9]/gi, '_')}_Authorized_Person_Signage.png`
+        : `Authorized_Persons_Signage_${selectedPersons.length}_persons.png`;
+      link.download = fileName;
+      link.href = canvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback: trigger print dialog which allows saving as PDF
+      alert('Image download failed. Opening print dialog - you can save as PDF from there.');
+      window.print();
+    }
   };
 
   const renderMultiPersonLandscape = (persons: AuthorizedPerson[]) => {
@@ -372,9 +442,8 @@ export function AuthorizedPersonsManager() {
     const cardWidth = baseCardWidth * (cardScale / 100);
     const cardHeight = baseCardHeight * (cardScale / 100);
     
-    // Calculate photo size based on manual scale (larger for better identification)
+    // Base photo size for calculations (individual scales applied per person)
     const basePhotoSize = 80;
-    const photoSize = basePhotoSize * (photoScale / 100);
     
     return (
       <div id="authorized-preview-content" style={{ display: 'flex', justifyContent: 'center', padding: '20px', backgroundColor: '#f8fafc' }}>
@@ -462,35 +531,41 @@ export function AuthorizedPersonsManager() {
                 </div>
                 
                 {/* Photo Centered at Top */}
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
-                  {person.photo ? (
-                    <img
-                      src={person.photo}
-                      alt={person.name}
-                      style={{
-                        width: `${photoSize}px`,
-                        height: `${photoSize}px`,
-                        objectFit: 'cover',
-                        borderRadius: '8px',
-                        border: `3px solid ${config.color}`,
-                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)'
-                      }}
-                    />
-                  ) : (
-                    <div style={{ 
-                      width: `${photoSize}px`,
-                      height: `${photoSize}px`,
-                      borderRadius: '8px',
-                      border: `3px solid ${config.color}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: '#f1f5f9'
-                    }}>
-                      <User style={{ width: `${photoSize * 0.5}px`, height: `${photoSize * 0.5}px`, color: '#94a3b8' }} />
+                {(() => {
+                  const personPhotoScale = getPhotoScale(person.id);
+                  const personPhotoSize = basePhotoSize * (personPhotoScale / 100);
+                  return (
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+                      {person.photo ? (
+                        <img
+                          src={person.photo}
+                          alt={person.name}
+                          style={{
+                            width: `${personPhotoSize}px`,
+                            height: `${personPhotoSize}px`,
+                            objectFit: 'cover',
+                            borderRadius: '8px',
+                            border: `3px solid ${config.color}`,
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)'
+                          }}
+                        />
+                      ) : (
+                        <div style={{ 
+                          width: `${personPhotoSize}px`,
+                          height: `${personPhotoSize}px`,
+                          borderRadius: '8px',
+                          border: `3px solid ${config.color}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: '#f1f5f9'
+                        }}>
+                          <User style={{ width: `${personPhotoSize * 0.5}px`, height: `${personPhotoSize * 0.5}px`, color: '#94a3b8' }} />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  );
+                })()}
 
                 {/* All Details Below Photo in Order */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '9px', flex: 1, minHeight: 0 }}>
@@ -756,22 +831,378 @@ export function AuthorizedPersonsManager() {
           <p className="text-slate-600 text-sm sm:text-base">Create professional paper signage for authorized personnel</p>
         </div>
 
+        {/* Edit Modal */}
+        {editingPerson && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={handleCloseEditModal}>
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">
+                <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <Edit2 className="w-5 h-5 text-blue-600" />
+                  Edit Person
+                </h3>
+                <button
+                  onClick={handleCloseEditModal}
+                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-600" />
+                </button>
+              </div>
+              <div className="p-6">
+                <div className="space-y-4">
+                  {/* Header Text */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-2">
+                      Header Text
+                    </label>
+                    <input
+                      type="text"
+                      value={headerText}
+                      onChange={(e) => setHeaderText(e.target.value)}
+                      placeholder="e.g., AUTHORIZED PERSONNEL"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  {/* Footer Text */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-2">
+                      Footer Text
+                    </label>
+                    <input
+                      type="text"
+                      value={footerText}
+                      onChange={(e) => setFooterText(e.target.value)}
+                      placeholder="e.g., ISO 7010 Compliant • EHS Safety"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  {/* Person Background Color */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-2">
+                      Card Background Color
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={formData.backgroundColor}
+                        onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
+                        className="w-16 h-10 rounded-lg border-2 border-slate-300 cursor-pointer"
+                        title="Pick a color"
+                      />
+                      <input
+                        type="text"
+                        value={formData.backgroundColor}
+                        onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
+                        placeholder="#ffffff"
+                        className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                      />
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">Background color for this person's card</p>
+                  </div>
+
+                  {/* Paper Size */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-2">
+                      Paper Size *
+                    </label>
+                    <div className="relative">
+                      <Layout className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                      <select
+                        value={formData.paperSize}
+                        onChange={(e) => setFormData({ ...formData, paperSize: e.target.value as any })}
+                        className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+                      >
+                        {PAPER_SIZE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Orientation */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-2">
+                      Orientation *
+                    </label>
+                    <div className="relative">
+                      <Layout className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                      <select
+                        value={formData.orientation}
+                        onChange={(e) => setFormData({ ...formData, orientation: e.target.value as any })}
+                        className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+                      >
+                        {ORIENTATION_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Category Selection */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-2">
+                      Signage Category *
+                    </label>
+                    <div className="relative">
+                      <div 
+                        className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded border-2 border-white shadow z-10"
+                        style={{ backgroundColor: selectedCategory?.color || '#005BBB' }}
+                      />
+                      <select
+                        value={formData.category}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value as SignageCategory })}
+                        className="w-full pl-12 pr-10 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+                      >
+                        {CATEGORY_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Photo Upload */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-2">
+                      Photo *
+                    </label>
+                    <div className="flex flex-col items-center">
+                      {previewImage ? (
+                        <div className="relative w-32 h-32 mb-3">
+                          <img
+                            src={previewImage}
+                            alt="Preview"
+                            className="w-full h-full object-cover rounded-lg border-2 border-slate-300"
+                          />
+                          <button
+                            onClick={() => {
+                              setPreviewImage('');
+                              setFormData({ ...formData, photo: '' });
+                              if (fileInputRef.current) {
+                                fileInputRef.current.value = '';
+                              }
+                            }}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="w-32 h-32 bg-slate-100 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center mb-3">
+                          <ImageIcon className="w-8 h-8 text-slate-400 mb-1" />
+                          <span className="text-xs text-slate-500">No photo</span>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer text-sm flex items-center gap-2"
+                      >
+                        <Upload className="w-4 h-4" />
+                        Upload Photo
+                      </button>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        ref={fileInputRef}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Full Name */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-2">
+                      Full Name *
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="e.g., John Doe"
+                        className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Employee ID */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-2">
+                      Employee ID
+                    </label>
+                    <div className="relative">
+                      <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        value={formData.employeeId}
+                        onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+                        placeholder="e.g., EMP-12345"
+                        className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Designation */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-2">
+                      Designation *
+                    </label>
+                    <div className="relative">
+                      <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        value={formData.designation}
+                        onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                        placeholder="e.g., Safety Supervisor"
+                        className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Department */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-2">
+                      Department *
+                    </label>
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        value={formData.department}
+                        onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                        placeholder="e.g., EHS Department"
+                        className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Shift */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-2">
+                      Shift
+                    </label>
+                    <div className="relative">
+                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                      <select
+                        value={formData.shift}
+                        onChange={(e) => setFormData({ ...formData, shift: e.target.value })}
+                        className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+                      >
+                        <option value="">Select Shift</option>
+                        {SHIFT_OPTIONS.map((shift) => (
+                          <option key={shift} value={shift}>
+                            {shift}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Contact */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-2">
+                      Contact Number *
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="tel"
+                        value={formData.contact}
+                        onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                        placeholder="e.g., +1 (555) 123-4567"
+                        className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Certifications */}
+                  <div>
+                    <label className="block text-sm text-slate-700 mb-2">
+                      Certifications / Licenses
+                    </label>
+                    <div className="relative">
+                      <Award className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        value={formData.certifications}
+                        onChange={(e) => setFormData({ ...formData, certifications: e.target.value })}
+                        placeholder="e.g., OSHA 30, First Aid"
+                        className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Valid Dates */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-slate-600 mb-1">Valid From</label>
+                      <div className="relative">
+                        <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+                        <input
+                          type="date"
+                          value={formData.validFrom}
+                          onChange={(e) => setFormData({ ...formData, validFrom: e.target.value })}
+                          className="w-full pl-8 pr-2 py-2 border border-slate-300 rounded-lg text-xs"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-600 mb-1">Valid Until</label>
+                      <div className="relative">
+                        <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+                        <input
+                          type="date"
+                          value={formData.validUntil}
+                          onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
+                          className="w-full pl-8 pr-2 py-2 border border-slate-300 rounded-lg text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Update/Cancel Buttons */}
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      onClick={handleUpdatePerson}
+                      disabled={!formData.name || !formData.designation || !formData.department || !formData.contact}
+                      className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
+                    >
+                      <Edit2 className="w-5 h-5" />
+                      Update Person
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg flex items-center justify-center transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
           {/* Left Panel - Form */}
           <div className="xl:col-span-1 order-2 xl:order-1">
             <div id="add-person-form" className="bg-white rounded-xl shadow-lg border border-slate-200 p-4 sm:p-6 xl:sticky xl:top-6 xl:max-h-[calc(100vh-120px)] xl:overflow-y-auto">
               <h3 className="text-slate-900 mb-4 flex items-center gap-2">
-                {editingPerson ? (
-                  <>
-                    <Edit2 className="w-5 h-5 text-blue-600" />
-                    Edit Person
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-5 h-5 text-blue-600" />
-                    Add New Person
-                  </>
-                )}
+                <Plus className="w-5 h-5 text-blue-600" />
+                Add New Person
               </h3>
 
               <div className="space-y-4">
@@ -1099,34 +1530,15 @@ export function AuthorizedPersonsManager() {
                   </div>
                 </div>
 
-                {/* Add/Update Button */}
-                {editingPerson ? (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleUpdatePerson}
-                      disabled={!formData.name || !formData.designation || !formData.department || !formData.contact}
-                      className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
-                    >
-                      <Edit2 className="w-5 h-5" />
-                      Update Person
-                    </button>
-                    <button
-                      onClick={handleCancelEdit}
-                      className="px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg flex items-center justify-center transition-all"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleAddPerson}
-                    disabled={!formData.name || !formData.designation || !formData.department || !formData.contact}
-                    className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
-                  >
-                    <Plus className="w-5 h-5" />
-                    Add Authorized Person
-                  </button>
-                )}
+                {/* Add Button */}
+                <button
+                  onClick={handleAddPerson}
+                  disabled={!formData.name || !formData.designation || !formData.department || !formData.contact}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Authorized Person
+                </button>
               </div>
             </div>
           </div>
@@ -1227,27 +1639,69 @@ export function AuthorizedPersonsManager() {
                                   />
                                 </div>
                               </div>
+                              
+                              {/* Photo Size Control */}
+                              <div className="mt-2">
+                                <label className="block text-xs text-slate-600 mb-1">
+                                  Photo Size: {getPhotoScale(person.id)}%
+                                </label>
+                                <input
+                                  type="range"
+                                  min="50"
+                                  max="150"
+                                  value={getPhotoScale(person.id)}
+                                  onChange={(e) => setPhotoScale(person.id, Number(e.target.value))}
+                                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                                  style={{
+                                    accentColor: config.color
+                                  }}
+                                  title={`Adjust photo size for ${person.name}`}
+                                />
+                                <div className="flex justify-between text-xs text-slate-400 mt-0.5">
+                                  <span>50%</span>
+                                  <span>100%</span>
+                                  <span>150%</span>
+                                </div>
+                              </div>
                             </div>
                           </div>
 
-                          <div className="flex gap-2 mt-3">
+                          <div className="flex gap-2 mt-3 flex-wrap">
                             <button
                               onClick={() => handleViewSignage(person)}
-                              className="flex-1 px-3 py-2 hover:opacity-90 text-white rounded-lg text-xs flex items-center justify-center gap-1 transition-opacity"
+                              className="flex-1 min-w-[100px] px-3 py-2 hover:opacity-90 text-white rounded-lg text-xs flex items-center justify-center gap-1 transition-opacity"
                               style={{ backgroundColor: config.color }}
                             >
                               <Eye className="w-3 h-3" />
-                              View Signage
+                              View
+                            </button>
+                            <button
+                              onClick={() => handlePrintPerson(person)}
+                              className="px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-xs transition-colors flex items-center justify-center gap-1"
+                              title="Print Signage"
+                            >
+                              <Printer className="w-3 h-3" />
+                              <span className="hidden sm:inline">Print</span>
+                            </button>
+                            <button
+                              onClick={() => handleDownloadPerson(person)}
+                              className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs transition-colors flex items-center justify-center gap-1"
+                              title="Download Signage"
+                            >
+                              <Download className="w-3 h-3" />
+                              <span className="hidden sm:inline">Download</span>
                             </button>
                             <button
                               onClick={() => handleEditPerson(person)}
                               className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs transition-colors"
+                              title="Edit Person"
                             >
                               <Edit2 className="w-3 h-3" />
                             </button>
                             <button
                               onClick={() => handleRemovePerson(person.id)}
                               className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs transition-colors"
+                              title="Delete Person"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
@@ -1358,6 +1812,13 @@ export function AuthorizedPersonsManager() {
                       Print
                     </button>
                     <button
+                      onClick={handleDownloadPreview}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm flex items-center gap-2 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download
+                    </button>
+                    <button
                       onClick={() => {
                         setViewMode(null);
                         setSelectedPersons([]);
@@ -1425,28 +1886,6 @@ export function AuthorizedPersonsManager() {
                       </div>
 
 
-                      {/* Photo Scale Slider */}
-                      <div>
-                        <label className="block text-sm text-slate-700 mb-2">
-                          Photo Size: {photoScale}%
-                        </label>
-                        <input
-                          type="range"
-                          min="50"
-                          max="150"
-                          value={photoScale}
-                          onChange={(e) => setPhotoScale(Number(e.target.value))}
-                          className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer"
-                          style={{
-                            accentColor: '#2563eb'
-                          }}
-                        />
-                        <div className="flex justify-between text-xs text-slate-500 mt-1">
-                          <span>50%</span>
-                          <span>100%</span>
-                          <span>150%</span>
-                        </div>
-                      </div>
                     </div>
 
                     {/* Reset Button */}
@@ -1454,7 +1893,6 @@ export function AuthorizedPersonsManager() {
                       <button
                         onClick={() => {
                           setCardScale(100);
-                          setPhotoScale(50);
                           setMultiPaperSize('a4');
                           setMultiOrientation('landscape');
                         }}
