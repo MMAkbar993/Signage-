@@ -326,7 +326,7 @@ export function CustomSignageEditor({ initialData, onDataLoaded }: CustomSignage
   // Tool State
   const [brushColor, setBrushColor] = useState('#000000');
   const [brushSize, setBrushSize] = useState(5);
-  const [fillColor, setFillColor] = useState('#6B7280');
+  const [fillColor, setFillColor] = useState('#ffffff');
   const [strokeColor, setStrokeColor] = useState('#374151');
   const [strokeWidth, setStrokeWidth] = useState(2);
   
@@ -524,7 +524,7 @@ export function CustomSignageEditor({ initialData, onDataLoaded }: CustomSignage
       width: 150,
       height: 150,
       rotation: 0,
-      backgroundColor: fillColor,
+      backgroundColor: fillColor || '#ffffff',
       borderColor: strokeColor,
       borderWidth: strokeWidth,
       opacity: 1,
@@ -868,7 +868,7 @@ export function CustomSignageEditor({ initialData, onDataLoaded }: CustomSignage
     });
   };
 
-  // Handle mouse move for dragging and resizing
+  // Handle mouse move for dragging, resizing, and drawing
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!canvasRef.current) return;
@@ -877,6 +877,36 @@ export function CustomSignageEditor({ initialData, onDataLoaded }: CustomSignage
       const scale = zoom / 100;
       const canvasX = (e.clientX - rect.left) / scale;
       const canvasY = (e.clientY - rect.top) / scale;
+
+      // Handle brush drawing
+      if (isDrawing && activeTool === 'brush' && selectedElement) {
+        const element = elements.find(el => el.id === selectedElement && el.type === 'drawing');
+        if (element) {
+          try {
+            const points = JSON.parse(element.content || '[]');
+            points.push({ x: canvasX, y: canvasY });
+            updateElement(selectedElement, { content: JSON.stringify(points) });
+          } catch (err) {
+            // Ignore parse errors
+          }
+        }
+      }
+
+      // Handle eraser
+      if (isDrawing && activeTool === 'eraser') {
+        const elementToErase = elements
+          .filter(el => el.visible !== false)
+          .sort((a, b) => b.zIndex - a.zIndex)
+          .find(el => {
+            return canvasX >= el.x && canvasX <= el.x + el.width &&
+                   canvasY >= el.y && canvasY <= el.y + el.height;
+          });
+        
+        if (elementToErase && !elementToErase.locked) {
+          updateElement(elementToErase.id, { visible: false });
+          toast.success('Element erased');
+        }
+      }
 
       if (isDragging && dragStart && selectedElement) {
         const element = elements.find(el => el.id === selectedElement);
@@ -942,17 +972,18 @@ export function CustomSignageEditor({ initialData, onDataLoaded }: CustomSignage
     };
 
     const handleMouseUp = () => {
-      if (isDragging || isResizing) {
+      if (isDragging || isResizing || isDrawing) {
         saveToHistory();
       }
       setIsDragging(false);
+      setIsDrawing(false);
       setIsResizing(null);
       setResizeHandle(null);
       setDragStart(null);
       setResizeStart(null);
     };
 
-    if (isDragging || isResizing) {
+    if (isDragging || isResizing || isDrawing) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -960,7 +991,7 @@ export function CustomSignageEditor({ initialData, onDataLoaded }: CustomSignage
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, isResizing, dragStart, resizeStart, resizeHandle, selectedElement, elements, zoom, canvasWidth, canvasHeight, updateElement, saveToHistory]);
+  }, [isDragging, isResizing, isDrawing, dragStart, resizeStart, resizeHandle, selectedElement, elements, zoom, canvasWidth, canvasHeight, activeTool, updateElement, saveToHistory]);
 
   // Filter icons based on search
   const getFilteredIcons = () => {
@@ -987,7 +1018,7 @@ export function CustomSignageEditor({ initialData, onDataLoaded }: CustomSignage
   const renderShape = (element: CanvasElement) => {
     const w = element.width;
     const h = element.height;
-    const fill = element.backgroundColor || '#000000';
+    const fill = element.backgroundColor || '#ffffff';
     const stroke = element.borderColor || '#000000';
     const strokeWidth = element.borderWidth || 0;
     const viewBox = `0 0 ${w} ${h}`;
@@ -1148,7 +1179,7 @@ export function CustomSignageEditor({ initialData, onDataLoaded }: CustomSignage
   const getFilterCSS = (element: CanvasElement) => {
     if (!element.filter) return '';
     const f = element.filter;
-    const filters = [];
+    const filters: string[] = [];
     if (f.brightness !== 100) filters.push(`brightness(${f.brightness}%)`);
     if (f.contrast !== 100) filters.push(`contrast(${f.contrast}%)`);
     if (f.saturation !== 100) filters.push(`saturate(${f.saturation}%)`);
@@ -1158,6 +1189,129 @@ export function CustomSignageEditor({ initialData, onDataLoaded }: CustomSignage
     if (f.sepia) filters.push('sepia(100%)');
     if (f.invert) filters.push('invert(100%)');
     return filters.join(' ');
+  };
+
+  // Handle canvas click for different tools
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    if (!canvasRef.current) return;
+    
+    // Don't handle if clicking on an element
+    if ((e.target as HTMLElement).closest('[data-element]')) {
+      return;
+    }
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scale = zoom / 100;
+    const canvasX = (e.clientX - rect.left) / scale;
+    const canvasY = (e.clientY - rect.top) / scale;
+
+    switch (activeTool) {
+      case 'text':
+        addElement({
+          id: `text-${Date.now()}`,
+          type: 'text',
+          content: 'Double-click to edit',
+          x: canvasX - 150,
+          y: canvasY - 30,
+          width: 300,
+          height: 60,
+          rotation: 0,
+          fontSize: 32,
+          fontFamily: 'Arial',
+          fontWeight: 'bold',
+          fontStyle: 'normal',
+          textAlign: 'left',
+          color: '#000000',
+          opacity: 1,
+          zIndex: elements.length,
+          lineHeight: 1.2,
+          letterSpacing: 0,
+          visible: true,
+          locked: false
+        });
+        toast.success('Text added');
+        break;
+      case 'fill':
+        if (selectedElement) {
+          const element = elements.find(el => el.id === selectedElement);
+          if (element) {
+            if (element.type === 'shape') {
+              updateElement(selectedElement, { backgroundColor: fillColor });
+            } else if (element.type === 'text') {
+              updateElement(selectedElement, { color: fillColor });
+            }
+            toast.success('Fill applied');
+          }
+        } else {
+          toast.info('Select an element to fill');
+        }
+        break;
+      case 'eyedropper':
+        // Find element at click position
+        const clickedElement = elements
+          .filter(el => el.visible !== false)
+          .sort((a, b) => b.zIndex - a.zIndex)
+          .find(el => {
+            return canvasX >= el.x && canvasX <= el.x + el.width &&
+                   canvasY >= el.y && canvasY <= el.y + el.height;
+          });
+        
+        if (clickedElement) {
+          if (clickedElement.type === 'shape' && clickedElement.backgroundColor) {
+            setFillColor(clickedElement.backgroundColor);
+            toast.success('Color picked');
+          } else if (clickedElement.color) {
+            setFillColor(clickedElement.color);
+            toast.success('Color picked');
+          }
+        }
+        break;
+    }
+  };
+
+  // Handle canvas mouse down for drawing tools
+  const handleCanvasMouseDown = (e: React.MouseEvent) => {
+    if (!canvasRef.current) return;
+    
+    // Don't handle if clicking on an element
+    if ((e.target as HTMLElement).closest('[data-element]')) {
+      return;
+    }
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scale = zoom / 100;
+    const canvasX = (e.clientX - rect.left) / scale;
+    const canvasY = (e.clientY - rect.top) / scale;
+
+    switch (activeTool) {
+      case 'brush':
+        setIsDrawing(true);
+        // Create a new drawing element
+        const drawingId = `drawing-${Date.now()}`;
+        addElement({
+          id: drawingId,
+          type: 'drawing',
+          content: JSON.stringify([{ x: canvasX, y: canvasY }]),
+          x: 0,
+          y: 0,
+          width: canvasWidth,
+          height: canvasHeight,
+          rotation: 0,
+          color: brushColor,
+          opacity: 1,
+          zIndex: elements.length,
+          visible: true,
+          locked: false
+        });
+        setSelectedElement(drawingId);
+        break;
+      case 'eraser':
+        setIsDrawing(true);
+        break;
+      case 'hand':
+        // Pan canvas (would need scroll container ref)
+        break;
+    }
   };
 
   return (
@@ -1215,88 +1369,7 @@ export function CustomSignageEditor({ initialData, onDataLoaded }: CustomSignage
       </div>
 
       {/* Tool Bar - Photoshop Style */}
-      <div className="bg-slate-800 border-b border-slate-700 px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          {/* History */}
-          <div className="flex items-center gap-1 border-r border-slate-700 pr-4">
-            <button onClick={undo} disabled={historyIndex <= 0} className="p-2 hover:bg-slate-700 rounded disabled:opacity-30" title="Undo (Ctrl+Z)">
-              <Undo className="w-4 h-4" />
-            </button>
-            <button onClick={redo} disabled={historyIndex >= history.length - 1} className="p-2 hover:bg-slate-700 rounded disabled:opacity-30" title="Redo (Ctrl+Y)">
-              <Redo className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Tools */}
-          <div className="flex items-center gap-1">
-            {[
-              { tool: 'select' as Tool, icon: MousePointer, label: 'Select (V)' },
-              { tool: 'text' as Tool, icon: Type, label: 'Text (T)' },
-              { tool: 'brush' as Tool, icon: Brush, label: 'Brush (B)' },
-              { tool: 'eraser' as Tool, icon: Eraser, label: 'Eraser (E)' },
-              { tool: 'fill' as Tool, icon: PaintBucket, label: 'Fill' },
-              { tool: 'eyedropper' as Tool, icon: Pipette, label: 'Eyedropper' },
-              { tool: 'crop' as Tool, icon: Crop, label: 'Crop' },
-              { tool: 'hand' as Tool, icon: Move, label: 'Hand (H)' },
-            ].map(({ tool, icon: Icon, label }) => (
-              <button
-                key={tool}
-                onClick={() => setActiveTool(tool)}
-                className={`p-2 rounded ${activeTool === tool ? 'bg-blue-600' : 'hover:bg-slate-700'}`}
-                title={label}
-              >
-                <Icon className="w-5 h-5" />
-              </button>
-            ))}
-          </div>
-
-          {/* Color Pickers */}
-          <div className="flex items-center gap-2 border-l border-slate-700 pl-4">
-            <div className="flex flex-col gap-1">
-              <input
-                type="color"
-                value={fillColor}
-                onChange={(e) => {
-                  const newColor = e.target.value;
-                  setFillColor(newColor);
-                  // Update selected shape if it's a shape
-                  if (selected && selected.type === 'shape') {
-                    updateElement(selected.id, { backgroundColor: newColor });
-                  }
-                }}
-                className="w-10 h-5 rounded cursor-pointer border border-slate-600"
-                title="Fill Color"
-              />
-              <input
-                type="color"
-                value={strokeColor}
-                onChange={(e) => {
-                  const newColor = e.target.value;
-                  setStrokeColor(newColor);
-                  // Update selected shape if it's a shape
-                  if (selected && selected.type === 'shape') {
-                    updateElement(selected.id, { borderColor: newColor });
-                  }
-                }}
-                className="w-10 h-5 rounded cursor-pointer border border-slate-600"
-                title="Stroke Color"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Zoom Controls */}
-        <div className="flex items-center gap-2">
-          <button onClick={() => setZoom(Math.max(25, zoom - 25))} className="p-1.5 hover:bg-slate-700 rounded">
-            <ZoomOut className="w-4 h-4" />
-          </button>
-          <span className="text-sm w-14 text-center">{zoom}%</span>
-          <button onClick={() => setZoom(Math.min(400, zoom + 25))} className="p-1.5 hover:bg-slate-700 rounded">
-            <ZoomIn className="w-4 h-4" />
-          </button>
-          <button onClick={() => setZoom(100)} className="text-xs px-2 py-1 hover:bg-slate-700 rounded">Fit</button>
-        </div>
-      </div>
+ 
 
       {/* Main Workspace */}
       <div className="flex flex-1 overflow-hidden">
@@ -1498,8 +1571,8 @@ export function CustomSignageEditor({ initialData, onDataLoaded }: CustomSignage
                   onDrop={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
-                    files.forEach((file) => {
+                    const files: File[] = Array.from(e.dataTransfer.files).filter((file): file is File => file instanceof File && file.type.startsWith('image/'));
+                    files.forEach((file: File) => {
                       const reader = new FileReader();
                       reader.onload = (event) => {
                         addElement({
@@ -1622,8 +1695,11 @@ export function CustomSignageEditor({ initialData, onDataLoaded }: CustomSignage
                 background: canvasBackground.includes('gradient') ? canvasBackground : 'transparent',
                 backgroundColor: canvasBackground.includes('gradient') ? 'transparent' : canvasBackground,
                 backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
-                backgroundSize: 'cover'
+                backgroundSize: 'cover',
+                cursor: activeTool === 'text' ? 'text' : activeTool === 'hand' ? 'grab' : activeTool === 'brush' ? 'crosshair' : activeTool === 'eraser' ? 'cell' : 'default'
               }}
+              onClick={handleCanvasClick}
+              onMouseDown={handleCanvasMouseDown}
             >
               {/* Grid overlay */}
               {showGrid && (
@@ -1647,12 +1723,36 @@ export function CustomSignageEditor({ initialData, onDataLoaded }: CustomSignage
                   return (
                     <div
                       key={element.id}
+                      data-element={element.id}
                       onClick={(e) => {
                         // Don't select if clicking on resize handle
                         if ((e.target as HTMLElement).closest('.resize-handle')) {
                           return;
                         }
-                        setSelectedElement(element.id);
+                        // Handle tool-specific clicks
+                        if (activeTool === 'eraser' && !element.locked) {
+                          updateElement(element.id, { visible: false });
+                          toast.success('Element erased');
+                          return;
+                        }
+                        if (activeTool === 'fill' && element.type === 'shape') {
+                          updateElement(element.id, { backgroundColor: fillColor });
+                          toast.success('Fill applied');
+                          return;
+                        }
+                        if (activeTool === 'eyedropper') {
+                          if (element.type === 'shape' && element.backgroundColor) {
+                            setFillColor(element.backgroundColor);
+                            toast.success('Color picked');
+                          } else if (element.color) {
+                            setFillColor(element.color);
+                            toast.success('Color picked');
+                          }
+                          return;
+                        }
+                        if (activeTool === 'select') {
+                          setSelectedElement(element.id);
+                        }
                       }}
                       onMouseDown={(e) => {
                         // Don't start drag if clicking on resize handle

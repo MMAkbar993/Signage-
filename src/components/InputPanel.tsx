@@ -1581,17 +1581,15 @@ export function InputPanel({ signageData, onUpdate }: InputPanelProps) {
             <select
               value={signageData.size}
               onChange={(e) => {
-                const size = e.target.value as 'a3' | 'a4' | 'a5' | 'custom';
+                const size = e.target.value as 'a3' | 'a4' | 'custom';
                 if (size === 'a3') onUpdate({ size, customWidth: 297, customHeight: 420 });
                 else if (size === 'a4') onUpdate({ size, customWidth: 210, customHeight: 297 });
-                else if (size === 'a5') onUpdate({ size, customWidth: 148, customHeight: 210 });
                 else onUpdate({ size });
               }}
               className="w-full px-4 py-3 border-2 border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white cursor-pointer"
             >
               <option value="a3">A3 (297×420 mm)</option>
               <option value="a4">A4 (210×297 mm)</option>
-              <option value="a5">A5 (148×210 mm)</option>
               <option value="custom">Custom Size</option>
             </select>
             <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none" />

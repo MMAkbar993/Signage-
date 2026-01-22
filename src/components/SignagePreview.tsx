@@ -345,7 +345,8 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
     const logoElement = (e.currentTarget as HTMLElement);
     const logoRect = logoElement.getBoundingClientRect();
     
-    // Calculate offset from mouse to logo top-left corner
+    // Calculate offset from mouse to logo top-left corner (accounting for border)
+    const borderWidth = 2; // Match the border width
     const offsetX = e.clientX - logoRect.left;
     const offsetY = e.clientY - logoRect.top;
     
@@ -815,10 +816,7 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
       let pageWidth = 210;
       let pageHeight = 297;
       
-      if (signageData.size === 'a5') {
-        pageWidth = 148;
-        pageHeight = 210;
-      } else if (signageData.size === 'a3') {
+      if (signageData.size === 'a3') {
         pageWidth = 297;
         pageHeight = 420;
       } else if (signageData.size === 'custom') {
@@ -1214,8 +1212,8 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
     }
   };
 
-  // Limit items to fit on one page
-  const displayProcedures = signageData.procedures.slice(0, 4);
+  // Display all items
+  const displayProcedures = signageData.procedures || [];
   const displayHazards = signageData.hazards || [];
   
   // Get QR code data using helper function
@@ -1313,7 +1311,6 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
           @page {
             size: ${
               signageData.size === 'a3' ? 'A3' : 
-              signageData.size === 'a5' ? 'A5' : 
               'A4'
             } portrait;
             margin: 0;
@@ -1425,58 +1422,49 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                         style={{
                           left: `${brandingConfig.clientLogoPosition?.x || 5}%`,
                           top: `${brandingConfig.clientLogoPosition?.y || 5}%`,
+                          width: `${brandingConfig.clientLogoSize?.width || 96}px`,
+                          height: `${brandingConfig.clientLogoSize?.height || 64}px`,
                           border: '2px solid rgba(59, 130, 246, 0.3)',
                           borderRadius: '4px',
-                          padding: '2px',
+                          padding: 0,
                           boxSizing: 'border-box',
-                          transformOrigin: 'top left', // Resize from top-left, keeping it fixed
+                          transformOrigin: 'top left',
                         }}
-                        onMouseDown={(e) => handleLogoMouseDown(e, 'client')}
+                        onMouseDown={(e) => {
+                          // Don't start drag if clicking on resize handle
+                          if (!(e.target as HTMLElement).closest('.resize-handle')) {
+                            handleLogoMouseDown(e, 'client');
+                          }
+                        }}
                       >
-                        <div 
-                          className="relative cursor-move"
+                        <img 
+                          src={brandingConfig.clientLogo} 
+                          alt="Client Logo" 
+                          className="pointer-events-none"
                           style={{
-                            width: `${brandingConfig.clientLogoSize?.width || 96}px`,
-                            height: `${brandingConfig.clientLogoSize?.height || 64}px`,
-                            background: 'transparent',
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            display: 'block',
+                            padding: 0,
+                            margin: 0,
                           }}
+                          draggable="false"
+                        />
+                        {/* Resize handle */}
+                        <div
+                          className="resize-handle absolute bottom-0 right-0 w-5 h-5 bg-blue-600 rounded-tl-lg cursor-nwse-resize opacity-80 hover:opacity-100 transition-opacity flex items-center justify-center z-10 shadow-md"
                           onMouseDown={(e) => {
-                            // Handle drag from inner div
-                            if (!(e.target as HTMLElement).closest('.resize-handle')) {
-                              handleLogoMouseDown(e, 'client');
-                              e.stopPropagation(); // Prevent outer handler from also firing
-                            }
+                            e.stopPropagation();
+                            handleResizeMouseDown(e, 'client');
                           }}
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <img 
-                            src={brandingConfig.clientLogo} 
-                            alt="Client Logo" 
-                            className="pointer-events-none"
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'contain',
-                              display: 'block',
-                              padding: 0,
-                              margin: 0,
-                            }}
-                            draggable="false"
-                          />
-                          {/* Resize handle */}
-                          <div
-                            className="resize-handle absolute bottom-0 right-0 w-5 h-5 bg-blue-600 rounded-tl-lg cursor-nwse-resize opacity-80 hover:opacity-100 transition-opacity flex items-center justify-center z-10 shadow-md"
-                            onMouseDown={(e) => {
-                              e.stopPropagation();
-                              handleResizeMouseDown(e, 'client');
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Maximize2 className="w-3 h-3 text-white" />
-                          </div>
-                          {/* Drag indicator */}
-                          <div className="absolute top-0 left-0 w-full h-6 bg-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                            <Move className="w-3 h-3 text-blue-600" />
-                          </div>
+                          <Maximize2 className="w-3 h-3 text-white" />
+                        </div>
+                        {/* Drag indicator */}
+                        <div className="absolute top-0 left-0 w-full h-6 bg-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                          <Move className="w-3 h-3 text-blue-600" />
                         </div>
                       </div>
                     )}
@@ -1489,58 +1477,49 @@ export function SignagePreview({ signageData, brandingConfig, onBrandingConfigCh
                         style={{
                           left: `${brandingConfig.contractorLogoPosition?.x || 95}%`,
                           top: `${brandingConfig.contractorLogoPosition?.y || 5}%`,
+                          width: `${brandingConfig.contractorLogoSize?.width || 96}px`,
+                          height: `${brandingConfig.contractorLogoSize?.height || 64}px`,
                           border: '2px solid rgba(168, 85, 247, 0.3)',
                           borderRadius: '4px',
-                          padding: '2px',
+                          padding: 0,
                           boxSizing: 'border-box',
-                          transformOrigin: 'top left', // Resize from top-left, keeping it fixed
+                          transformOrigin: 'top left',
                         }}
-                        onMouseDown={(e) => handleLogoMouseDown(e, 'contractor')}
+                        onMouseDown={(e) => {
+                          // Don't start drag if clicking on resize handle
+                          if (!(e.target as HTMLElement).closest('.resize-handle')) {
+                            handleLogoMouseDown(e, 'contractor');
+                          }
+                        }}
                       >
-                        <div 
-                          className="relative cursor-move"
+                        <img 
+                          src={brandingConfig.contractorLogo} 
+                          alt="Contractor Logo" 
+                          className="pointer-events-none"
                           style={{
-                            width: `${brandingConfig.contractorLogoSize?.width || 96}px`,
-                            height: `${brandingConfig.contractorLogoSize?.height || 64}px`,
-                            background: 'transparent',
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            display: 'block',
+                            padding: 0,
+                            margin: 0,
                           }}
+                          draggable="false"
+                        />
+                        {/* Resize handle */}
+                        <div
+                          className="resize-handle absolute bottom-0 right-0 w-5 h-5 bg-purple-600 rounded-tl-lg cursor-nwse-resize opacity-80 hover:opacity-100 transition-opacity flex items-center justify-center z-10 shadow-md"
                           onMouseDown={(e) => {
-                            // Handle drag from inner div
-                            if (!(e.target as HTMLElement).closest('.resize-handle')) {
-                              handleLogoMouseDown(e, 'contractor');
-                              e.stopPropagation(); // Prevent outer handler from also firing
-                            }
+                            e.stopPropagation();
+                            handleResizeMouseDown(e, 'contractor');
                           }}
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <img 
-                            src={brandingConfig.contractorLogo} 
-                            alt="Contractor Logo" 
-                            className="pointer-events-none"
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'contain',
-                              display: 'block',
-                              padding: 0,
-                              margin: 0,
-                            }}
-                            draggable="false"
-                          />
-                          {/* Resize handle */}
-                          <div
-                            className="resize-handle absolute bottom-0 right-0 w-5 h-5 bg-purple-600 rounded-tl-lg cursor-nwse-resize opacity-80 hover:opacity-100 transition-opacity flex items-center justify-center z-10 shadow-md"
-                            onMouseDown={(e) => {
-                              e.stopPropagation();
-                              handleResizeMouseDown(e, 'contractor');
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Maximize2 className="w-3 h-3 text-white" />
-                          </div>
-                          {/* Drag indicator */}
-                          <div className="absolute top-0 left-0 w-full h-6 bg-purple-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                            <Move className="w-3 h-3 text-purple-600" />
-                          </div>
+                          <Maximize2 className="w-3 h-3 text-white" />
+                        </div>
+                        {/* Drag indicator */}
+                        <div className="absolute top-0 left-0 w-full h-6 bg-purple-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                          <Move className="w-3 h-3 text-purple-600" />
                         </div>
                       </div>
                     )}

@@ -24,7 +24,7 @@ export interface ExportOptions {
   includeImage: boolean;
   includeBranding: boolean;
   includeQR: boolean;
-  paperSize?: 'a4' | 'a5' | 'letter' | 'legal';
+  paperSize?: 'a4' | 'letter' | 'legal';
 }
 
 export function EnhancedExportDialog({ onExport, onClose }: EnhancedExportDialogProps) {
@@ -35,7 +35,7 @@ export function EnhancedExportDialog({ onExport, onClose }: EnhancedExportDialog
   const [includeImage, setIncludeImage] = useState(true);
   const [includeBranding, setIncludeBranding] = useState(true);
   const [includeQR, setIncludeQR] = useState(true);
-  const [paperSize, setPaperSize] = useState<'a4' | 'a5' | 'letter' | 'legal'>('a4');
+  const [paperSize, setPaperSize] = useState<'a4' | 'letter' | 'legal'>('a4');
 
   const formats: ExportFormat[] = [
     {
@@ -213,7 +213,6 @@ export function EnhancedExportDialog({ onExport, onClose }: EnhancedExportDialog
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { value: 'a4', label: 'A4 (210 × 297 mm)' },
-                  { value: 'a5', label: 'A5 (148 × 210 mm)' },
                   { value: 'letter', label: 'Letter (216 × 279 mm)' },
                   { value: 'legal', label: 'Legal (216 × 356 mm)' }
                 ].map((size) => (

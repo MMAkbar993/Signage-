@@ -14,7 +14,7 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
     const [memberPositions, setMemberPositions] = useState({})
     const [chartImage, setChartImage] = useState(null)
     const [chartStyle, setChartStyle] = useState('modern') // modern, classic, minimal, colorful, professional, twolevel, threelevel, fourlevel, colorcoded
-    const [paperSize, setPaperSize] = useState('A4') // A4, A3, A5, Legal
+    const [paperSize, setPaperSize] = useState('A4') // A4, A3, Legal
     const [orientation, setOrientation] = useState('landscape') // portrait, landscape
     const chartContainerRef = useRef(null)
     const fileInputRef = useRef(null)
@@ -285,7 +285,6 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
         const dimensions = {
             A4: { width: 794, height: 1123 }, // Portrait
             A3: { width: 1123, height: 1587 },
-            A5: { width: 559, height: 794 },
             Legal: { width: 816, height: 1344 }
         }
 
@@ -301,7 +300,6 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
         const dimensions = {
             A4: { width: 210, height: 297 }, // Portrait in mm
             A3: { width: 297, height: 420 },
-            A5: { width: 148, height: 210 },
             Legal: { width: 216, height: 356 }
         }
 
@@ -2055,7 +2053,6 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                                     >
                                         <option value="A4">A4</option>
                                         <option value="A3">A3</option>
-                                        <option value="A5">A5</option>
                                         <option value="Legal">Legal</option>
                                     </select>
                                 </div>

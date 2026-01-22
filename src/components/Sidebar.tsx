@@ -9,10 +9,11 @@ import {
   AlertTriangle, 
   BookOpen,
   Settings,
-  Network
+  Network,
+  Library as LibraryIcon
 } from 'lucide-react';
 
-type TabType = 'dashboard' | 'signage' | 'authorized' | 'emergency' | 'templates' | 'ai-generator' | 'custom-editor' | 'blog' | 'admin' | 'organization-chart';
+type TabType = 'dashboard' | 'signage' | 'authorized' | 'emergency' | 'templates' | 'ai-generator' | 'custom-editor' | 'blog' | 'admin' | 'organization-chart' | 'library';
 
 interface SidebarProps {
   activeTab: TabType;
@@ -136,6 +137,24 @@ export function Sidebar({ activeTab, onNavigate, menuOpen }: SidebarProps) {
               NEW
             </span>
           )}
+        </button>
+
+        {/* Library */}
+        <button
+          onClick={() => onNavigate('library')}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+            activeTab === 'library'
+              ? 'bg-green-600 text-white shadow-md'
+              : 'text-slate-700 hover:bg-slate-100'
+          }`}
+        >
+          <LibraryIcon className="w-5 h-5" />
+          <div className="text-left">
+            <div className="font-medium">Library</div>
+            <div className={`text-xs ${activeTab === 'library' ? 'text-green-100' : 'text-slate-500'}`}>
+              Your saved signages
+            </div>
+          </div>
         </button>
 
         {/* Divider */}

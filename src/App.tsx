@@ -12,6 +12,7 @@ import { BlogTutorials } from './components/BlogTutorials';
 import { CustomSignageEditor } from './components/CustomSignageEditor';
 import { Sidebar } from './components/Sidebar';
 import OrganizationChart from './components/OrganizationChart';
+import { Library } from './components/Library';
 import { SignageData } from './types/signage';
 import { mapPPEStringsToTypes } from './utils/ppeMapper';
 import { 
@@ -21,7 +22,7 @@ import {
   Globe
 } from 'lucide-react';
 
-type TabType = 'dashboard' | 'signage' | 'authorized' | 'emergency' | 'templates' | 'ai-generator' | 'custom-editor' | 'blog' | 'admin' | 'organization-chart';
+type TabType = 'dashboard' | 'signage' | 'authorized' | 'emergency' | 'templates' | 'ai-generator' | 'custom-editor' | 'blog' | 'admin' | 'organization-chart' | 'library';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -167,6 +168,7 @@ function App() {
           {activeTab === 'templates' && <TemplateLibraryV2 onSelectTemplate={handleTemplateSelect} onClose={() => handleNavigate('dashboard')} />}
           {activeTab === 'ai-generator' && <AISignageGenerator onGenerate={handleAIGenerate} onClose={() => handleNavigate('dashboard')} />}
           {activeTab === 'custom-editor' && <CustomSignageEditor initialData={loadedCustomEditorData} onDataLoaded={() => setLoadedCustomEditorData(null)} />}
+          {activeTab === 'library' && <Library onNavigate={handleNavigate} />}
           {activeTab === 'blog' && <BlogTutorials />}
           {activeTab === 'admin' && (
             <AdminAuth>

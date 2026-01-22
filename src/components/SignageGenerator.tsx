@@ -52,21 +52,31 @@ export function SignageGenerator({ aiGeneratedData, onDataUsed }: SignageGenerat
   // Load AI generated data or saved signage data when available
   useEffect(() => {
     if (aiGeneratedData) {
-      // Check if this is a loaded saved signage (has an id property)
-      if ((aiGeneratedData as any).id) {
-        setCurrentSignageId((aiGeneratedData as any).id);
-        // Remove id from data before setting
-        const { id, ...dataWithoutId } = aiGeneratedData as any;
-        setSignageData(prev => ({
-          ...prev,
-          ...dataWithoutId
-        }));
+      const data = aiGeneratedData as any;
+      
+      // Check if this is identification signage
+      if (data.type === 'identification' || data.identificationData) {
+        setSignageType('identification');
+        // Identification data will be passed to IdentificationSignage component via props
       } else {
-        setSignageData(prev => ({
-          ...prev,
-          ...aiGeneratedData
-        }));
+        setSignageType('safety');
+        // Check if this is a loaded saved signage (has an id property)
+        if (data.id) {
+          setCurrentSignageId(data.id);
+          // Remove id from data before setting
+          const { id, ...dataWithoutId } = data;
+          setSignageData(prev => ({
+            ...prev,
+            ...dataWithoutId
+          }));
+        } else {
+          setSignageData(prev => ({
+            ...prev,
+            ...aiGeneratedData
+          }));
+        }
       }
+      
       if (onDataUsed) {
         onDataUsed();
       }
@@ -225,7 +235,11 @@ export function SignageGenerator({ aiGeneratedData, onDataUsed }: SignageGenerat
             </div>
           </div>
         ) : (
-          <IdentificationSignage />
+          <IdentificationSignage 
+            initialData={(aiGeneratedData as any)?.identificationData}
+            id={(aiGeneratedData as any)?.id}
+            onDataLoaded={onDataUsed}
+          />
         )}
       </div>
     </div>

@@ -719,7 +719,6 @@ export function AdminPanel() {
                       <select className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option>A4 (210 × 297 mm)</option>
                         <option>A3 (297 × 420 mm)</option>
-                        <option>A5 (148 × 210 mm)</option>
                         <option>Letter (216 × 279 mm)</option>
                         <option>Legal (216 × 356 mm)</option>
                       </select>

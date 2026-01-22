@@ -27,6 +27,32 @@ export interface SavedSignage {
     canvasBackground: string;
     backgroundImage?: string | null;
   }; // Custom editor data
+  identificationData?: {
+    areaName: string;
+    icon: string;
+    bgColor: string;
+    textColor: string;
+    iconBgColor: string;
+    showHeader: boolean;
+    headerText: string;
+    showFooter: boolean;
+    footerText: string;
+    showImage: boolean;
+    uploadedImage: string;
+    imagePosition: 'top' | 'center' | 'bottom' | 'background';
+    imageSize: number;
+    imageOpacity: number;
+    fontSize: number;
+    iconSize: number;
+    paperSize: 'a4' | 'a3' | 'letter' | 'square';
+    orientation: 'landscape' | 'portrait';
+    borderRadius: number;
+    showBorder: boolean;
+    borderColor: string;
+    borderWidth: number;
+    iconPosition: { x: number; y: number };
+    textPosition: { x: number; y: number };
+  }; // Identification signage data
 }
 
 // Save recent signage

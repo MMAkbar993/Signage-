@@ -162,7 +162,7 @@ export type PPEType =
   | 'powered-air-respirator'
   | 'oxygen-supply';
 
-export type SizeType = 'a3' | 'a4' | 'a5' | 'custom';
+export type SizeType = 'a3' | 'a4' | 'custom';
 export type ResolutionType = '72dpi' | '300dpi';
 export type PermitRequiredType = 'yes' | 'no';
 
@@ -180,7 +180,7 @@ export interface AuthorizedPerson {
   photo: string; // Base64 or URL
   format: 'badge' | 'paper'; // Badge to wear or paper signage
   category: SignageCategory; // Color category
-  paperSize?: 'a5' | 'a4' | 'a3' | 'letter' | 'legal'; // Paper size (only for paper format)
+  paperSize?: 'a4' | 'a3' | 'letter' | 'legal'; // Paper size (only for paper format)
   orientation?: 'landscape' | 'portrait'; // Orientation (only for paper format)
   backgroundColor?: string; // Background color for the person's card
 }

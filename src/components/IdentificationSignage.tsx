@@ -1,8 +1,10 @@
-import { useState, useRef } from 'react';
-import { Download, Upload, Droplet, Zap, Settings, Warehouse, Wind, Filter, Trash2, Fuel, Building2, Package, Wrench, Home, Activity, FlaskConical, Plug2, Image as ImageIcon, Maximize2, Move, RotateCw, X, RotateCcw, Printer } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import React from 'react';
+import { Download, Upload, Droplet, Zap, Settings, Warehouse, Wind, Filter, Trash2, Fuel, Building2, Package, Wrench, Home, Activity, FlaskConical, Plug2, Image as ImageIcon, Maximize2, Move, RotateCw, X, RotateCcw, Printer, Save } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { toast } from 'sonner';
+import { saveSignageToLibrary, generateSignageId } from '../utils/storageManager';
 
 interface IdentificationData {
   areaName: string;
@@ -21,7 +23,7 @@ interface IdentificationData {
   imageOpacity: number;
   fontSize: number;
   iconSize: number;
-  paperSize: 'a4' | 'a5' | 'a3' | 'letter' | 'square';
+  paperSize: 'a4' | 'a3' | 'letter' | 'square';
   orientation: 'landscape' | 'portrait';
   borderRadius: number;
   showBorder: boolean;
@@ -40,6 +42,12 @@ interface ColorfulTemplate {
   iconBgColor: string;
   imageUrl: string;
   description: string;
+}
+
+interface IdentificationSignageProps {
+  initialData?: IdentificationData;
+  id?: string;
+  onDataLoaded?: () => void;
 }
 
 const ICON_OPTIONS = [
@@ -263,8 +271,8 @@ const COLORFUL_TEMPLATES: ColorfulTemplate[] = [
   }
 ];
 
-export function IdentificationSignage() {
-  const [data, setData] = useState<IdentificationData>({
+export function IdentificationSignage({ initialData, id, onDataLoaded }: IdentificationSignageProps = {} as IdentificationSignageProps) {
+  const defaultData: IdentificationData = {
     areaName: 'INLET AREA',
     icon: 'droplet',
     bgColor: '#0EA5E9',
@@ -289,15 +297,29 @@ export function IdentificationSignage() {
     borderWidth: 4,
     iconPosition: { x: 0, y: 0 },
     textPosition: { x: 0, y: 0 }
-  });
+  };
 
+  const [data, setData] = useState<IdentificationData>(initialData || defaultData);
   const previewRef = useRef<HTMLDivElement>(null);
   const [isDraggingIcon, setIsDraggingIcon] = useState(false);
   const [isDraggingText, setIsDraggingText] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [currentSignageId, setCurrentSignageId] = useState<string | null>(id || null);
+
+  // Load initial data when provided
+  React.useEffect(() => {
+    if (initialData) {
+      setData(initialData);
+    }
+    if (id) {
+      setCurrentSignageId(id);
+    }
+    if (onDataLoaded) {
+      onDataLoaded();
+    }
+  }, [initialData, id, onDataLoaded]);
 
   const paperDimensions = {
-    a5: { landscape: { width: 210, height: 148 }, portrait: { width: 148, height: 210 } },
     a4: { landscape: { width: 297, height: 210 }, portrait: { width: 210, height: 297 } },
     a3: { landscape: { width: 420, height: 297 }, portrait: { width: 297, height: 420 } },
     letter: { landscape: { width: 279, height: 216 }, portrait: { width: 216, height: 279 } },
@@ -507,6 +529,51 @@ export function IdentificationSignage() {
     }
   };
 
+  const handleSaveToLibrary = async () => {
+    try {
+      // Generate thumbnail from preview
+      let thumbnail: string | undefined;
+      
+      if (previewRef.current) {
+        try {
+          const canvas = await html2canvas(previewRef.current as HTMLElement, {
+            scale: 0.3,
+            useCORS: true,
+            backgroundColor: data.bgColor
+          });
+          thumbnail = canvas.toDataURL('image/png');
+        } catch (error) {
+          console.warn('Could not generate thumbnail:', error);
+        }
+      }
+
+      const savedSignage = {
+        id: currentSignageId || generateSignageId(),
+        type: 'identification' as const,
+        title: data.areaName || 'Identification Signage',
+        category: 'identification',
+        timestamp: currentSignageId ? Date.now() : Date.now(), // Keep original timestamp if updating
+        lastModified: Date.now(),
+        thumbnail,
+        identificationData: { ...data } // Store identification data separately
+      };
+
+      if (!currentSignageId) {
+        setCurrentSignageId(savedSignage.id); // Store new ID for future updates
+      }
+
+      saveSignageToLibrary(savedSignage);
+      toast.success(currentSignageId ? 'Signage updated in library!' : 'Signage saved to library!', {
+        description: 'You can access it from the Library anytime.'
+      });
+    } catch (error) {
+      console.error('Error saving signage:', error);
+      toast.error('Failed to save signage', {
+        description: 'Please try again.'
+      });
+    }
+  };
+
   const getIconComponent = (iconId: string) => {
     const icon = ICON_OPTIONS.find(i => i.id === iconId);
     return icon ? icon.component : Droplet;
@@ -636,7 +703,6 @@ export function IdentificationSignage() {
           @page {
             size: ${
               data.paperSize === 'a3' ? 'A3' : 
-              data.paperSize === 'a5' ? 'A5' :
               data.paperSize === 'letter' ? '216mm 279mm' :
               data.paperSize === 'square' ? '210mm 210mm' :
               'A4'
@@ -1034,7 +1100,6 @@ export function IdentificationSignage() {
               onChange={(e) => setData({ ...data, paperSize: e.target.value as any })}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
             >
-              <option value="a5">A5 (148 × 210 mm)</option>
               <option value="a4">A4 (210 × 297 mm)</option>
               <option value="a3">A3 (297 × 420 mm)</option>
               <option value="letter">Letter (216 × 279 mm)</option>
@@ -1067,6 +1132,17 @@ export function IdentificationSignage() {
                 Portrait
               </button>
             </div>
+          </div>
+
+          {/* Save to Library Button */}
+          <div className="mb-4">
+            <button
+              onClick={handleSaveToLibrary}
+              className="w-full px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+            >
+              <Save className="w-4 h-4" />
+              Save to Library
+            </button>
           </div>
 
           {/* Export Buttons */}

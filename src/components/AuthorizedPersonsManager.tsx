@@ -12,7 +12,6 @@ const SHIFT_OPTIONS = [
 ];
 
 const PAPER_SIZE_OPTIONS = [
-  { value: 'a5', label: 'A5 (148 × 210 mm)' },
   { value: 'a4', label: 'A4 (210 × 297 mm)' },
   { value: 'a3', label: 'A3 (297 × 420 mm)' },
   { value: 'letter', label: 'Letter (216 × 279 mm)' },
@@ -42,7 +41,7 @@ export function AuthorizedPersonsManager() {
   // Manual resize controls
   const [cardScale, setCardScale] = useState<number>(100); // 20-150%
   const [photoScales, setPhotoScales] = useState<Map<string, number>>(new Map()); // Individual photo scales per person ID
-  const [multiPaperSize, setMultiPaperSize] = useState<'a5' | 'a4' | 'a3' | 'letter' | 'legal'>('a4');
+  const [multiPaperSize, setMultiPaperSize] = useState<'a4' | 'a3' | 'letter' | 'legal'>('a4');
   const [multiOrientation, setMultiOrientation] = useState<'landscape' | 'portrait'>('landscape');
   
   // Helper function to get photo scale for a person (defaults to 50% if not set)
@@ -72,7 +71,7 @@ export function AuthorizedPersonsManager() {
     photo: '',
     format: 'paper' as 'paper',
     category: 'mandatory' as SignageCategory,
-    paperSize: 'a4' as 'a5' | 'a4' | 'a3' | 'letter' | 'legal',
+    paperSize: 'a4' as 'a4' | 'a3' | 'letter' | 'legal',
     orientation: 'landscape' as 'landscape' | 'portrait',
     headerText: 'AUTHORIZED PERSONNEL',
     footerText: 'ISO 7010 Compliant • EHS Safety',
@@ -311,17 +310,27 @@ export function AuthorizedPersonsManager() {
       try {
         // Use html2canvas to capture the preview
         const html2canvas = (await import('html2canvas')).default;
+        
+        // Get the actual dimensions of the element
+        const rect = previewElement.getBoundingClientRect();
+        
         const canvas = await html2canvas(previewElement, {
-          scale: 2,
+          scale: 3,
           useCORS: true,
           backgroundColor: '#ffffff',
           logging: false,
           allowTaint: true,
+          width: rect.width,
+          height: rect.height,
+          windowWidth: rect.width,
+          windowHeight: rect.height,
+          scrollX: 0,
+          scrollY: 0,
         });
         
         const link = document.createElement('a');
         link.download = `${person.name.replace(/[^a-z0-9]/gi, '_')}_Authorized_Person_Signage.png`;
-        link.href = canvas.toDataURL('image/png');
+        link.href = canvas.toDataURL('image/png', 1.0);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -331,7 +340,7 @@ export function AuthorizedPersonsManager() {
         alert('Image download failed. Opening print dialog - you can save as PDF from there.');
         window.print();
       }
-    }, 800);
+    }, 1000);
   };
 
   const handlePrintPerson = (person: AuthorizedPerson) => {
@@ -354,12 +363,22 @@ export function AuthorizedPersonsManager() {
 
     try {
       const html2canvas = (await import('html2canvas')).default;
+      
+      // Get the actual dimensions of the element
+      const rect = previewElement.getBoundingClientRect();
+      
       const canvas = await html2canvas(previewElement, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
         allowTaint: true,
+        width: rect.width,
+        height: rect.height,
+        windowWidth: rect.width,
+        windowHeight: rect.height,
+        scrollX: 0,
+        scrollY: 0,
       });
       
       const link = document.createElement('a');
@@ -367,7 +386,7 @@ export function AuthorizedPersonsManager() {
         ? `${selectedPersons[0].name.replace(/[^a-z0-9]/gi, '_')}_Authorized_Person_Signage.png`
         : `Authorized_Persons_Signage_${selectedPersons.length}_persons.png`;
       link.download = fileName;
-      link.href = canvas.toDataURL('image/png');
+      link.href = canvas.toDataURL('image/png', 1.0);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -398,7 +417,6 @@ export function AuthorizedPersonsManager() {
     
     // Full paper dimensions in mm
     const paperDimensions = {
-      a5: { landscape: { width: 210, height: 148 }, portrait: { width: 148, height: 210 } },
       a4: { landscape: { width: 297, height: 210 }, portrait: { width: 210, height: 297 } },
       a3: { landscape: { width: 420, height: 297 }, portrait: { width: 297, height: 420 } },
       letter: { landscape: { width: 279, height: 216 }, portrait: { width: 216, height: 279 } },
@@ -446,18 +464,20 @@ export function AuthorizedPersonsManager() {
     const basePhotoSize = 80;
     
     return (
-      <div id="authorized-preview-content" style={{ display: 'flex', justifyContent: 'center', padding: '20px', backgroundColor: '#f8fafc' }}>
+      <div id="authorized-preview-content" style={{ display: 'flex', justifyContent: 'center', padding: '20px', backgroundColor: '#f8fafc', minHeight: '100%' }}>
         <div style={{ 
           width: `${width}mm`,
           height: `${height}mm`,
+          minHeight: `${height}mm`,
           boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
-          overflow: 'hidden',
+          overflow: 'visible',
           border: `4px solid ${config.color}`,
           backgroundColor: config.color,
           boxSizing: 'border-box',
           borderRadius: '8px',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          position: 'relative'
         }}>
           {/* Header */}
           <div 
@@ -492,14 +512,20 @@ export function AuthorizedPersonsManager() {
             gap: '12px',
             overflow: 'auto'
           }}>
-            {displayPersons.map((person, index) => (
+            {displayPersons.map((person, index) => {
+              // Use formData.backgroundColor if this person is being edited, otherwise use person's backgroundColor
+              const currentBgColor = editingPerson && editingPerson.id === person.id 
+                ? formData.backgroundColor 
+                : (person.backgroundColor || cardBackgroundColor);
+              
+              return (
               <div 
                 key={person.id}
                 style={{ 
                   border: `3px solid ${config.color}`,
                   borderRadius: '8px',
                   padding: '12px',
-                  backgroundColor: person.backgroundColor || cardBackgroundColor,
+                  backgroundColor: currentBgColor,
                   boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                   display: 'flex',
                   flexDirection: 'column',
@@ -725,7 +751,8 @@ export function AuthorizedPersonsManager() {
                   )}
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
 
           {/* Footer */}
@@ -774,10 +801,22 @@ export function AuthorizedPersonsManager() {
             position: absolute;
             left: 0;
             top: 0;
-            width: 100%;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 100% !important;
             background: white !important;
             padding: 0 !important;
             margin: 0 !important;
+            overflow: visible !important;
+          }
+          
+          /* Ensure the inner card is fully visible */
+          #authorized-preview-content > div {
+            width: 100% !important;
+            height: auto !important;
+            min-height: 100% !important;
+            overflow: visible !important;
+            page-break-inside: avoid !important;
           }
           
           /* Force all background colors and images to print */
@@ -1173,24 +1212,25 @@ export function AuthorizedPersonsManager() {
                     </div>
                   </div>
 
-                  {/* Update/Cancel Buttons */}
-                  <div className="flex gap-2 pt-2">
-                    <button
-                      onClick={handleUpdatePerson}
-                      disabled={!formData.name || !formData.designation || !formData.department || !formData.contact}
-                      className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
-                    >
-                      <Edit2 className="w-5 h-5" />
-                      Update Person
-                    </button>
-                    <button
-                      onClick={handleCancelEdit}
-                      className="px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg flex items-center justify-center transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
                 </div>
+              </div>
+              
+              {/* Sticky Footer with Save/Cancel Buttons */}
+              <div className="sticky bottom-0 bg-white border-t border-slate-200 p-6 flex gap-3">
+                <button
+                  onClick={handleUpdatePerson}
+                  disabled={!formData.name || !formData.designation || !formData.department || !formData.contact}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all font-medium shadow-md"
+                >
+                  <Edit2 className="w-5 h-5" />
+                  Save Changes
+                </button>
+                <button
+                  onClick={handleCancelEdit}
+                  className="px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg flex items-center justify-center transition-colors font-medium"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
@@ -1908,7 +1948,13 @@ export function AuthorizedPersonsManager() {
                 )}
 
                 <div ref={previewRef} className="overflow-auto">
-                  {renderMultiPersonLandscape(selectedPersons)}
+                  {renderMultiPersonLandscape(
+                    // Use latest person data from persons array to ensure color changes are reflected
+                    selectedPersons.map(sp => {
+                      const latestPerson = persons.find(p => p.id === sp.id);
+                      return latestPerson || sp;
+                    })
+                  )}
                 </div>
               </div>
             )}
