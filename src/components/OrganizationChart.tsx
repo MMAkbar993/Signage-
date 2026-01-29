@@ -13,7 +13,7 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
     const [dragOverMember, setDragOverMember] = useState(null)
     const [memberPositions, setMemberPositions] = useState({})
     const [chartImage, setChartImage] = useState(null)
-    const [chartStyle, setChartStyle] = useState('modern') // modern, classic, minimal, colorful, professional, twolevel, threelevel, fourlevel, colorcoded
+    const [chartStyle, setChartStyle] = useState('modern') // modern, classic, minimal, colorful, professional, twolevel, threelevel, fourlevel, colorcoded, wiring, pid, circuit, mechanical, photo, horizontal, company, nonprofit, corporate, hospital, hr, school
     const [paperSize, setPaperSize] = useState('A4') // A4, A3, Legal
     const [orientation, setOrientation] = useState('landscape') // portrait, landscape
     const chartContainerRef = useRef(null)
@@ -907,6 +907,116 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                 avatar: 'bg-white border-2 border-white',
                 lineColor: '#6b7280', // Gray lines for colorcoded style
                 avatarIcon: 'text-gray-600'
+            },
+            // NEW ENGINEERING DIAGRAM STYLES
+            wiring: {
+                card: 'bg-white border-3 border-gray-600 rounded-md shadow-lg',
+                border: 'border-gray-600',
+                text: 'text-gray-900',
+                role: 'text-gray-700 font-bold',
+                avatar: 'bg-gray-100 border-2 border-gray-400',
+                lineColor: '#dc2626', // Red for wiring (power lines)
+                avatarIcon: 'text-gray-600'
+            },
+            pid: {
+                card: 'bg-gradient-to-b from-slate-700 to-slate-800 border-3 border-slate-500 rounded-xl shadow-2xl',
+                border: 'border-slate-500',
+                text: 'text-white',
+                role: 'text-cyan-300 font-semibold uppercase',
+                avatar: 'bg-white border-2 border-cyan-400',
+                lineColor: '#64748b', // Slate for P&ID flow lines
+                avatarIcon: 'text-slate-700'
+            },
+            circuit: {
+                card: 'bg-gray-100 border-3 border-gray-700 rounded-sm shadow-lg',
+                border: 'border-gray-700',
+                text: 'text-gray-900 font-semibold',
+                role: 'text-gray-700 font-bold uppercase',
+                avatar: 'bg-gray-300 border-2 border-gray-600',
+                lineColor: '#374151', // Dark gray for circuit traces
+                avatarIcon: 'text-gray-700'
+            },
+            mechanical: {
+                card: 'bg-gradient-to-br from-indigo-50 to-white border-2 border-indigo-500 rounded-lg shadow-xl',
+                border: 'border-indigo-500',
+                text: 'text-gray-900',
+                role: 'text-indigo-700 font-bold uppercase',
+                avatar: 'bg-indigo-100 border-2 border-indigo-400',
+                lineColor: '#6366f1', // Indigo for mechanical diagrams
+                avatarIcon: 'text-indigo-600'
+            },
+            // NEW ORGANIZATION CHART STYLES
+            photo: {
+                card: 'bg-white border-2 border-amber-400 rounded-2xl shadow-lg',
+                border: 'border-amber-400',
+                text: 'text-gray-900 font-semibold',
+                role: 'text-amber-600 font-medium',
+                avatar: 'bg-gradient-to-br from-amber-100 to-amber-200 border-3 border-amber-300',
+                lineColor: '#f59e0b', // Amber for photo chart
+                avatarIcon: 'text-amber-600'
+            },
+            horizontal: {
+                card: 'bg-gradient-to-r from-rose-500 to-pink-500 border-2 border-rose-600 rounded-xl shadow-xl',
+                border: 'border-rose-600',
+                text: 'text-white font-bold',
+                role: 'text-rose-100 font-semibold',
+                avatar: 'bg-white border-3 border-white',
+                lineColor: '#f43f5e', // Rose for horizontal chart
+                avatarIcon: 'text-rose-500'
+            },
+            company: {
+                card: 'bg-gradient-to-b from-slate-800 to-slate-900 border-2 border-slate-600 rounded-lg shadow-2xl',
+                border: 'border-slate-600',
+                text: 'text-white font-bold',
+                role: 'text-amber-400 font-semibold uppercase',
+                avatar: 'bg-amber-400 border-3 border-amber-300',
+                lineColor: '#64748b', // Slate for company chart
+                avatarIcon: 'text-slate-800'
+            },
+            nonprofit: {
+                card: 'bg-gradient-to-b from-emerald-600 to-emerald-700 border-3 border-emerald-500 rounded-xl shadow-xl',
+                border: 'border-emerald-500',
+                text: 'text-white font-bold',
+                role: 'text-emerald-100 font-semibold',
+                avatar: 'bg-white border-3 border-emerald-300',
+                lineColor: '#10b981', // Emerald for nonprofit chart
+                avatarIcon: 'text-emerald-600'
+            },
+            corporate: {
+                card: 'bg-gradient-to-b from-zinc-900 to-black border-2 border-amber-500 rounded-lg shadow-2xl',
+                border: 'border-amber-500',
+                text: 'text-white font-bold',
+                role: 'text-amber-400 font-bold uppercase',
+                avatar: 'bg-amber-500 border-4 border-amber-400',
+                lineColor: '#71717a', // Zinc for corporate chart
+                avatarIcon: 'text-zinc-900'
+            },
+            hospital: {
+                card: 'bg-gradient-to-b from-blue-700 to-blue-800 border-3 border-blue-500 rounded-xl shadow-2xl',
+                border: 'border-blue-500',
+                text: 'text-white font-bold',
+                role: 'text-blue-100 font-bold uppercase',
+                avatar: 'bg-white border-4 border-blue-300',
+                lineColor: '#3b82f6', // Blue for hospital chart
+                avatarIcon: 'text-blue-700'
+            },
+            hr: {
+                card: 'bg-gradient-to-b from-orange-500 to-orange-600 border-3 border-orange-400 rounded-xl shadow-xl',
+                border: 'border-orange-400',
+                text: 'text-white font-bold',
+                role: 'text-orange-100 font-semibold',
+                avatar: 'bg-white border-3 border-orange-200',
+                lineColor: '#f97316', // Orange for HR chart
+                avatarIcon: 'text-orange-600'
+            },
+            school: {
+                card: 'bg-gradient-to-b from-indigo-700 to-indigo-800 border-3 border-indigo-500 rounded-xl shadow-2xl',
+                border: 'border-indigo-500',
+                text: 'text-white font-bold',
+                role: 'text-indigo-100 font-bold uppercase',
+                avatar: 'bg-amber-400 border-4 border-amber-300',
+                lineColor: '#6366f1', // Indigo for school chart
+                avatarIcon: 'text-indigo-800'
             }
         }
         return styles[chartStyle] || styles.modern
@@ -1086,7 +1196,7 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
         if (!parent || !child) return null
 
         const styleClasses = getStyleClasses()
-        const lineColor = styleClasses.lineColor
+        let lineColor = styleClasses.lineColor
 
         // Card dimensions vary by style
         const cardWidth = 200 // Average of min 180px and max 220px
@@ -1104,10 +1214,134 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
         const midY = startY + (endY - startY) / 2
 
         // Calculate bounding box for SVG
-        const minX = Math.min(startX, endX) - 10
-        const maxX = Math.max(startX, endX) + 10
-        const minY = Math.min(startY, endY) - 10
-        const maxY = Math.max(startY, endY) + 10
+        const minX = Math.min(startX, endX) - 20
+        const maxX = Math.max(startX, endX) + 20
+        const minY = Math.min(startY, endY) - 20
+        const maxY = Math.max(startY, endY) + 20
+
+        // Get hierarchy level for color-coded connections
+        const parentLevel = getHierarchyLevel(parentId)
+
+        // Custom line styles for new diagram types
+        let strokeWidth = 2
+        let strokeDasharray = ''
+        let strokeLinecap = 'round'
+        let pathStyle = 'elbow' // elbow, straight, curved
+
+        // WIRING DIAGRAM - Thick colored wires with terminal connectors
+        if (chartStyle === 'wiring') {
+            strokeWidth = 4
+            strokeLinecap = 'round'
+            pathStyle = 'elbow'
+            if (parentLevel === 0) lineColor = '#dc2626' // Red
+            else if (parentLevel === 1) lineColor = '#2563eb' // Blue
+            else lineColor = '#16a34a' // Green
+        }
+
+        // P&ID - Flow lines with direction indicators
+        if (chartStyle === 'pid') {
+            strokeWidth = 3
+            pathStyle = 'elbow'
+            if (parentLevel === 0) lineColor = '#64748b' // Slate
+            else if (parentLevel === 1) lineColor = '#0891b2' // Cyan
+            else lineColor = '#14b8a6' // Teal
+        }
+
+        // CIRCUIT DIAGRAM - Precise angular connections
+        if (chartStyle === 'circuit') {
+            strokeWidth = 2
+            strokeLinecap = 'square'
+            pathStyle = 'elbow'
+            lineColor = '#374151' // Gray-700 for all circuit traces
+        }
+
+        // MECHANICAL DIAGRAM - Technical drawing lines
+        if (chartStyle === 'mechanical') {
+            strokeWidth = 2
+            strokeDasharray = '6,3'
+            pathStyle = 'elbow'
+            if (parentLevel === 0) lineColor = '#6366f1' // Indigo
+            else if (parentLevel === 1) lineColor = '#a855f7' // Purple
+            else lineColor = '#8b5cf6' // Violet
+        }
+
+        // PHOTO ORG CHART - Warm gradient lines
+        if (chartStyle === 'photo') {
+            strokeWidth = 3
+            pathStyle = 'elbow'
+            if (parentLevel === 0) lineColor = '#f59e0b' // Amber
+            else if (parentLevel === 1) lineColor = '#0ea5e9' // Sky
+            else lineColor = '#10b981' // Emerald
+        }
+
+        // HORIZONTAL ORG CHART - Vibrant gradient lines
+        if (chartStyle === 'horizontal' || chartStyle === 'school') {
+            strokeWidth = 3
+            pathStyle = 'elbow'
+            if (parentLevel === 0) lineColor = '#f43f5e' // Rose
+            else if (parentLevel === 1) lineColor = '#d946ef' // Fuchsia
+            else lineColor = '#8b5cf6' // Violet
+        }
+
+        // COMPANY ORG CHART - Professional slate lines
+        if (chartStyle === 'company') {
+            strokeWidth = 2
+            pathStyle = 'elbow'
+            if (parentLevel === 0) lineColor = '#64748b' // Slate
+            else lineColor = '#94a3b8' // Slate-400
+        }
+
+        // NON-PROFIT ORG CHART - Green ecosystem lines
+        if (chartStyle === 'nonprofit') {
+            strokeWidth = 3
+            pathStyle = 'elbow'
+            if (parentLevel === 0) lineColor = '#10b981' // Emerald
+            else if (parentLevel === 1) lineColor = '#14b8a6' // Teal
+            else lineColor = '#06b6d4' // Cyan
+        }
+
+        // CORPORATE ORG CHART - Formal dark lines
+        if (chartStyle === 'corporate') {
+            strokeWidth = 2
+            pathStyle = 'elbow'
+            if (parentLevel === 0) lineColor = '#f59e0b' // Amber accent
+            else lineColor = '#71717a' // Zinc-500
+        }
+
+        // HOSPITAL ORG CHART - Medical blue lines
+        if (chartStyle === 'hospital') {
+            strokeWidth = 3
+            pathStyle = 'elbow'
+            if (parentLevel === 0) lineColor = '#3b82f6' // Blue
+            else if (parentLevel === 1) lineColor = '#0ea5e9' // Sky
+            else lineColor = '#14b8a6' // Teal
+        }
+
+        // HR CHART - Warm people-focused lines
+        if (chartStyle === 'hr') {
+            strokeWidth = 3
+            pathStyle = 'elbow'
+            if (parentLevel === 0) lineColor = '#f97316' // Orange
+            else if (parentLevel === 1) lineColor = '#f59e0b' // Amber
+            else lineColor = '#eab308' // Yellow
+        }
+
+        // Generate path based on style
+        let pathD = ''
+        if (pathStyle === 'elbow') {
+            pathD = `M ${startX - minX} ${startY - minY} 
+                     L ${startX - minX} ${midY - minY}
+                     L ${endX - minX} ${midY - minY}
+                     L ${endX - minX} ${endY - minY}`
+        } else if (pathStyle === 'curved') {
+            const controlY = startY + (endY - startY) * 0.5
+            pathD = `M ${startX - minX} ${startY - minY} 
+                     C ${startX - minX} ${controlY - minY},
+                       ${endX - minX} ${controlY - minY},
+                       ${endX - minX} ${endY - minY}`
+        } else {
+            pathD = `M ${startX - minX} ${startY - minY} L ${endX - minX} ${endY - minY}`
+        }
 
         return (
             <svg
@@ -1120,26 +1354,86 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                     height: `${maxY - minY}px`
                 }}
             >
+                {/* Shadow effect for wiring diagram */}
+                {chartStyle === 'wiring' && (
+                    <path
+                        d={pathD}
+                        stroke="rgba(0,0,0,0.2)"
+                        strokeWidth={strokeWidth + 2}
+                        fill="none"
+                        strokeLinecap={strokeLinecap as any}
+                        transform="translate(2, 2)"
+                    />
+                )}
+                
+                {/* Main connection line */}
                 <path
-                    d={`M ${startX - minX} ${startY - minY} 
-              L ${startX - minX} ${midY - minY}
-              L ${endX - minX} ${midY - minY}
-              L ${endX - minX} ${endY - minY}`}
+                    d={pathD}
                     stroke={lineColor}
-                    strokeWidth="2"
+                    strokeWidth={strokeWidth}
                     fill="none"
+                    strokeDasharray={strokeDasharray}
+                    strokeLinecap={strokeLinecap as any}
                     markerEnd={`url(#arrowhead-${parentId}-${childId})`}
                 />
+
+                {/* Connection dots for wiring diagram */}
+                {chartStyle === 'wiring' && (
+                    <>
+                        <circle 
+                            cx={startX - minX} 
+                            cy={startY - minY} 
+                            r="6" 
+                            fill={lineColor}
+                            stroke="#fff"
+                            strokeWidth="2"
+                        />
+                        <circle 
+                            cx={endX - minX} 
+                            cy={endY - minY} 
+                            r="5" 
+                            fill={lineColor}
+                            stroke="#fff"
+                            strokeWidth="2"
+                        />
+                    </>
+                )}
+
+                {/* Flow direction indicator for P&ID */}
+                {chartStyle === 'pid' && (
+                    <circle 
+                        cx={(startX - minX + endX - minX) / 2} 
+                        cy={midY - minY} 
+                        r="4" 
+                        fill={lineColor}
+                    />
+                )}
+
+                {/* Junction dots for circuit diagram */}
+                {chartStyle === 'circuit' && (
+                    <>
+                        <circle 
+                            cx={startX - minX} 
+                            cy={midY - minY} 
+                            r="3" 
+                            fill={lineColor}
+                        />
+                    </>
+                )}
+
                 <defs>
                     <marker
                         id={`arrowhead-${parentId}-${childId}`}
-                        markerWidth="10"
-                        markerHeight="10"
-                        refX="5"
-                        refY="3"
+                        markerWidth={chartStyle === 'wiring' ? 12 : 10}
+                        markerHeight={chartStyle === 'wiring' ? 12 : 10}
+                        refX={chartStyle === 'wiring' ? 6 : 5}
+                        refY={chartStyle === 'wiring' ? 4 : 3}
                         orient="auto"
                     >
-                        <polygon points="0 0, 10 3, 0 6" fill={lineColor} />
+                        <polygon 
+                            points={chartStyle === 'wiring' ? "0 0, 12 4, 0 8" : "0 0, 10 3, 0 6"} 
+                            fill={lineColor} 
+                        />
                     </marker>
                 </defs>
             </svg>
@@ -1434,6 +1728,540 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
             }
         }
 
+        // WIRING DIAGRAM STYLE - Clear connections with elbow lines, component-like boxes
+        const getWiringCardStyle = () => {
+            if (hierarchyLevel === 0) {
+                // Power Source / CEO - Red terminal
+                return {
+                    card: 'bg-white border-3 border-red-600 rounded-md shadow-lg',
+                    border: 'border-red-600',
+                    text: 'text-gray-900',
+                    role: 'text-red-700 font-bold',
+                    avatar: 'bg-red-100 border-2 border-red-400',
+                    avatarIcon: 'text-red-600',
+                    isWiring: true,
+                    wireColor: '#dc2626'
+                }
+            } else if (hierarchyLevel === 1) {
+                // Control Points - Blue terminals (Managers)
+                return {
+                    card: 'bg-white border-3 border-blue-600 rounded-md shadow-lg',
+                    border: 'border-blue-600',
+                    text: 'text-gray-900',
+                    role: 'text-blue-700 font-bold',
+                    avatar: 'bg-blue-100 border-2 border-blue-400',
+                    avatarIcon: 'text-blue-600',
+                    isWiring: true,
+                    wireColor: '#2563eb'
+                }
+            } else {
+                // End Points - Green terminals (Employees)
+                return {
+                    card: 'bg-white border-3 border-green-600 rounded-md shadow-lg',
+                    border: 'border-green-600',
+                    text: 'text-gray-900',
+                    role: 'text-green-700 font-bold',
+                    avatar: 'bg-green-100 border-2 border-green-400',
+                    avatarIcon: 'text-green-600',
+                    isWiring: true,
+                    wireColor: '#16a34a'
+                }
+            }
+        }
+
+        // P&ID STYLE - Department containers with flow direction, process-like appearance
+        const getPidCardStyle = () => {
+            if (hierarchyLevel === 0) {
+                // Main System - Large container with thick border
+                return {
+                    card: 'bg-gradient-to-b from-slate-700 to-slate-800 border-4 border-slate-500 rounded-xl shadow-2xl',
+                    border: 'border-slate-500',
+                    text: 'text-white',
+                    role: 'text-cyan-300 font-semibold uppercase tracking-wider',
+                    avatar: 'bg-white border-2 border-cyan-400',
+                    avatarIcon: 'text-slate-700',
+                    isPid: true,
+                    flowIndicator: 'top'
+                }
+            } else if (hierarchyLevel === 1) {
+                // Control Valves / Managers - Medium containers
+                return {
+                    card: 'bg-gradient-to-b from-cyan-600 to-cyan-700 border-3 border-cyan-400 rounded-lg shadow-xl',
+                    border: 'border-cyan-400',
+                    text: 'text-white',
+                    role: 'text-cyan-100 font-semibold uppercase tracking-wide',
+                    avatar: 'bg-white border-2 border-cyan-300',
+                    avatarIcon: 'text-cyan-700',
+                    isPid: true,
+                    flowIndicator: 'middle'
+                }
+            } else {
+                // Flow Endpoints - Smaller elements
+                return {
+                    card: 'bg-gradient-to-b from-teal-500 to-teal-600 border-2 border-teal-300 rounded-lg shadow-lg',
+                    border: 'border-teal-300',
+                    text: 'text-white',
+                    role: 'text-teal-100 font-medium',
+                    avatar: 'bg-white border-2 border-teal-200',
+                    avatarIcon: 'text-teal-600',
+                    isPid: true,
+                    flowIndicator: 'bottom'
+                }
+            }
+        }
+
+        // CIRCUIT DIAGRAM STYLE - Logic paths, power flow, hierarchical
+        const getCircuitCardStyle = () => {
+            if (hierarchyLevel === 0) {
+                // Power Source - Main supply (Top Management)
+                return {
+                    card: 'bg-yellow-400 border-4 border-yellow-600 rounded-none shadow-xl',
+                    border: 'border-yellow-600',
+                    text: 'text-gray-900 font-bold',
+                    role: 'text-yellow-800 font-black uppercase',
+                    avatar: 'bg-yellow-200 border-3 border-yellow-500',
+                    avatarIcon: 'text-yellow-700',
+                    isCircuit: true,
+                    symbolType: 'power'
+                }
+            } else if (hierarchyLevel === 1) {
+                // Control Logic - Switches/Controllers (Mid Management)
+                return {
+                    card: 'bg-gray-100 border-3 border-gray-700 rounded-sm shadow-lg',
+                    border: 'border-gray-700',
+                    text: 'text-gray-900 font-semibold',
+                    role: 'text-gray-700 font-bold uppercase',
+                    avatar: 'bg-gray-300 border-2 border-gray-600',
+                    avatarIcon: 'text-gray-700',
+                    isCircuit: true,
+                    symbolType: 'switch'
+                }
+            } else if (hierarchyLevel === 2) {
+                // Signal Processing - Resistors/Capacitors (Team Leads)
+                return {
+                    card: 'bg-blue-100 border-2 border-blue-600 rounded-sm shadow-md',
+                    border: 'border-blue-600',
+                    text: 'text-gray-900',
+                    role: 'text-blue-800 font-semibold',
+                    avatar: 'bg-blue-200 border-2 border-blue-400',
+                    avatarIcon: 'text-blue-600',
+                    isCircuit: true,
+                    symbolType: 'processor'
+                }
+            } else {
+                // Output - LEDs/Load (Staff)
+                return {
+                    card: 'bg-green-100 border-2 border-green-600 rounded-sm shadow-md',
+                    border: 'border-green-600',
+                    text: 'text-gray-900',
+                    role: 'text-green-800 font-medium',
+                    avatar: 'bg-green-200 border-2 border-green-400',
+                    avatarIcon: 'text-green-600',
+                    isCircuit: true,
+                    symbolType: 'output'
+                }
+            }
+        }
+
+        // MECHANICAL DIAGRAM STYLE - Clean alignment, equal sizing, structural clarity
+        const getMechanicalCardStyle = () => {
+            // All levels have consistent sizing - focus on layout and alignment
+            const baseStyle = {
+                card: 'bg-white border-2 rounded-lg shadow-md',
+                text: 'text-gray-900',
+                avatar: 'bg-gray-100 border-2',
+                avatarIcon: 'text-gray-600',
+                isMechanical: true
+            }
+            
+            if (hierarchyLevel === 0) {
+                // Main Assembly - Larger, primary color
+                return {
+                    ...baseStyle,
+                    card: 'bg-gradient-to-br from-indigo-50 to-white border-3 border-indigo-500 rounded-lg shadow-xl',
+                    border: 'border-indigo-500',
+                    role: 'text-indigo-700 font-bold uppercase tracking-wide',
+                    avatar: 'bg-indigo-100 border-2 border-indigo-400',
+                    avatarIcon: 'text-indigo-600'
+                }
+            } else if (hierarchyLevel === 1) {
+                // Sub-Assembly - Secondary color
+                return {
+                    ...baseStyle,
+                    card: 'bg-gradient-to-br from-purple-50 to-white border-2 border-purple-400 rounded-lg shadow-lg',
+                    border: 'border-purple-400',
+                    role: 'text-purple-700 font-semibold uppercase',
+                    avatar: 'bg-purple-100 border-2 border-purple-300',
+                    avatarIcon: 'text-purple-600'
+                }
+            } else if (hierarchyLevel === 2) {
+                // Component Group
+                return {
+                    ...baseStyle,
+                    card: 'bg-gradient-to-br from-violet-50 to-white border-2 border-violet-300 rounded-lg shadow-md',
+                    border: 'border-violet-300',
+                    role: 'text-violet-700 font-medium',
+                    avatar: 'bg-violet-100 border-2 border-violet-200',
+                    avatarIcon: 'text-violet-600'
+                }
+            } else {
+                // Individual Parts
+                return {
+                    ...baseStyle,
+                    card: 'bg-gradient-to-br from-gray-50 to-white border-2 border-gray-300 rounded-lg shadow-sm',
+                    border: 'border-gray-300',
+                    role: 'text-gray-600',
+                    avatar: 'bg-gray-100 border-2 border-gray-200',
+                    avatarIcon: 'text-gray-500'
+                }
+            }
+        }
+
+        // PHOTO ORG CHART - Emphasizes profile photos with circular frames
+        const getPhotoCardStyle = () => {
+            if (hierarchyLevel === 0) {
+                return {
+                    card: 'bg-white border-3 border-amber-500 rounded-2xl shadow-xl',
+                    border: 'border-amber-500',
+                    text: 'text-gray-900 font-bold',
+                    role: 'text-amber-700 font-semibold',
+                    avatar: 'bg-gradient-to-br from-amber-100 to-amber-200 border-4 border-amber-400',
+                    avatarIcon: 'text-amber-600',
+                    isPhoto: true
+                }
+            } else if (hierarchyLevel === 1) {
+                return {
+                    card: 'bg-white border-2 border-sky-400 rounded-2xl shadow-lg',
+                    border: 'border-sky-400',
+                    text: 'text-gray-900 font-semibold',
+                    role: 'text-sky-600 font-medium',
+                    avatar: 'bg-gradient-to-br from-sky-100 to-sky-200 border-3 border-sky-300',
+                    avatarIcon: 'text-sky-600',
+                    isPhoto: true
+                }
+            } else {
+                return {
+                    card: 'bg-white border-2 border-emerald-300 rounded-2xl shadow-md',
+                    border: 'border-emerald-300',
+                    text: 'text-gray-800',
+                    role: 'text-emerald-600',
+                    avatar: 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-200',
+                    avatarIcon: 'text-emerald-500',
+                    isPhoto: true
+                }
+            }
+        }
+
+        // HORIZONTAL ORG CHART - Optimized for left-to-right flow
+        const getHorizontalCardStyle = () => {
+            if (hierarchyLevel === 0) {
+                return {
+                    card: 'bg-gradient-to-r from-rose-500 to-pink-500 border-2 border-rose-600 rounded-xl shadow-xl',
+                    border: 'border-rose-600',
+                    text: 'text-white font-bold',
+                    role: 'text-rose-100 font-semibold uppercase tracking-wide',
+                    avatar: 'bg-white border-3 border-white',
+                    avatarIcon: 'text-rose-500',
+                    isHorizontal: true
+                }
+            } else if (hierarchyLevel === 1) {
+                return {
+                    card: 'bg-gradient-to-r from-fuchsia-400 to-purple-400 border-2 border-fuchsia-500 rounded-xl shadow-lg',
+                    border: 'border-fuchsia-500',
+                    text: 'text-white font-semibold',
+                    role: 'text-fuchsia-100 font-medium',
+                    avatar: 'bg-white border-2 border-white',
+                    avatarIcon: 'text-fuchsia-500',
+                    isHorizontal: true
+                }
+            } else {
+                return {
+                    card: 'bg-gradient-to-r from-violet-300 to-purple-300 border-2 border-violet-400 rounded-xl shadow-md',
+                    border: 'border-violet-400',
+                    text: 'text-gray-800 font-medium',
+                    role: 'text-violet-700',
+                    avatar: 'bg-white border-2 border-violet-200',
+                    avatarIcon: 'text-violet-500',
+                    isHorizontal: true
+                }
+            }
+        }
+
+        // COMPANY ORG CHART - Professional corporate look
+        const getCompanyCardStyle = () => {
+            if (hierarchyLevel === 0) {
+                // CEO / Executive
+                return {
+                    card: 'bg-gradient-to-b from-slate-800 to-slate-900 border-2 border-slate-600 rounded-lg shadow-2xl',
+                    border: 'border-slate-600',
+                    text: 'text-white font-bold',
+                    role: 'text-amber-400 font-semibold uppercase tracking-wider',
+                    avatar: 'bg-amber-400 border-3 border-amber-300',
+                    avatarIcon: 'text-slate-800'
+                }
+            } else if (hierarchyLevel === 1) {
+                // Department Heads
+                return {
+                    card: 'bg-gradient-to-b from-slate-600 to-slate-700 border-2 border-slate-500 rounded-lg shadow-xl',
+                    border: 'border-slate-500',
+                    text: 'text-white font-semibold',
+                    role: 'text-slate-200 font-medium uppercase',
+                    avatar: 'bg-white border-2 border-slate-300',
+                    avatarIcon: 'text-slate-600'
+                }
+            } else if (hierarchyLevel === 2) {
+                // Managers
+                return {
+                    card: 'bg-white border-2 border-slate-300 rounded-lg shadow-lg',
+                    border: 'border-slate-300',
+                    text: 'text-slate-800 font-semibold',
+                    role: 'text-slate-600 font-medium',
+                    avatar: 'bg-slate-100 border-2 border-slate-200',
+                    avatarIcon: 'text-slate-500'
+                }
+            } else {
+                // Staff
+                return {
+                    card: 'bg-slate-50 border border-slate-200 rounded-lg shadow-md',
+                    border: 'border-slate-200',
+                    text: 'text-slate-700',
+                    role: 'text-slate-500',
+                    avatar: 'bg-slate-100 border border-slate-200',
+                    avatarIcon: 'text-slate-400'
+                }
+            }
+        }
+
+        // NON-PROFIT ORG CHART - Warm, mission-focused colors
+        const getNonProfitCardStyle = () => {
+            if (hierarchyLevel === 0) {
+                // Board of Directors
+                return {
+                    card: 'bg-gradient-to-b from-emerald-600 to-emerald-700 border-3 border-emerald-500 rounded-xl shadow-xl',
+                    border: 'border-emerald-500',
+                    text: 'text-white font-bold',
+                    role: 'text-emerald-100 font-semibold uppercase',
+                    avatar: 'bg-white border-3 border-emerald-300',
+                    avatarIcon: 'text-emerald-600'
+                }
+            } else if (hierarchyLevel === 1) {
+                // Executive Director
+                return {
+                    card: 'bg-gradient-to-b from-teal-500 to-teal-600 border-2 border-teal-400 rounded-xl shadow-lg',
+                    border: 'border-teal-400',
+                    text: 'text-white font-semibold',
+                    role: 'text-teal-100 font-medium',
+                    avatar: 'bg-white border-2 border-teal-200',
+                    avatarIcon: 'text-teal-600'
+                }
+            } else if (hierarchyLevel === 2) {
+                // Program Teams
+                return {
+                    card: 'bg-gradient-to-b from-cyan-100 to-cyan-200 border-2 border-cyan-300 rounded-xl shadow-md',
+                    border: 'border-cyan-300',
+                    text: 'text-teal-800 font-medium',
+                    role: 'text-teal-600',
+                    avatar: 'bg-white border-2 border-cyan-200',
+                    avatarIcon: 'text-cyan-600'
+                }
+            } else {
+                // Volunteers
+                return {
+                    card: 'bg-white border-2 border-emerald-200 rounded-xl shadow-sm',
+                    border: 'border-emerald-200',
+                    text: 'text-teal-700',
+                    role: 'text-emerald-500',
+                    avatar: 'bg-emerald-50 border border-emerald-200',
+                    avatarIcon: 'text-emerald-400'
+                }
+            }
+        }
+
+        // CORPORATE ORG CHART - Enterprise-level formal structure
+        const getCorporateCardStyle = () => {
+            if (hierarchyLevel === 0) {
+                // CEO / Board
+                return {
+                    card: 'bg-gradient-to-b from-zinc-900 to-black border-2 border-amber-500 rounded-lg shadow-2xl',
+                    border: 'border-amber-500',
+                    text: 'text-white font-bold',
+                    role: 'text-amber-400 font-bold uppercase tracking-widest',
+                    avatar: 'bg-amber-500 border-4 border-amber-400',
+                    avatarIcon: 'text-zinc-900',
+                    headerBg: '#18181b'
+                }
+            } else if (hierarchyLevel === 1) {
+                // C-Suite / VPs
+                return {
+                    card: 'bg-gradient-to-b from-zinc-700 to-zinc-800 border-2 border-zinc-500 rounded-lg shadow-xl',
+                    border: 'border-zinc-500',
+                    text: 'text-white font-semibold',
+                    role: 'text-zinc-300 font-medium uppercase tracking-wide',
+                    avatar: 'bg-zinc-300 border-3 border-zinc-200',
+                    avatarIcon: 'text-zinc-700'
+                }
+            } else if (hierarchyLevel === 2) {
+                // Directors
+                return {
+                    card: 'bg-zinc-100 border-2 border-zinc-400 rounded-lg shadow-lg',
+                    border: 'border-zinc-400',
+                    text: 'text-zinc-800 font-semibold',
+                    role: 'text-zinc-600 font-medium uppercase',
+                    avatar: 'bg-zinc-200 border-2 border-zinc-300',
+                    avatarIcon: 'text-zinc-600'
+                }
+            } else if (hierarchyLevel === 3) {
+                // Managers
+                return {
+                    card: 'bg-white border-2 border-zinc-300 rounded-lg shadow-md',
+                    border: 'border-zinc-300',
+                    text: 'text-zinc-700 font-medium',
+                    role: 'text-zinc-500',
+                    avatar: 'bg-zinc-100 border border-zinc-200',
+                    avatarIcon: 'text-zinc-500'
+                }
+            } else {
+                // Staff
+                return {
+                    card: 'bg-zinc-50 border border-zinc-200 rounded-lg shadow-sm',
+                    border: 'border-zinc-200',
+                    text: 'text-zinc-600',
+                    role: 'text-zinc-400',
+                    avatar: 'bg-zinc-100 border border-zinc-200',
+                    avatarIcon: 'text-zinc-400'
+                }
+            }
+        }
+
+        // HOSPITAL ORG CHART - Healthcare-focused with clinical colors
+        const getHospitalCardStyle = () => {
+            if (hierarchyLevel === 0) {
+                // Medical Director / CEO
+                return {
+                    card: 'bg-gradient-to-b from-blue-700 to-blue-800 border-3 border-blue-500 rounded-xl shadow-2xl',
+                    border: 'border-blue-500',
+                    text: 'text-white font-bold',
+                    role: 'text-blue-100 font-bold uppercase tracking-wide',
+                    avatar: 'bg-white border-4 border-blue-300',
+                    avatarIcon: 'text-blue-700'
+                }
+            } else if (hierarchyLevel === 1) {
+                // Doctors / Department Chiefs
+                return {
+                    card: 'bg-gradient-to-b from-sky-500 to-sky-600 border-2 border-sky-400 rounded-xl shadow-xl',
+                    border: 'border-sky-400',
+                    text: 'text-white font-semibold',
+                    role: 'text-sky-100 font-medium uppercase',
+                    avatar: 'bg-white border-3 border-sky-200',
+                    avatarIcon: 'text-sky-600'
+                }
+            } else if (hierarchyLevel === 2) {
+                // Nurses / Team Leads
+                return {
+                    card: 'bg-gradient-to-b from-teal-100 to-teal-200 border-2 border-teal-300 rounded-xl shadow-lg',
+                    border: 'border-teal-300',
+                    text: 'text-teal-800 font-semibold',
+                    role: 'text-teal-600 font-medium',
+                    avatar: 'bg-white border-2 border-teal-200',
+                    avatarIcon: 'text-teal-600'
+                }
+            } else {
+                // Administrative Staff
+                return {
+                    card: 'bg-white border-2 border-blue-200 rounded-xl shadow-md',
+                    border: 'border-blue-200',
+                    text: 'text-blue-800',
+                    role: 'text-blue-500',
+                    avatar: 'bg-blue-50 border border-blue-200',
+                    avatarIcon: 'text-blue-400'
+                }
+            }
+        }
+
+        // HR DEPARTMENT ORG CHART - People-focused warm colors
+        const getHRCardStyle = () => {
+            if (hierarchyLevel === 0) {
+                // HR Director
+                return {
+                    card: 'bg-gradient-to-b from-orange-500 to-orange-600 border-3 border-orange-400 rounded-xl shadow-xl',
+                    border: 'border-orange-400',
+                    text: 'text-white font-bold',
+                    role: 'text-orange-100 font-semibold uppercase',
+                    avatar: 'bg-white border-3 border-orange-200',
+                    avatarIcon: 'text-orange-600'
+                }
+            } else if (hierarchyLevel === 1) {
+                // HR Managers (Recruitment, Payroll, Training)
+                return {
+                    card: 'bg-gradient-to-b from-amber-400 to-amber-500 border-2 border-amber-300 rounded-xl shadow-lg',
+                    border: 'border-amber-300',
+                    text: 'text-amber-900 font-semibold',
+                    role: 'text-amber-800 font-medium',
+                    avatar: 'bg-white border-2 border-amber-200',
+                    avatarIcon: 'text-amber-600'
+                }
+            } else {
+                // HR Staff
+                return {
+                    card: 'bg-gradient-to-b from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-xl shadow-md',
+                    border: 'border-yellow-300',
+                    text: 'text-amber-800',
+                    role: 'text-amber-600',
+                    avatar: 'bg-white border border-yellow-200',
+                    avatarIcon: 'text-amber-500'
+                }
+            }
+        }
+
+        // SCHOOL ORG CHART - Education-focused with academic colors
+        const getSchoolCardStyle = () => {
+            if (hierarchyLevel === 0) {
+                // Principal
+                return {
+                    card: 'bg-gradient-to-b from-indigo-700 to-indigo-800 border-3 border-indigo-500 rounded-xl shadow-2xl',
+                    border: 'border-indigo-500',
+                    text: 'text-white font-bold',
+                    role: 'text-indigo-100 font-bold uppercase tracking-wide',
+                    avatar: 'bg-amber-400 border-4 border-amber-300',
+                    avatarIcon: 'text-indigo-800',
+                    isHorizontal: true
+                }
+            } else if (hierarchyLevel === 1) {
+                // Vice Principal / Department Heads
+                return {
+                    card: 'bg-gradient-to-b from-indigo-500 to-indigo-600 border-2 border-indigo-400 rounded-xl shadow-xl',
+                    border: 'border-indigo-400',
+                    text: 'text-white font-semibold',
+                    role: 'text-indigo-100 font-medium uppercase',
+                    avatar: 'bg-white border-3 border-indigo-200',
+                    avatarIcon: 'text-indigo-600',
+                    isHorizontal: true
+                }
+            } else if (hierarchyLevel === 2) {
+                // Teachers
+                return {
+                    card: 'bg-gradient-to-b from-blue-100 to-blue-200 border-2 border-blue-300 rounded-xl shadow-lg',
+                    border: 'border-blue-300',
+                    text: 'text-indigo-800 font-semibold',
+                    role: 'text-indigo-600 font-medium',
+                    avatar: 'bg-white border-2 border-blue-200',
+                    avatarIcon: 'text-blue-600',
+                    isHorizontal: true
+                }
+            } else {
+                // Administrative Staff
+                return {
+                    card: 'bg-white border-2 border-indigo-200 rounded-xl shadow-md',
+                    border: 'border-indigo-200',
+                    text: 'text-indigo-700',
+                    role: 'text-indigo-500',
+                    avatar: 'bg-indigo-50 border border-indigo-200',
+                    avatarIcon: 'text-indigo-400',
+                    isHorizontal: true
+                }
+            }
+        }
+
         // Get the actual style classes to use
         const getCardStyle = (): {
             card: string;
@@ -1468,6 +2296,43 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
             }
             if (chartStyle === 'colorcoded') {
                 return getColorCodedCardStyle()
+            }
+            if (chartStyle === 'wiring') {
+                return getWiringCardStyle()
+            }
+            if (chartStyle === 'pid') {
+                return getPidCardStyle()
+            }
+            if (chartStyle === 'circuit') {
+                return getCircuitCardStyle()
+            }
+            if (chartStyle === 'mechanical') {
+                return getMechanicalCardStyle()
+            }
+            // New organization chart types
+            if (chartStyle === 'photo') {
+                return getPhotoCardStyle()
+            }
+            if (chartStyle === 'horizontal') {
+                return getHorizontalCardStyle()
+            }
+            if (chartStyle === 'company') {
+                return getCompanyCardStyle()
+            }
+            if (chartStyle === 'nonprofit') {
+                return getNonProfitCardStyle()
+            }
+            if (chartStyle === 'corporate') {
+                return getCorporateCardStyle()
+            }
+            if (chartStyle === 'hospital') {
+                return getHospitalCardStyle()
+            }
+            if (chartStyle === 'hr') {
+                return getHRCardStyle()
+            }
+            if (chartStyle === 'school') {
+                return getSchoolCardStyle()
             }
             // Modern style or default
             return {
@@ -1511,6 +2376,70 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                 if (hierarchyLevel === 1 || hierarchyLevel === 3) return 'ring-green-400'
                 return 'ring-orange-400'
             }
+            // New diagram types
+            if (chartStyle === 'wiring') {
+                if (hierarchyLevel === 0) return 'ring-red-500'
+                if (hierarchyLevel === 1) return 'ring-blue-500'
+                return 'ring-green-500'
+            }
+            if (chartStyle === 'pid') {
+                if (hierarchyLevel === 0) return 'ring-slate-400'
+                if (hierarchyLevel === 1) return 'ring-cyan-400'
+                return 'ring-teal-400'
+            }
+            if (chartStyle === 'circuit') {
+                if (hierarchyLevel === 0) return 'ring-yellow-500'
+                if (hierarchyLevel === 1) return 'ring-gray-500'
+                if (hierarchyLevel === 2) return 'ring-blue-500'
+                return 'ring-green-500'
+            }
+            if (chartStyle === 'mechanical') {
+                if (hierarchyLevel === 0) return 'ring-indigo-400'
+                if (hierarchyLevel === 1) return 'ring-purple-400'
+                if (hierarchyLevel === 2) return 'ring-violet-400'
+                return 'ring-gray-400'
+            }
+            // New organization chart types
+            if (chartStyle === 'photo') {
+                if (hierarchyLevel === 0) return 'ring-amber-400'
+                if (hierarchyLevel === 1) return 'ring-sky-400'
+                return 'ring-emerald-400'
+            }
+            if (chartStyle === 'horizontal') {
+                if (hierarchyLevel === 0) return 'ring-rose-400'
+                if (hierarchyLevel === 1) return 'ring-fuchsia-400'
+                return 'ring-violet-400'
+            }
+            if (chartStyle === 'company') {
+                if (hierarchyLevel === 0) return 'ring-amber-400'
+                if (hierarchyLevel === 1) return 'ring-slate-400'
+                return 'ring-slate-300'
+            }
+            if (chartStyle === 'nonprofit') {
+                if (hierarchyLevel === 0) return 'ring-emerald-400'
+                if (hierarchyLevel === 1) return 'ring-teal-400'
+                return 'ring-cyan-400'
+            }
+            if (chartStyle === 'corporate') {
+                if (hierarchyLevel === 0) return 'ring-amber-400'
+                if (hierarchyLevel === 1) return 'ring-zinc-400'
+                return 'ring-zinc-300'
+            }
+            if (chartStyle === 'hospital') {
+                if (hierarchyLevel === 0) return 'ring-blue-500'
+                if (hierarchyLevel === 1) return 'ring-sky-400'
+                return 'ring-teal-400'
+            }
+            if (chartStyle === 'hr') {
+                if (hierarchyLevel === 0) return 'ring-orange-400'
+                if (hierarchyLevel === 1) return 'ring-amber-400'
+                return 'ring-yellow-400'
+            }
+            if (chartStyle === 'school') {
+                if (hierarchyLevel === 0) return 'ring-indigo-500'
+                if (hierarchyLevel === 1) return 'ring-indigo-400'
+                return 'ring-blue-400'
+            }
             return 'ring-blue-400' // modern
         }
 
@@ -1541,6 +2470,70 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                 if (hierarchyLevel === 1 || hierarchyLevel === 3) return 'bg-green-700 hover:bg-green-800'
                 return 'bg-orange-600 hover:bg-orange-700'
             }
+            // New diagram types
+            if (chartStyle === 'wiring') {
+                if (hierarchyLevel === 0) return 'bg-red-600 hover:bg-red-700'
+                if (hierarchyLevel === 1) return 'bg-blue-600 hover:bg-blue-700'
+                return 'bg-green-600 hover:bg-green-700'
+            }
+            if (chartStyle === 'pid') {
+                if (hierarchyLevel === 0) return 'bg-slate-600 hover:bg-slate-700'
+                if (hierarchyLevel === 1) return 'bg-cyan-600 hover:bg-cyan-700'
+                return 'bg-teal-600 hover:bg-teal-700'
+            }
+            if (chartStyle === 'circuit') {
+                if (hierarchyLevel === 0) return 'bg-yellow-600 hover:bg-yellow-700'
+                if (hierarchyLevel === 1) return 'bg-gray-600 hover:bg-gray-700'
+                if (hierarchyLevel === 2) return 'bg-blue-600 hover:bg-blue-700'
+                return 'bg-green-600 hover:bg-green-700'
+            }
+            if (chartStyle === 'mechanical') {
+                if (hierarchyLevel === 0) return 'bg-indigo-600 hover:bg-indigo-700'
+                if (hierarchyLevel === 1) return 'bg-purple-600 hover:bg-purple-700'
+                if (hierarchyLevel === 2) return 'bg-violet-600 hover:bg-violet-700'
+                return 'bg-gray-600 hover:bg-gray-700'
+            }
+            // New organization chart types
+            if (chartStyle === 'photo') {
+                if (hierarchyLevel === 0) return 'bg-amber-500 hover:bg-amber-600'
+                if (hierarchyLevel === 1) return 'bg-sky-500 hover:bg-sky-600'
+                return 'bg-emerald-500 hover:bg-emerald-600'
+            }
+            if (chartStyle === 'horizontal') {
+                if (hierarchyLevel === 0) return 'bg-rose-500 hover:bg-rose-600'
+                if (hierarchyLevel === 1) return 'bg-fuchsia-500 hover:bg-fuchsia-600'
+                return 'bg-violet-500 hover:bg-violet-600'
+            }
+            if (chartStyle === 'company') {
+                if (hierarchyLevel === 0) return 'bg-slate-700 hover:bg-slate-800'
+                if (hierarchyLevel === 1) return 'bg-slate-600 hover:bg-slate-700'
+                return 'bg-slate-500 hover:bg-slate-600'
+            }
+            if (chartStyle === 'nonprofit') {
+                if (hierarchyLevel === 0) return 'bg-emerald-600 hover:bg-emerald-700'
+                if (hierarchyLevel === 1) return 'bg-teal-600 hover:bg-teal-700'
+                return 'bg-cyan-600 hover:bg-cyan-700'
+            }
+            if (chartStyle === 'corporate') {
+                if (hierarchyLevel === 0) return 'bg-zinc-800 hover:bg-zinc-900'
+                if (hierarchyLevel === 1) return 'bg-zinc-600 hover:bg-zinc-700'
+                return 'bg-zinc-500 hover:bg-zinc-600'
+            }
+            if (chartStyle === 'hospital') {
+                if (hierarchyLevel === 0) return 'bg-blue-700 hover:bg-blue-800'
+                if (hierarchyLevel === 1) return 'bg-sky-600 hover:bg-sky-700'
+                return 'bg-teal-600 hover:bg-teal-700'
+            }
+            if (chartStyle === 'hr') {
+                if (hierarchyLevel === 0) return 'bg-orange-500 hover:bg-orange-600'
+                if (hierarchyLevel === 1) return 'bg-amber-500 hover:bg-amber-600'
+                return 'bg-yellow-500 hover:bg-yellow-600'
+            }
+            if (chartStyle === 'school') {
+                if (hierarchyLevel === 0) return 'bg-indigo-700 hover:bg-indigo-800'
+                if (hierarchyLevel === 1) return 'bg-indigo-600 hover:bg-indigo-700'
+                return 'bg-blue-600 hover:bg-blue-700'
+            }
             return 'bg-blue-600 hover:bg-blue-700' // modern
         }
 
@@ -1569,6 +2562,70 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                 if (hierarchyLevel === 1 || hierarchyLevel === 3) return 'bg-green-700'
                 return 'bg-orange-600'
             }
+            // New diagram types
+            if (chartStyle === 'wiring') {
+                if (hierarchyLevel === 0) return 'bg-red-100'
+                if (hierarchyLevel === 1) return 'bg-blue-100'
+                return 'bg-green-100'
+            }
+            if (chartStyle === 'pid') {
+                if (hierarchyLevel === 0) return 'bg-slate-200'
+                if (hierarchyLevel === 1) return 'bg-cyan-100'
+                return 'bg-teal-100'
+            }
+            if (chartStyle === 'circuit') {
+                if (hierarchyLevel === 0) return 'bg-yellow-200'
+                if (hierarchyLevel === 1) return 'bg-gray-200'
+                if (hierarchyLevel === 2) return 'bg-blue-100'
+                return 'bg-green-100'
+            }
+            if (chartStyle === 'mechanical') {
+                if (hierarchyLevel === 0) return 'bg-indigo-100'
+                if (hierarchyLevel === 1) return 'bg-purple-100'
+                if (hierarchyLevel === 2) return 'bg-violet-100'
+                return 'bg-gray-100'
+            }
+            // New organization chart types
+            if (chartStyle === 'photo') {
+                if (hierarchyLevel === 0) return 'bg-amber-100'
+                if (hierarchyLevel === 1) return 'bg-sky-100'
+                return 'bg-emerald-100'
+            }
+            if (chartStyle === 'horizontal') {
+                if (hierarchyLevel === 0) return 'bg-rose-100'
+                if (hierarchyLevel === 1) return 'bg-fuchsia-100'
+                return 'bg-violet-100'
+            }
+            if (chartStyle === 'company') {
+                if (hierarchyLevel === 0) return 'bg-slate-200'
+                if (hierarchyLevel === 1) return 'bg-slate-100'
+                return 'bg-slate-50'
+            }
+            if (chartStyle === 'nonprofit') {
+                if (hierarchyLevel === 0) return 'bg-emerald-100'
+                if (hierarchyLevel === 1) return 'bg-teal-100'
+                return 'bg-cyan-100'
+            }
+            if (chartStyle === 'corporate') {
+                if (hierarchyLevel === 0) return 'bg-zinc-200'
+                if (hierarchyLevel === 1) return 'bg-zinc-100'
+                return 'bg-zinc-50'
+            }
+            if (chartStyle === 'hospital') {
+                if (hierarchyLevel === 0) return 'bg-blue-100'
+                if (hierarchyLevel === 1) return 'bg-sky-100'
+                return 'bg-teal-100'
+            }
+            if (chartStyle === 'hr') {
+                if (hierarchyLevel === 0) return 'bg-orange-100'
+                if (hierarchyLevel === 1) return 'bg-amber-100'
+                return 'bg-yellow-100'
+            }
+            if (chartStyle === 'school') {
+                if (hierarchyLevel === 0) return 'bg-indigo-100'
+                if (hierarchyLevel === 1) return 'bg-indigo-50'
+                return 'bg-blue-100'
+            }
             if (chartStyle === 'modern') return 'bg-blue-100'
             return 'bg-blue-50' // default
         }
@@ -1592,6 +2649,70 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                 return 'border-orange-500'
             }
             if (chartStyle === 'professional') return 'border-gray-600'
+            // New diagram types
+            if (chartStyle === 'wiring') {
+                if (hierarchyLevel === 0) return 'border-red-700'
+                if (hierarchyLevel === 1) return 'border-blue-700'
+                return 'border-green-700'
+            }
+            if (chartStyle === 'pid') {
+                if (hierarchyLevel === 0) return 'border-slate-600'
+                if (hierarchyLevel === 1) return 'border-cyan-500'
+                return 'border-teal-400'
+            }
+            if (chartStyle === 'circuit') {
+                if (hierarchyLevel === 0) return 'border-yellow-700'
+                if (hierarchyLevel === 1) return 'border-gray-800'
+                if (hierarchyLevel === 2) return 'border-blue-700'
+                return 'border-green-700'
+            }
+            if (chartStyle === 'mechanical') {
+                if (hierarchyLevel === 0) return 'border-indigo-600'
+                if (hierarchyLevel === 1) return 'border-purple-500'
+                if (hierarchyLevel === 2) return 'border-violet-400'
+                return 'border-gray-400'
+            }
+            // New organization chart types
+            if (chartStyle === 'photo') {
+                if (hierarchyLevel === 0) return 'border-amber-600'
+                if (hierarchyLevel === 1) return 'border-sky-500'
+                return 'border-emerald-500'
+            }
+            if (chartStyle === 'horizontal') {
+                if (hierarchyLevel === 0) return 'border-rose-600'
+                if (hierarchyLevel === 1) return 'border-fuchsia-600'
+                return 'border-violet-500'
+            }
+            if (chartStyle === 'company') {
+                if (hierarchyLevel === 0) return 'border-slate-700'
+                if (hierarchyLevel === 1) return 'border-slate-600'
+                return 'border-slate-400'
+            }
+            if (chartStyle === 'nonprofit') {
+                if (hierarchyLevel === 0) return 'border-emerald-600'
+                if (hierarchyLevel === 1) return 'border-teal-500'
+                return 'border-cyan-500'
+            }
+            if (chartStyle === 'corporate') {
+                if (hierarchyLevel === 0) return 'border-amber-600'
+                if (hierarchyLevel === 1) return 'border-zinc-600'
+                return 'border-zinc-400'
+            }
+            if (chartStyle === 'hospital') {
+                if (hierarchyLevel === 0) return 'border-blue-700'
+                if (hierarchyLevel === 1) return 'border-sky-600'
+                return 'border-teal-500'
+            }
+            if (chartStyle === 'hr') {
+                if (hierarchyLevel === 0) return 'border-orange-600'
+                if (hierarchyLevel === 1) return 'border-amber-500'
+                return 'border-yellow-500'
+            }
+            if (chartStyle === 'school') {
+                if (hierarchyLevel === 0) return 'border-indigo-700'
+                if (hierarchyLevel === 1) return 'border-indigo-600'
+                return 'border-blue-500'
+            }
             return 'border-blue-600' // modern
         }
 
@@ -2031,15 +3152,37 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                                         onChange={(e) => setChartStyle(e.target.value)}
                                         className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
                                     >
-                                        <option value="modern">Modern</option>
-                                        <option value="classic">Classic</option>
-                                        <option value="minimal">Minimal</option>
-                                        <option value="colorful">Colorful</option>
-                                        <option value="professional">Professional</option>
-                                        <option value="twolevel">Org Chart (2 Level)</option>
-                                        <option value="threelevel">Org Chart (3 Level)</option>
-                                        <option value="fourlevel">Org Chart (4 Level)</option>
-                                        <option value="colorcoded">Color-Coded Hierarchy</option>
+                                        <optgroup label="Basic Styles">
+                                            <option value="modern">Modern</option>
+                                            <option value="classic">Classic</option>
+                                            <option value="minimal">Minimal</option>
+                                            <option value="colorful">Colorful</option>
+                                            <option value="professional">Professional</option>
+                                        </optgroup>
+                                        <optgroup label="Hierarchy Levels">
+                                            <option value="twolevel">Org Chart (2 Level)</option>
+                                            <option value="threelevel">Org Chart (3 Level)</option>
+                                            <option value="fourlevel">Org Chart (4 Level)</option>
+                                            <option value="colorcoded">Color-Coded Hierarchy</option>
+                                        </optgroup>
+                                        <optgroup label="Special Features">
+                                            <option value="photo">Photo Org Chart</option>
+                                            <option value="horizontal">Horizontal Org Chart</option>
+                                        </optgroup>
+                                        <optgroup label="Industry Templates">
+                                            <option value="company">Company Org Chart</option>
+                                            <option value="corporate">Corporate Org Chart</option>
+                                            <option value="nonprofit">Non-Profit Org Chart</option>
+                                            <option value="hospital">Hospital Org Chart</option>
+                                            <option value="hr">HR Department Chart</option>
+                                            <option value="school">School Org Chart</option>
+                                        </optgroup>
+                                        <optgroup label="Engineering Diagrams">
+                                            <option value="wiring">Wiring Diagram</option>
+                                            <option value="pid">P&ID (Process Flow)</option>
+                                            <option value="circuit">Circuit Diagram</option>
+                                            <option value="mechanical">Mechanical Layout</option>
+                                        </optgroup>
                                     </select>
                                 </div>
 

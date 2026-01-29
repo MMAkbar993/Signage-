@@ -320,12 +320,51 @@ export function AuthorizedPersonsManager() {
           backgroundColor: '#ffffff',
           logging: false,
           allowTaint: true,
+          foreignObjectRendering: false,
           width: rect.width,
           height: rect.height,
           windowWidth: rect.width,
           windowHeight: rect.height,
           scrollX: 0,
           scrollY: 0,
+          onclone: (clonedDoc: Document) => {
+            // Fix oklch color parsing issue by converting to RGB
+            const processOklchColors = (doc: Document) => {
+              const win = doc.defaultView || window;
+              
+              // Remove oklch from style tags
+              const styleTags = doc.querySelectorAll('style');
+              styleTags.forEach((styleTag) => {
+                if (styleTag.textContent && styleTag.textContent.toLowerCase().includes('oklch')) {
+                  styleTag.textContent = styleTag.textContent.replace(/oklch\([^)]+\)/gi, 'transparent');
+                }
+              });
+              
+              // Process all elements and convert computed colors to inline styles
+              const allElements = doc.querySelectorAll('*');
+              allElements.forEach((el) => {
+                const element = el as HTMLElement;
+                try {
+                  const computedStyle = win.getComputedStyle(element);
+                  const colorProps = ['color', 'backgroundColor', 'borderColor', 'borderTopColor', 
+                    'borderRightColor', 'borderBottomColor', 'borderLeftColor', 'outlineColor'];
+                  
+                  colorProps.forEach(prop => {
+                    try {
+                      const value = computedStyle.getPropertyValue(prop);
+                      if (value && value.trim() !== '' && value !== 'transparent' && 
+                          value !== 'rgba(0, 0, 0, 0)' && !value.toLowerCase().includes('oklch')) {
+                        element.style.setProperty(prop, value, 'important');
+                      } else if (value && value.toLowerCase().includes('oklch')) {
+                        element.style.setProperty(prop, prop === 'backgroundColor' ? '#ffffff' : '#000000', 'important');
+                      }
+                    } catch (e) { /* ignore */ }
+                  });
+                } catch (e) { /* ignore */ }
+              });
+            };
+            processOklchColors(clonedDoc);
+          },
         });
         
         const link = document.createElement('a');
@@ -373,12 +412,51 @@ export function AuthorizedPersonsManager() {
         backgroundColor: '#ffffff',
         logging: false,
         allowTaint: true,
+        foreignObjectRendering: false,
         width: rect.width,
         height: rect.height,
         windowWidth: rect.width,
         windowHeight: rect.height,
         scrollX: 0,
         scrollY: 0,
+        onclone: (clonedDoc: Document) => {
+          // Fix oklch color parsing issue by converting to RGB
+          const processOklchColors = (doc: Document) => {
+            const win = doc.defaultView || window;
+            
+            // Remove oklch from style tags
+            const styleTags = doc.querySelectorAll('style');
+            styleTags.forEach((styleTag) => {
+              if (styleTag.textContent && styleTag.textContent.toLowerCase().includes('oklch')) {
+                styleTag.textContent = styleTag.textContent.replace(/oklch\([^)]+\)/gi, 'transparent');
+              }
+            });
+            
+            // Process all elements and convert computed colors to inline styles
+            const allElements = doc.querySelectorAll('*');
+            allElements.forEach((el) => {
+              const element = el as HTMLElement;
+              try {
+                const computedStyle = win.getComputedStyle(element);
+                const colorProps = ['color', 'backgroundColor', 'borderColor', 'borderTopColor', 
+                  'borderRightColor', 'borderBottomColor', 'borderLeftColor', 'outlineColor'];
+                
+                colorProps.forEach(prop => {
+                  try {
+                    const value = computedStyle.getPropertyValue(prop);
+                    if (value && value.trim() !== '' && value !== 'transparent' && 
+                        value !== 'rgba(0, 0, 0, 0)' && !value.toLowerCase().includes('oklch')) {
+                      element.style.setProperty(prop, value, 'important');
+                    } else if (value && value.toLowerCase().includes('oklch')) {
+                      element.style.setProperty(prop, prop === 'backgroundColor' ? '#ffffff' : '#000000', 'important');
+                    }
+                  } catch (e) { /* ignore */ }
+                });
+              } catch (e) { /* ignore */ }
+            });
+          };
+          processOklchColors(clonedDoc);
+        },
       });
       
       const link = document.createElement('a');
