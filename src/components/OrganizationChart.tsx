@@ -7,6 +7,156 @@ interface OrganizationChartProps {
     // No props needed - will be managed by App.tsx routing
 }
 
+// Sample Organization Chart Templates
+const getSampleOrgChartData = (templateType: string) => {
+    const baseTime = Date.now()
+    
+    const templates: Record<string, { members: any[], positions: Record<string, { x: number, y: number }> }> = {
+        // Default Company Org Chart
+        company: {
+            members: [
+                { id: baseTime + 1, name: 'John Smith', role: 'CEO', phone: '+1 555-0100', email: 'ceo@company.com', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'Sarah Johnson', role: 'CFO', phone: '+1 555-0101', email: 'cfo@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Michael Chen', role: 'CTO', phone: '+1 555-0102', email: 'cto@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 4, name: 'Emily Davis', role: 'COO', phone: '+1 555-0103', email: 'coo@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 5, name: 'Robert Wilson', role: 'Finance Manager', phone: '+1 555-0104', email: 'finance@company.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 6, name: 'Lisa Anderson', role: 'Dev Lead', phone: '+1 555-0105', email: 'devlead@company.com', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 7, name: 'David Brown', role: 'Operations Manager', phone: '+1 555-0106', email: 'ops@company.com', parentId: baseTime + 4, photo: null },
+            ],
+            positions: {
+                [baseTime + 1]: { x: 450, y: 50 },
+                [baseTime + 2]: { x: 150, y: 200 },
+                [baseTime + 3]: { x: 450, y: 200 },
+                [baseTime + 4]: { x: 750, y: 200 },
+                [baseTime + 5]: { x: 150, y: 380 },
+                [baseTime + 6]: { x: 450, y: 380 },
+                [baseTime + 7]: { x: 750, y: 380 },
+            }
+        },
+        // Hospital Org Chart
+        hospital: {
+            members: [
+                { id: baseTime + 1, name: 'Dr. James Wilson', role: 'Medical Director', phone: '+1 555-0200', email: 'director@hospital.com', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'Dr. Maria Garcia', role: 'Chief of Surgery', phone: '+1 555-0201', email: 'surgery@hospital.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Dr. Robert Lee', role: 'Chief of Medicine', phone: '+1 555-0202', email: 'medicine@hospital.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 4, name: 'Nancy Thompson', role: 'Head Nurse', phone: '+1 555-0203', email: 'nursing@hospital.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 5, name: 'Dr. Sarah Kim', role: 'Surgeon', phone: '+1 555-0204', email: 'surgeon@hospital.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 6, name: 'Dr. Michael Park', role: 'Physician', phone: '+1 555-0205', email: 'physician@hospital.com', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 7, name: 'Jennifer Adams', role: 'Staff Nurse', phone: '+1 555-0206', email: 'nurse@hospital.com', parentId: baseTime + 4, photo: null },
+            ],
+            positions: {
+                [baseTime + 1]: { x: 450, y: 50 },
+                [baseTime + 2]: { x: 150, y: 200 },
+                [baseTime + 3]: { x: 450, y: 200 },
+                [baseTime + 4]: { x: 750, y: 200 },
+                [baseTime + 5]: { x: 150, y: 380 },
+                [baseTime + 6]: { x: 450, y: 380 },
+                [baseTime + 7]: { x: 750, y: 380 },
+            }
+        },
+        // School Org Chart
+        school: {
+            members: [
+                { id: baseTime + 1, name: 'Dr. Elizabeth Moore', role: 'Principal', phone: '+1 555-0300', email: 'principal@school.edu', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'Mark Stevens', role: 'Vice Principal', phone: '+1 555-0301', email: 'vp@school.edu', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Jennifer White', role: 'Academic Director', phone: '+1 555-0302', email: 'academic@school.edu', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 4, name: 'Thomas Brown', role: 'Math Department', phone: '+1 555-0303', email: 'math@school.edu', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 5, name: 'Susan Clark', role: 'Science Department', phone: '+1 555-0304', email: 'science@school.edu', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 6, name: 'Patricia Taylor', role: 'Admin Staff', phone: '+1 555-0305', email: 'admin@school.edu', parentId: baseTime + 2, photo: null },
+            ],
+            positions: {
+                [baseTime + 1]: { x: 400, y: 50 },
+                [baseTime + 2]: { x: 200, y: 200 },
+                [baseTime + 3]: { x: 600, y: 200 },
+                [baseTime + 4]: { x: 450, y: 380 },
+                [baseTime + 5]: { x: 700, y: 380 },
+                [baseTime + 6]: { x: 200, y: 380 },
+            }
+        },
+        // Non-Profit Org Chart
+        nonprofit: {
+            members: [
+                { id: baseTime + 1, name: 'Board of Directors', role: 'Governance', phone: '+1 555-0400', email: 'board@nonprofit.org', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'Amanda Foster', role: 'Executive Director', phone: '+1 555-0401', email: 'ed@nonprofit.org', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Kevin Martinez', role: 'Program Director', phone: '+1 555-0402', email: 'programs@nonprofit.org', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 4, name: 'Rachel Green', role: 'Development Manager', phone: '+1 555-0403', email: 'development@nonprofit.org', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 5, name: 'Chris Turner', role: 'Program Coordinator', phone: '+1 555-0404', email: 'coordinator@nonprofit.org', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 6, name: 'Volunteer Team', role: 'Volunteers', phone: '+1 555-0405', email: 'volunteer@nonprofit.org', parentId: baseTime + 3, photo: null },
+            ],
+            positions: {
+                [baseTime + 1]: { x: 400, y: 50 },
+                [baseTime + 2]: { x: 400, y: 200 },
+                [baseTime + 3]: { x: 250, y: 350 },
+                [baseTime + 4]: { x: 550, y: 350 },
+                [baseTime + 5]: { x: 150, y: 500 },
+                [baseTime + 6]: { x: 350, y: 500 },
+            }
+        },
+        // HR Department Org Chart
+        hr: {
+            members: [
+                { id: baseTime + 1, name: 'Diana Ross', role: 'HR Director', phone: '+1 555-0500', email: 'hr.director@company.com', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'James Miller', role: 'Recruitment Manager', phone: '+1 555-0501', email: 'recruitment@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Angela White', role: 'Training Manager', phone: '+1 555-0502', email: 'training@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 4, name: 'Steven Hall', role: 'Payroll Manager', phone: '+1 555-0503', email: 'payroll@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 5, name: 'Michelle Lee', role: 'Recruiter', phone: '+1 555-0504', email: 'recruiter@company.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 6, name: 'Daniel Kim', role: 'Training Specialist', phone: '+1 555-0505', email: 'trainer@company.com', parentId: baseTime + 3, photo: null },
+            ],
+            positions: {
+                [baseTime + 1]: { x: 400, y: 50 },
+                [baseTime + 2]: { x: 150, y: 200 },
+                [baseTime + 3]: { x: 400, y: 200 },
+                [baseTime + 4]: { x: 650, y: 200 },
+                [baseTime + 5]: { x: 150, y: 380 },
+                [baseTime + 6]: { x: 400, y: 380 },
+            }
+        },
+        // Corporate Org Chart
+        corporate: {
+            members: [
+                { id: baseTime + 1, name: 'Board of Directors', role: 'Board', phone: '', email: 'board@corp.com', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'William Gates', role: 'CEO', phone: '+1 555-0600', email: 'ceo@corp.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Patricia Johnson', role: 'EVP Operations', phone: '+1 555-0601', email: 'evp.ops@corp.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 4, name: 'Richard Thompson', role: 'EVP Finance', phone: '+1 555-0602', email: 'evp.finance@corp.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 5, name: 'Barbara Williams', role: 'VP Marketing', phone: '+1 555-0603', email: 'vp.marketing@corp.com', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 6, name: 'Charles Davis', role: 'VP Sales', phone: '+1 555-0604', email: 'vp.sales@corp.com', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 7, name: 'Margaret Brown', role: 'Controller', phone: '+1 555-0605', email: 'controller@corp.com', parentId: baseTime + 4, photo: null },
+            ],
+            positions: {
+                [baseTime + 1]: { x: 450, y: 30 },
+                [baseTime + 2]: { x: 450, y: 150 },
+                [baseTime + 3]: { x: 250, y: 280 },
+                [baseTime + 4]: { x: 650, y: 280 },
+                [baseTime + 5]: { x: 100, y: 420 },
+                [baseTime + 6]: { x: 350, y: 420 },
+                [baseTime + 7]: { x: 650, y: 420 },
+            }
+        },
+        // Default Modern Template
+        default: {
+            members: [
+                { id: baseTime + 1, name: 'John Smith', role: 'CEO', phone: '+1 555-0100', email: 'ceo@company.com', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'Sarah Johnson', role: 'Manager', phone: '+1 555-0101', email: 'manager1@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Michael Chen', role: 'Manager', phone: '+1 555-0102', email: 'manager2@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 4, name: 'Emily Davis', role: 'Team Lead', phone: '+1 555-0103', email: 'lead@company.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 5, name: 'Robert Wilson', role: 'Employee', phone: '+1 555-0104', email: 'employee1@company.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 6, name: 'Lisa Anderson', role: 'Employee', phone: '+1 555-0105', email: 'employee2@company.com', parentId: baseTime + 3, photo: null },
+            ],
+            positions: {
+                [baseTime + 1]: { x: 400, y: 50 },
+                [baseTime + 2]: { x: 200, y: 220 },
+                [baseTime + 3]: { x: 600, y: 220 },
+                [baseTime + 4]: { x: 100, y: 400 },
+                [baseTime + 5]: { x: 300, y: 400 },
+                [baseTime + 6]: { x: 600, y: 400 },
+            }
+        }
+    }
+    
+    // Return template based on type, or default
+    return templates[templateType] || templates.default
+}
+
 const OrganizationChart: React.FC<OrganizationChartProps> = () => {
     const [orgMembers, setOrgMembers] = useState([])
     const [draggedMember, setDraggedMember] = useState(null)
@@ -20,7 +170,23 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
     const fileInputRef = useRef(null)
     const isPositionDraggingRef = useRef(false)
 
-    // Load from localStorage on mount
+    // Load sample template for a chart style
+    const loadSampleTemplate = (style: string) => {
+        const templateMap: Record<string, string> = {
+            hospital: 'hospital',
+            school: 'school',
+            nonprofit: 'nonprofit',
+            hr: 'hr',
+            corporate: 'corporate',
+            company: 'company',
+        }
+        const templateType = templateMap[style] || 'default'
+        const template = getSampleOrgChartData(templateType)
+        setOrgMembers(template.members)
+        setMemberPositions(template.positions)
+    }
+
+    // Load from localStorage on mount, or load default template
     useEffect(() => {
         const savedMembers = localStorage.getItem('organizationChartMembers')
         const savedPositions = localStorage.getItem('organizationChartPositions')
@@ -29,10 +195,15 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
         const savedPaperSize = localStorage.getItem('organizationChartPaperSize')
         const savedOrientation = localStorage.getItem('organizationChartOrientation')
         
+        let hasLoadedData = false
+        
         if (savedMembers) {
             try {
                 const loadedMembers = JSON.parse(savedMembers)
-                setOrgMembers(loadedMembers)
+                if (loadedMembers && loadedMembers.length > 0) {
+                    setOrgMembers(loadedMembers)
+                    hasLoadedData = true
+                }
             } catch (error) {
                 console.error('Error loading organization chart members:', error)
             }
@@ -61,6 +232,13 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
         
         if (savedOrientation) {
             setOrientation(savedOrientation)
+        }
+        
+        // If no saved data, load default template
+        if (!hasLoadedData) {
+            const template = getSampleOrgChartData('default')
+            setOrgMembers(template.members)
+            setMemberPositions(template.positions)
         }
     }, [])
 
@@ -3215,6 +3393,80 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                             </div>
                             <div className="mt-4 text-xs text-gray-500">
                                 <p>Current size: {getPaperDimensions().width} × {getPaperDimensions().height} px ({paperSize} - {orientation})</p>
+                            </div>
+                            
+                            {/* Load Sample Template Section */}
+                            <div className="mt-4 pt-4 border-t border-gray-200">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Quick Load Sample Template</label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    <button
+                                        onClick={() => {
+                                            if (confirm('Load Company template? This will replace current data.')) {
+                                                loadSampleTemplate('company')
+                                                setChartStyle('company')
+                                            }
+                                        }}
+                                        className="px-3 py-2 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg border border-slate-300 transition-colors"
+                                    >
+                                        Company
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (confirm('Load Hospital template? This will replace current data.')) {
+                                                loadSampleTemplate('hospital')
+                                                setChartStyle('hospital')
+                                            }
+                                        }}
+                                        className="px-3 py-2 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg border border-blue-300 transition-colors"
+                                    >
+                                        Hospital
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (confirm('Load School template? This will replace current data.')) {
+                                                loadSampleTemplate('school')
+                                                setChartStyle('school')
+                                            }
+                                        }}
+                                        className="px-3 py-2 text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg border border-indigo-300 transition-colors"
+                                    >
+                                        School
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (confirm('Load Non-Profit template? This will replace current data.')) {
+                                                loadSampleTemplate('nonprofit')
+                                                setChartStyle('nonprofit')
+                                            }
+                                        }}
+                                        className="px-3 py-2 text-xs bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg border border-emerald-300 transition-colors"
+                                    >
+                                        Non-Profit
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (confirm('Load HR template? This will replace current data.')) {
+                                                loadSampleTemplate('hr')
+                                                setChartStyle('hr')
+                                            }
+                                        }}
+                                        className="px-3 py-2 text-xs bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg border border-orange-300 transition-colors"
+                                    >
+                                        HR Dept
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (confirm('Load Corporate template? This will replace current data.')) {
+                                                loadSampleTemplate('corporate')
+                                                setChartStyle('corporate')
+                                            }
+                                        }}
+                                        className="px-3 py-2 text-xs bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg border border-zinc-300 transition-colors"
+                                    >
+                                        Corporate
+                                    </button>
+                                </div>
+                                <p className="mt-2 text-xs text-gray-400">Click to load pre-built organization chart samples</p>
                             </div>
                         </div>
 
