@@ -132,6 +132,185 @@ const getSampleOrgChartData = (templateType: string) => {
                 [baseTime + 7]: { x: 650, y: 420 },
             }
         },
+        // 2-Level Org Chart (Simple)
+        twolevel: {
+            members: [
+                { id: baseTime + 1, name: 'Executive', role: 'CEO', phone: '+1 555-0100', email: 'ceo@company.com', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'Report 1', role: 'Direct Report', phone: '+1 555-0101', email: 'report1@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Report 2', role: 'Direct Report', phone: '+1 555-0102', email: 'report2@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 4, name: 'Report 3', role: 'Direct Report', phone: '+1 555-0103', email: 'report3@company.com', parentId: baseTime + 1, photo: null },
+            ],
+            positions: {
+                [baseTime + 1]: { x: 400, y: 80 },
+                [baseTime + 2]: { x: 150, y: 280 },
+                [baseTime + 3]: { x: 400, y: 280 },
+                [baseTime + 4]: { x: 650, y: 280 },
+            }
+        },
+        // 3-Level Org Chart
+        threelevel: {
+            members: [
+                { id: baseTime + 1, name: 'Executive', role: 'CEO', phone: '+1 555-0100', email: 'ceo@company.com', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'Manager A', role: 'Manager', phone: '+1 555-0101', email: 'manager1@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Manager B', role: 'Manager', phone: '+1 555-0102', email: 'manager2@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 4, name: 'Staff 1', role: 'Staff', phone: '+1 555-0103', email: 'staff1@company.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 5, name: 'Staff 2', role: 'Staff', phone: '+1 555-0104', email: 'staff2@company.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 6, name: 'Staff 3', role: 'Staff', phone: '+1 555-0105', email: 'staff3@company.com', parentId: baseTime + 3, photo: null },
+            ],
+            positions: {
+                [baseTime + 1]: { x: 400, y: 50 },
+                [baseTime + 2]: { x: 200, y: 200 },
+                [baseTime + 3]: { x: 600, y: 200 },
+                [baseTime + 4]: { x: 100, y: 380 },
+                [baseTime + 5]: { x: 300, y: 380 },
+                [baseTime + 6]: { x: 600, y: 380 },
+            }
+        },
+        // 4-Level Org Chart
+        fourlevel: {
+            members: [
+                { id: baseTime + 1, name: 'Executive', role: 'CEO', phone: '+1 555-0100', email: 'ceo@company.com', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'Senior Mgr', role: 'Senior Manager', phone: '+1 555-0101', email: 'srmgr@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Senior Mgr', role: 'Senior Manager', phone: '+1 555-0102', email: 'srmgr2@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 4, name: 'Manager', role: 'Manager', phone: '+1 555-0103', email: 'mgr1@company.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 5, name: 'Manager', role: 'Manager', phone: '+1 555-0104', email: 'mgr2@company.com', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 6, name: 'Employee 1', role: 'Employee', phone: '+1 555-0105', email: 'emp1@company.com', parentId: baseTime + 4, photo: null },
+                { id: baseTime + 7, name: 'Employee 2', role: 'Employee', phone: '+1 555-0106', email: 'emp2@company.com', parentId: baseTime + 4, photo: null },
+                { id: baseTime + 8, name: 'Employee 3', role: 'Employee', phone: '+1 555-0107', email: 'emp3@company.com', parentId: baseTime + 5, photo: null },
+            ],
+            positions: {
+                [baseTime + 1]: { x: 400, y: 30 },
+                [baseTime + 2]: { x: 200, y: 150 },
+                [baseTime + 3]: { x: 600, y: 150 },
+                [baseTime + 4]: { x: 200, y: 290 },
+                [baseTime + 5]: { x: 600, y: 290 },
+                [baseTime + 6]: { x: 80, y: 440 },
+                [baseTime + 7]: { x: 280, y: 440 },
+                [baseTime + 8]: { x: 600, y: 440 },
+            }
+        },
+        // Photo Org Chart
+        photo: {
+            members: [
+                { id: baseTime + 1, name: 'Alice Johnson', role: 'CEO', phone: '+1 555-0100', email: 'alice@company.com', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'Bob Smith', role: 'VP Sales', phone: '+1 555-0101', email: 'bob@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Carol White', role: 'VP Engineering', phone: '+1 555-0102', email: 'carol@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 4, name: 'David Lee', role: 'Sales Rep', phone: '+1 555-0103', email: 'david@company.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 5, name: 'Eva Brown', role: 'Developer', phone: '+1 555-0104', email: 'eva@company.com', parentId: baseTime + 3, photo: null },
+            ],
+            positions: {
+                [baseTime + 1]: { x: 400, y: 50 },
+                [baseTime + 2]: { x: 200, y: 230 },
+                [baseTime + 3]: { x: 600, y: 230 },
+                [baseTime + 4]: { x: 200, y: 420 },
+                [baseTime + 5]: { x: 600, y: 420 },
+            }
+        },
+        // Inverted Org Chart (Bottom-up)
+        inverted: {
+            members: [
+                { id: baseTime + 1, name: 'Team Members', role: 'Staff', phone: '+1 555-0100', email: 'team@company.com', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'Team Members', role: 'Staff', phone: '+1 555-0101', email: 'team2@company.com', parentId: null, photo: null },
+                { id: baseTime + 3, name: 'Team Members', role: 'Staff', phone: '+1 555-0102', email: 'team3@company.com', parentId: null, photo: null },
+                { id: baseTime + 4, name: 'Manager A', role: 'Manager', phone: '+1 555-0103', email: 'mgr1@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 5, name: 'Manager B', role: 'Manager', phone: '+1 555-0104', email: 'mgr2@company.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 6, name: 'Executive', role: 'CEO', phone: '+1 555-0105', email: 'ceo@company.com', parentId: baseTime + 4, photo: null },
+            ],
+            positions: {
+                [baseTime + 1]: { x: 100, y: 50 },
+                [baseTime + 2]: { x: 400, y: 50 },
+                [baseTime + 3]: { x: 700, y: 50 },
+                [baseTime + 4]: { x: 200, y: 230 },
+                [baseTime + 5]: { x: 550, y: 230 },
+                [baseTime + 6]: { x: 400, y: 420 },
+            }
+        },
+        // WIRING DIAGRAM - Clear connections like electrical wiring
+        wiring: {
+            members: [
+                { id: baseTime + 1, name: 'Power Source', role: 'Main Supply', phone: '', email: '', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'Distribution A', role: 'Control Panel', phone: '', email: '', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Distribution B', role: 'Control Panel', phone: '', email: '', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 4, name: 'Terminal 1', role: 'Output', phone: '', email: '', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 5, name: 'Terminal 2', role: 'Output', phone: '', email: '', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 6, name: 'Terminal 3', role: 'Output', phone: '', email: '', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 7, name: 'Terminal 4', role: 'Output', phone: '', email: '', parentId: baseTime + 3, photo: null },
+            ],
+            positions: {
+                [baseTime + 1]: { x: 450, y: 50 },
+                [baseTime + 2]: { x: 250, y: 200 },
+                [baseTime + 3]: { x: 650, y: 200 },
+                [baseTime + 4]: { x: 150, y: 380 },
+                [baseTime + 5]: { x: 350, y: 380 },
+                [baseTime + 6]: { x: 550, y: 380 },
+                [baseTime + 7]: { x: 750, y: 380 },
+            }
+        },
+        // P&ID (Process & Instrumentation) - Department containers with flow
+        pid: {
+            members: [
+                { id: baseTime + 1, name: 'Main Process', role: 'System Controller', phone: '', email: '', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'Process Unit A', role: 'Department', phone: '', email: '', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Process Unit B', role: 'Department', phone: '', email: '', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 4, name: 'Process Unit C', role: 'Department', phone: '', email: '', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 5, name: 'Valve Control', role: 'Control Point', phone: '', email: '', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 6, name: 'Sensor Array', role: 'Monitoring', phone: '', email: '', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 7, name: 'Flow Meter', role: 'Measurement', phone: '', email: '', parentId: baseTime + 4, photo: null },
+            ],
+            positions: {
+                [baseTime + 1]: { x: 450, y: 50 },
+                [baseTime + 2]: { x: 150, y: 220 },
+                [baseTime + 3]: { x: 450, y: 220 },
+                [baseTime + 4]: { x: 750, y: 220 },
+                [baseTime + 5]: { x: 150, y: 400 },
+                [baseTime + 6]: { x: 450, y: 400 },
+                [baseTime + 7]: { x: 750, y: 400 },
+            }
+        },
+        // CIRCUIT DIAGRAM - Logic flow, power hierarchy
+        circuit: {
+            members: [
+                { id: baseTime + 1, name: 'Power Supply', role: 'VCC Source', phone: '', email: '', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'Main Switch', role: 'Control Logic', phone: '', email: '', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Secondary Switch', role: 'Control Logic', phone: '', email: '', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 4, name: 'Processor A', role: 'Processing Unit', phone: '', email: '', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 5, name: 'Processor B', role: 'Processing Unit', phone: '', email: '', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 6, name: 'Output 1', role: 'LED/Display', phone: '', email: '', parentId: baseTime + 4, photo: null },
+                { id: baseTime + 7, name: 'Output 2', role: 'LED/Display', phone: '', email: '', parentId: baseTime + 4, photo: null },
+                { id: baseTime + 8, name: 'Output 3', role: 'LED/Display', phone: '', email: '', parentId: baseTime + 5, photo: null },
+            ],
+            positions: {
+                [baseTime + 1]: { x: 450, y: 30 },
+                [baseTime + 2]: { x: 250, y: 150 },
+                [baseTime + 3]: { x: 650, y: 150 },
+                [baseTime + 4]: { x: 250, y: 290 },
+                [baseTime + 5]: { x: 650, y: 290 },
+                [baseTime + 6]: { x: 150, y: 440 },
+                [baseTime + 7]: { x: 350, y: 440 },
+                [baseTime + 8]: { x: 650, y: 440 },
+            }
+        },
+        // MECHANICAL DIAGRAM - Clean alignment, structural clarity
+        mechanical: {
+            members: [
+                { id: baseTime + 1, name: 'Main Assembly', role: 'Primary Structure', phone: '', email: '', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'Sub-Assembly A', role: 'Component Group', phone: '', email: '', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Sub-Assembly B', role: 'Component Group', phone: '', email: '', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 4, name: 'Part 1', role: 'Component', phone: '', email: '', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 5, name: 'Part 2', role: 'Component', phone: '', email: '', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 6, name: 'Part 3', role: 'Component', phone: '', email: '', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 7, name: 'Part 4', role: 'Component', phone: '', email: '', parentId: baseTime + 3, photo: null },
+            ],
+            positions: {
+                [baseTime + 1]: { x: 450, y: 60 },
+                [baseTime + 2]: { x: 250, y: 220 },
+                [baseTime + 3]: { x: 650, y: 220 },
+                [baseTime + 4]: { x: 150, y: 400 },
+                [baseTime + 5]: { x: 350, y: 400 },
+                [baseTime + 6]: { x: 550, y: 400 },
+                [baseTime + 7]: { x: 750, y: 400 },
+            }
+        },
         // Default Modern Template
         default: {
             members: [
@@ -166,12 +345,13 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
     const [chartStyle, setChartStyle] = useState('modern') // modern, classic, minimal, colorful, professional, twolevel, threelevel, fourlevel, colorcoded, wiring, pid, circuit, mechanical, photo, horizontal, company, nonprofit, corporate, hospital, hr, school
     const [paperSize, setPaperSize] = useState('A4') // A4, A3, Legal
     const [orientation, setOrientation] = useState('landscape') // portrait, landscape
+    const [currentView, setCurrentView] = useState<'gallery' | 'editor'>('gallery') // gallery or editor view
     const chartContainerRef = useRef(null)
     const fileInputRef = useRef(null)
     const isPositionDraggingRef = useRef(false)
 
-    // Load sample template for a chart style
-    const loadSampleTemplate = (style: string) => {
+    // Load sample template for a chart style and switch to editor
+    const loadSampleTemplate = (style: string, switchToEditor = true) => {
         const templateMap: Record<string, string> = {
             hospital: 'hospital',
             school: 'school',
@@ -179,11 +359,31 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
             hr: 'hr',
             corporate: 'corporate',
             company: 'company',
+            twolevel: 'twolevel',
+            threelevel: 'threelevel',
+            fourlevel: 'fourlevel',
+            photo: 'photo',
+            inverted: 'inverted',
+            wiring: 'wiring',
+            pid: 'pid',
+            circuit: 'circuit',
+            mechanical: 'mechanical',
         }
         const templateType = templateMap[style] || 'default'
         const template = getSampleOrgChartData(templateType)
         setOrgMembers(template.members)
         setMemberPositions(template.positions)
+        if (switchToEditor) {
+            setCurrentView('editor')
+        }
+    }
+    
+    // Start with blank chart
+    const startBlankChart = (style: string) => {
+        setOrgMembers([])
+        setMemberPositions({})
+        setChartStyle(style)
+        setCurrentView('editor')
     }
 
     // Load from localStorage on mount, or load default template
@@ -234,12 +434,12 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
             setOrientation(savedOrientation)
         }
         
-        // If no saved data, load default template
-        if (!hasLoadedData) {
-            const template = getSampleOrgChartData('default')
-            setOrgMembers(template.members)
-            setMemberPositions(template.positions)
+        // If user has saved data, go directly to editor view
+        // Otherwise, stay in gallery view to let them choose a template
+        if (hasLoadedData) {
+            setCurrentView('editor')
         }
+        // Note: We don't load a default template anymore - user chooses from gallery
     }, [])
 
     // Save to localStorage whenever data changes
@@ -458,12 +658,12 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
         }
     }
 
-    // Paper size dimensions in pixels (at 96 DPI)
+    // Paper size dimensions in pixels (at higher DPI for better editing experience)
     const getPaperDimensions = () => {
         const dimensions = {
-            A4: { width: 794, height: 1123 }, // Portrait
-            A3: { width: 1123, height: 1587 },
-            Legal: { width: 816, height: 1344 }
+            A4: { width: 1123, height: 1587 }, // Portrait - larger for better editing
+            A3: { width: 1587, height: 2245 }, // Even larger for A3
+            Legal: { width: 1156, height: 1900 }
         }
 
         const base = dimensions[paperSize]
@@ -3244,6 +3444,873 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
         )
     }
 
+    // Template Gallery View
+    if (currentView === 'gallery') {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-100 via-gray-50 to-white p-4 sm:p-6 lg:p-8">
+                <div className="max-w-7xl mx-auto">
+                    {/* Header */}
+                    <div className="text-center mb-8">
+                        <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">Organization Chart Templates</h1>
+                        <p className="text-gray-600 text-lg">Choose a template to get started or import your own data</p>
+                    </div>
+
+                    {/* Template Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        
+                        {/* Import From Data */}
+                        <div 
+                            onClick={() => setCurrentView('editor')}
+                            className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-200"
+                        >
+                            <div className="h-48 bg-gradient-to-br from-gray-50 to-white flex items-center justify-center p-4">
+                                <svg className="w-full h-full max-w-[200px]" viewBox="0 0 200 130" fill="none">
+                                    {/* Database/Excel icon */}
+                                    <rect x="20" y="25" width="60" height="80" rx="4" fill="#22c55e" />
+                                    <rect x="25" y="30" width="50" height="10" fill="white" opacity="0.9" />
+                                    <rect x="25" y="45" width="50" height="8" fill="white" opacity="0.6" />
+                                    <rect x="25" y="58" width="50" height="8" fill="white" opacity="0.6" />
+                                    <rect x="25" y="71" width="50" height="8" fill="white" opacity="0.6" />
+                                    <rect x="25" y="84" width="50" height="8" fill="white" opacity="0.6" />
+                                    <line x1="45" y1="30" x2="45" y2="95" stroke="#22c55e" strokeWidth="1" />
+                                    
+                                    {/* Arrow */}
+                                    <path d="M90 65 L110 65" stroke="#6b7280" strokeWidth="3" />
+                                    <path d="M105 58 L115 65 L105 72" fill="#6b7280" />
+                                    
+                                    {/* Org chart result */}
+                                    <rect x="125" y="30" width="50" height="22" rx="3" fill="#3b82f6" />
+                                    <rect x="130" y="35" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    <line x1="150" y1="52" x2="150" y2="60" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="130" y1="60" x2="170" y2="60" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="130" y1="60" x2="130" y2="68" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="170" y1="60" x2="170" y2="68" stroke="#94a3b8" strokeWidth="2" />
+                                    <rect x="115" y="68" width="30" height="16" rx="2" fill="#10b981" />
+                                    <rect x="155" y="68" width="30" height="16" rx="2" fill="#10b981" />
+                                    <line x1="130" y1="84" x2="130" y2="90" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="170" y1="84" x2="170" y2="90" stroke="#94a3b8" strokeWidth="2" />
+                                    <rect x="115" y="90" width="30" height="14" rx="2" fill="#f59e0b" />
+                                    <rect x="155" y="90" width="30" height="14" rx="2" fill="#f59e0b" />
+                                </svg>
+                            </div>
+                            <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-4 py-3 text-center">
+                                <span className="font-semibold text-white">Import From Data</span>
+                            </div>
+                        </div>
+
+                        {/* Org Chart (2 Level) */}
+                        <div 
+                            onClick={() => { loadSampleTemplate('twolevel'); setChartStyle('twolevel'); }}
+                            className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-200"
+                        >
+                            <div className="h-48 bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
+                                <svg className="w-full h-full max-w-[200px]" viewBox="0 0 200 130" fill="none">
+                                    {/* Level 1 - CEO */}
+                                    <rect x="65" y="20" width="70" height="32" rx="4" fill="#3b82f6" />
+                                    <rect x="72" y="26" width="56" height="5" rx="2" fill="white" opacity="0.9" />
+                                    <rect x="78" y="35" width="44" height="4" rx="2" fill="white" opacity="0.5" />
+                                    
+                                    <line x1="100" y1="52" x2="100" y2="65" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="40" y1="65" x2="160" y2="65" stroke="#94a3b8" strokeWidth="2" />
+                                    
+                                    {/* Level 2 - Direct Reports */}
+                                    <line x1="40" y1="65" x2="40" y2="75" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="100" y1="65" x2="100" y2="75" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="160" y1="65" x2="160" y2="75" stroke="#94a3b8" strokeWidth="2" />
+                                    
+                                    <rect x="15" y="75" width="50" height="28" rx="3" fill="#10b981" />
+                                    <rect x="20" y="80" width="40" height="4" rx="2" fill="white" opacity="0.8" />
+                                    <rect x="23" y="88" width="34" height="3" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <rect x="75" y="75" width="50" height="28" rx="3" fill="#10b981" />
+                                    <rect x="80" y="80" width="40" height="4" rx="2" fill="white" opacity="0.8" />
+                                    <rect x="83" y="88" width="34" height="3" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <rect x="135" y="75" width="50" height="28" rx="3" fill="#10b981" />
+                                    <rect x="140" y="80" width="40" height="4" rx="2" fill="white" opacity="0.8" />
+                                    <rect x="143" y="88" width="34" height="3" rx="1" fill="white" opacity="0.5" />
+                                </svg>
+                            </div>
+                            <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3 text-center">
+                                <span className="font-semibold text-white">Org Chart (2 Level)</span>
+                            </div>
+                        </div>
+
+                        {/* Org Chart (3 Level) */}
+                        <div 
+                            onClick={() => { loadSampleTemplate('threelevel'); setChartStyle('threelevel'); }}
+                            className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-200"
+                        >
+                            <div className="h-48 bg-gradient-to-br from-violet-50 to-white flex items-center justify-center p-4">
+                                <svg className="w-full h-full max-w-[200px]" viewBox="0 0 200 130" fill="none">
+                                    {/* Level 1 */}
+                                    <rect x="70" y="5" width="60" height="24" rx="4" fill="#8b5cf6" />
+                                    <rect x="76" y="10" width="48" height="4" rx="2" fill="white" opacity="0.9" />
+                                    <rect x="80" y="17" width="40" height="3" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <line x1="100" y1="29" x2="100" y2="38" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="50" y1="38" x2="150" y2="38" stroke="#94a3b8" strokeWidth="2" />
+                                    
+                                    {/* Level 2 */}
+                                    <line x1="50" y1="38" x2="50" y2="46" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="150" y1="38" x2="150" y2="46" stroke="#94a3b8" strokeWidth="2" />
+                                    
+                                    <rect x="25" y="46" width="50" height="22" rx="3" fill="#a78bfa" />
+                                    <rect x="30" y="50" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    
+                                    <rect x="125" y="46" width="50" height="22" rx="3" fill="#a78bfa" />
+                                    <rect x="130" y="50" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    
+                                    {/* Level 3 */}
+                                    <line x1="50" y1="68" x2="50" y2="76" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="30" y1="76" x2="70" y2="76" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="30" y1="76" x2="30" y2="82" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="70" y1="76" x2="70" y2="82" stroke="#94a3b8" strokeWidth="2" />
+                                    
+                                    <rect x="10" y="82" width="40" height="18" rx="2" fill="#c4b5fd" />
+                                    <rect x="50" y="82" width="40" height="18" rx="2" fill="#c4b5fd" />
+                                    
+                                    <line x1="150" y1="68" x2="150" y2="76" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="130" y1="76" x2="170" y2="76" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="130" y1="76" x2="130" y2="82" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="170" y1="76" x2="170" y2="82" stroke="#94a3b8" strokeWidth="2" />
+                                    
+                                    <rect x="110" y="82" width="40" height="18" rx="2" fill="#c4b5fd" />
+                                    <rect x="150" y="82" width="40" height="18" rx="2" fill="#c4b5fd" />
+                                </svg>
+                            </div>
+                            <div className="bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-3 text-center">
+                                <span className="font-semibold text-white">Org Chart (3 Level)</span>
+                            </div>
+                        </div>
+
+                        {/* Org Chart (4 Level) */}
+                        <div 
+                            onClick={() => { loadSampleTemplate('fourlevel'); setChartStyle('fourlevel'); }}
+                            className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-200"
+                        >
+                            <div className="h-48 bg-gradient-to-br from-teal-50 to-white flex items-center justify-center p-4">
+                                <svg className="w-full h-full max-w-[200px]" viewBox="0 0 200 130" fill="none">
+                                    {/* Level 1 */}
+                                    <rect x="70" y="2" width="60" height="20" rx="3" fill="#0d9488" />
+                                    <rect x="76" y="6" width="48" height="4" rx="2" fill="white" opacity="0.9" />
+                                    
+                                    <line x1="100" y1="22" x2="100" y2="28" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="50" y1="28" x2="150" y2="28" stroke="#94a3b8" strokeWidth="2" />
+                                    
+                                    {/* Level 2 */}
+                                    <line x1="50" y1="28" x2="50" y2="34" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="150" y1="28" x2="150" y2="34" stroke="#94a3b8" strokeWidth="2" />
+                                    <rect x="25" y="34" width="50" height="18" rx="2" fill="#14b8a6" />
+                                    <rect x="125" y="34" width="50" height="18" rx="2" fill="#14b8a6" />
+                                    
+                                    {/* Level 3 */}
+                                    <line x1="50" y1="52" x2="50" y2="58" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="30" y1="58" x2="70" y2="58" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="30" y1="58" x2="30" y2="64" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="70" y1="58" x2="70" y2="64" stroke="#94a3b8" strokeWidth="2" />
+                                    <rect x="10" y="64" width="40" height="16" rx="2" fill="#2dd4bf" />
+                                    <rect x="50" y="64" width="40" height="16" rx="2" fill="#2dd4bf" />
+                                    
+                                    <line x1="150" y1="52" x2="150" y2="58" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="130" y1="58" x2="170" y2="58" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="130" y1="58" x2="130" y2="64" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="170" y1="58" x2="170" y2="64" stroke="#94a3b8" strokeWidth="2" />
+                                    <rect x="110" y="64" width="40" height="16" rx="2" fill="#2dd4bf" />
+                                    <rect x="150" y="64" width="40" height="16" rx="2" fill="#2dd4bf" />
+                                    
+                                    {/* Level 4 */}
+                                    <line x1="30" y1="80" x2="30" y2="86" stroke="#94a3b8" strokeWidth="1.5" />
+                                    <line x1="70" y1="80" x2="70" y2="86" stroke="#94a3b8" strokeWidth="1.5" />
+                                    <line x1="20" y1="86" x2="40" y2="86" stroke="#94a3b8" strokeWidth="1.5" />
+                                    <line x1="60" y1="86" x2="80" y2="86" stroke="#94a3b8" strokeWidth="1.5" />
+                                    <line x1="20" y1="86" x2="20" y2="90" stroke="#94a3b8" strokeWidth="1.5" />
+                                    <line x1="40" y1="86" x2="40" y2="90" stroke="#94a3b8" strokeWidth="1.5" />
+                                    <line x1="60" y1="86" x2="60" y2="90" stroke="#94a3b8" strokeWidth="1.5" />
+                                    <line x1="80" y1="86" x2="80" y2="90" stroke="#94a3b8" strokeWidth="1.5" />
+                                    
+                                    <rect x="5" y="90" width="30" height="14" rx="2" fill="#5eead4" />
+                                    <rect x="40" y="90" width="30" height="14" rx="2" fill="#5eead4" />
+                                    <rect x="130" y="90" width="30" height="14" rx="2" fill="#5eead4" />
+                                    <rect x="165" y="90" width="30" height="14" rx="2" fill="#5eead4" />
+                                </svg>
+                            </div>
+                            <div className="bg-gradient-to-r from-teal-500 to-cyan-600 px-4 py-3 text-center">
+                                <span className="font-semibold text-white">Org Chart (4 Level)</span>
+                            </div>
+                        </div>
+
+                        {/* Company Org Chart */}
+                        <div 
+                            onClick={() => { loadSampleTemplate('company'); setChartStyle('company'); }}
+                            className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-200"
+                        >
+                            <div className="h-48 bg-gradient-to-br from-slate-50 to-white flex items-center justify-center p-4">
+                                <svg className="w-full h-full max-w-[200px]" viewBox="0 0 200 130" fill="none">
+                                    {/* CEO - Top */}
+                                    <rect x="70" y="5" width="60" height="24" rx="4" fill="#3b82f6" />
+                                    <rect x="75" y="10" width="50" height="4" rx="2" fill="white" opacity="0.8" />
+                                    <rect x="80" y="17" width="40" height="3" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <line x1="100" y1="29" x2="100" y2="40" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="35" y1="40" x2="165" y2="40" stroke="#94a3b8" strokeWidth="2" />
+                                    
+                                    {/* Level 2 - VPs */}
+                                    <line x1="35" y1="40" x2="35" y2="48" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="100" y1="40" x2="100" y2="48" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="165" y1="40" x2="165" y2="48" stroke="#94a3b8" strokeWidth="2" />
+                                    
+                                    <rect x="10" y="48" width="50" height="22" rx="3" fill="#10b981" />
+                                    <rect x="15" y="52" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    <rect x="18" y="58" width="34" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <rect x="75" y="48" width="50" height="22" rx="3" fill="#10b981" />
+                                    <rect x="80" y="52" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    <rect x="83" y="58" width="34" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <rect x="140" y="48" width="50" height="22" rx="3" fill="#10b981" />
+                                    <rect x="145" y="52" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    <rect x="148" y="58" width="34" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    {/* Level 3 - Managers */}
+                                    <line x1="35" y1="70" x2="35" y2="78" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="100" y1="70" x2="100" y2="78" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="165" y1="70" x2="165" y2="78" stroke="#94a3b8" strokeWidth="2" />
+                                    
+                                    <rect x="10" y="78" width="50" height="18" rx="3" fill="#f59e0b" />
+                                    <rect x="15" y="82" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    <rect x="18" y="88" width="30" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <rect x="75" y="78" width="50" height="18" rx="3" fill="#f59e0b" />
+                                    <rect x="80" y="82" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    <rect x="83" y="88" width="30" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <rect x="140" y="78" width="50" height="18" rx="3" fill="#f59e0b" />
+                                    <rect x="145" y="82" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    <rect x="148" y="88" width="30" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    {/* Level 4 - Staff */}
+                                    <line x1="35" y1="96" x2="35" y2="102" stroke="#94a3b8" strokeWidth="1.5" />
+                                    <line x1="165" y1="96" x2="165" y2="102" stroke="#94a3b8" strokeWidth="1.5" />
+                                    <rect x="15" y="102" width="40" height="14" rx="2" fill="#64748b" />
+                                    <rect x="145" y="102" width="40" height="14" rx="2" fill="#64748b" />
+                                </svg>
+                            </div>
+                            <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-4 py-3 text-center">
+                                <span className="font-semibold text-white">Company Org Chart</span>
+                            </div>
+                        </div>
+
+                        {/* Corporate Org Chart */}
+                        <div 
+                            onClick={() => { loadSampleTemplate('corporate'); setChartStyle('corporate'); }}
+                            className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-200"
+                        >
+                            <div className="h-48 bg-gradient-to-br from-zinc-50 to-white flex items-center justify-center p-4">
+                                <svg className="w-full h-full max-w-[200px]" viewBox="0 0 200 130" fill="none">
+                                    {/* CEO */}
+                                    <rect x="65" y="5" width="70" height="26" rx="4" fill="#1e3a5f" />
+                                    <rect x="72" y="10" width="56" height="4" rx="2" fill="white" opacity="0.9" />
+                                    <rect x="78" y="18" width="44" height="3" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <line x1="100" y1="31" x2="100" y2="42" stroke="#475569" strokeWidth="2" />
+                                    <line x1="50" y1="42" x2="150" y2="42" stroke="#475569" strokeWidth="2" />
+                                    
+                                    {/* Directors */}
+                                    <line x1="50" y1="42" x2="50" y2="50" stroke="#475569" strokeWidth="2" />
+                                    <line x1="150" y1="42" x2="150" y2="50" stroke="#475569" strokeWidth="2" />
+                                    
+                                    <rect x="20" y="50" width="60" height="22" rx="3" fill="#2563eb" />
+                                    <rect x="26" y="54" width="48" height="4" rx="2" fill="white" opacity="0.8" />
+                                    <rect x="30" y="61" width="40" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <rect x="120" y="50" width="60" height="22" rx="3" fill="#2563eb" />
+                                    <rect x="126" y="54" width="48" height="4" rx="2" fill="white" opacity="0.8" />
+                                    <rect x="130" y="61" width="40" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    {/* Managers */}
+                                    <line x1="50" y1="72" x2="50" y2="80" stroke="#475569" strokeWidth="2" />
+                                    <line x1="30" y1="80" x2="70" y2="80" stroke="#475569" strokeWidth="2" />
+                                    <line x1="30" y1="80" x2="30" y2="86" stroke="#475569" strokeWidth="2" />
+                                    <line x1="70" y1="80" x2="70" y2="86" stroke="#475569" strokeWidth="2" />
+                                    
+                                    <rect x="10" y="86" width="40" height="18" rx="2" fill="#22c55e" />
+                                    <rect x="55" y="86" width="40" height="18" rx="2" fill="#22c55e" />
+                                    
+                                    <line x1="150" y1="72" x2="150" y2="80" stroke="#475569" strokeWidth="2" />
+                                    <line x1="130" y1="80" x2="170" y2="80" stroke="#475569" strokeWidth="2" />
+                                    <line x1="130" y1="80" x2="130" y2="86" stroke="#475569" strokeWidth="2" />
+                                    <line x1="170" y1="80" x2="170" y2="86" stroke="#475569" strokeWidth="2" />
+                                    
+                                    <rect x="110" y="86" width="40" height="18" rx="2" fill="#22c55e" />
+                                    <rect x="155" y="86" width="40" height="18" rx="2" fill="#22c55e" />
+                                    
+                                    {/* Staff */}
+                                    <line x1="30" y1="104" x2="30" y2="110" stroke="#475569" strokeWidth="1.5" />
+                                    <line x1="70" y1="104" x2="70" y2="110" stroke="#475569" strokeWidth="1.5" />
+                                    <rect x="15" y="110" width="30" height="12" rx="2" fill="#f97316" />
+                                    <rect x="55" y="110" width="30" height="12" rx="2" fill="#f97316" />
+                                    <rect x="115" y="110" width="30" height="12" rx="2" fill="#f97316" />
+                                    <rect x="160" y="110" width="30" height="12" rx="2" fill="#f97316" />
+                                </svg>
+                            </div>
+                            <div className="bg-gradient-to-r from-zinc-700 to-zinc-800 px-4 py-3 text-center">
+                                <span className="font-semibold text-white">Corporate Org Chart</span>
+                            </div>
+                        </div>
+
+                        {/* Non-Profit Org Chart */}
+                        <div 
+                            onClick={() => { loadSampleTemplate('nonprofit'); setChartStyle('nonprofit'); }}
+                            className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-200"
+                        >
+                            <div className="h-48 bg-gradient-to-br from-emerald-50 to-white flex items-center justify-center p-4">
+                                <svg className="w-full h-full max-w-[200px]" viewBox="0 0 200 130" fill="none">
+                                    {/* Board */}
+                                    <rect x="20" y="5" width="40" height="18" rx="3" fill="#3b82f6" />
+                                    <rect x="60" y="5" width="40" height="18" rx="3" fill="#3b82f6" />
+                                    <rect x="100" y="5" width="40" height="18" rx="3" fill="#3b82f6" />
+                                    <rect x="140" y="5" width="40" height="18" rx="3" fill="#3b82f6" />
+                                    
+                                    <line x1="40" y1="23" x2="40" y2="30" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="80" y1="23" x2="80" y2="30" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="120" y1="23" x2="120" y2="30" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="160" y1="23" x2="160" y2="30" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="40" y1="30" x2="160" y2="30" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="100" y1="30" x2="100" y2="38" stroke="#94a3b8" strokeWidth="2" />
+                                    
+                                    {/* Executive Director */}
+                                    <rect x="60" y="38" width="80" height="24" rx="4" fill="#10b981" />
+                                    <rect x="68" y="43" width="64" height="4" rx="2" fill="white" opacity="0.8" />
+                                    <rect x="75" y="50" width="50" height="3" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <line x1="100" y1="62" x2="100" y2="72" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="35" y1="72" x2="165" y2="72" stroke="#94a3b8" strokeWidth="2" />
+                                    
+                                    {/* Department Heads */}
+                                    <line x1="35" y1="72" x2="35" y2="80" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="100" y1="72" x2="100" y2="80" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="165" y1="72" x2="165" y2="80" stroke="#94a3b8" strokeWidth="2" />
+                                    
+                                    <rect x="10" y="80" width="50" height="18" rx="3" fill="#f97316" />
+                                    <rect x="75" y="80" width="50" height="18" rx="3" fill="#f97316" />
+                                    <rect x="140" y="80" width="50" height="18" rx="3" fill="#f97316" />
+                                    
+                                    {/* Staff */}
+                                    <line x1="35" y1="98" x2="35" y2="104" stroke="#94a3b8" strokeWidth="1.5" />
+                                    <line x1="100" y1="98" x2="100" y2="104" stroke="#94a3b8" strokeWidth="1.5" />
+                                    <line x1="165" y1="98" x2="165" y2="104" stroke="#94a3b8" strokeWidth="1.5" />
+                                    <rect x="15" y="104" width="40" height="14" rx="2" fill="#ef4444" />
+                                    <rect x="80" y="104" width="40" height="14" rx="2" fill="#ef4444" />
+                                    <rect x="145" y="104" width="40" height="14" rx="2" fill="#ef4444" />
+                                </svg>
+                            </div>
+                            <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-3 text-center">
+                                <span className="font-semibold text-white">Non-Profit Org Chart</span>
+                            </div>
+                        </div>
+
+                        {/* Hospital Org Chart */}
+                        <div 
+                            onClick={() => { loadSampleTemplate('hospital'); setChartStyle('hospital'); }}
+                            className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-200"
+                        >
+                            <div className="h-48 bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
+                                <svg className="w-full h-full max-w-[200px]" viewBox="0 0 200 130" fill="none">
+                                    {/* Medical Director */}
+                                    <rect x="60" y="5" width="80" height="26" rx="4" fill="#1d4ed8" />
+                                    <rect x="68" y="10" width="64" height="4" rx="2" fill="white" opacity="0.9" />
+                                    <rect x="75" y="18" width="50" height="3" rx="1" fill="white" opacity="0.5" />
+                                    {/* Cross icon */}
+                                    <rect x="92" y="8" width="3" height="10" fill="white" opacity="0.7" />
+                                    <rect x="88" y="11" width="11" height="3" fill="white" opacity="0.7" />
+                                    
+                                    <line x1="100" y1="31" x2="100" y2="42" stroke="#3b82f6" strokeWidth="2" />
+                                    <line x1="35" y1="42" x2="165" y2="42" stroke="#3b82f6" strokeWidth="2" />
+                                    
+                                    {/* Department Heads */}
+                                    <line x1="35" y1="42" x2="35" y2="50" stroke="#3b82f6" strokeWidth="2" />
+                                    <line x1="100" y1="42" x2="100" y2="50" stroke="#3b82f6" strokeWidth="2" />
+                                    <line x1="165" y1="42" x2="165" y2="50" stroke="#3b82f6" strokeWidth="2" />
+                                    
+                                    <rect x="10" y="50" width="50" height="20" rx="3" fill="#0ea5e9" />
+                                    <rect x="15" y="54" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    <rect x="18" y="60" width="34" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <rect x="75" y="50" width="50" height="20" rx="3" fill="#0ea5e9" />
+                                    <rect x="80" y="54" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    <rect x="83" y="60" width="34" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <rect x="140" y="50" width="50" height="20" rx="3" fill="#0ea5e9" />
+                                    <rect x="145" y="54" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    <rect x="148" y="60" width="34" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    {/* Staff Level */}
+                                    <line x1="35" y1="70" x2="35" y2="78" stroke="#0ea5e9" strokeWidth="2" />
+                                    <line x1="100" y1="70" x2="100" y2="78" stroke="#0ea5e9" strokeWidth="2" />
+                                    <line x1="165" y1="70" x2="165" y2="78" stroke="#0ea5e9" strokeWidth="2" />
+                                    
+                                    <rect x="10" y="78" width="50" height="16" rx="2" fill="#f97316" />
+                                    <rect x="75" y="78" width="50" height="16" rx="2" fill="#f97316" />
+                                    <rect x="140" y="78" width="50" height="16" rx="2" fill="#f97316" />
+                                    
+                                    {/* More Staff */}
+                                    <line x1="35" y1="94" x2="35" y2="100" stroke="#f97316" strokeWidth="1.5" />
+                                    <line x1="100" y1="94" x2="100" y2="100" stroke="#f97316" strokeWidth="1.5" />
+                                    <line x1="165" y1="94" x2="165" y2="100" stroke="#f97316" strokeWidth="1.5" />
+                                    <rect x="15" y="100" width="40" height="14" rx="2" fill="#ef4444" />
+                                    <rect x="80" y="100" width="40" height="14" rx="2" fill="#ef4444" />
+                                    <rect x="145" y="100" width="40" height="14" rx="2" fill="#ef4444" />
+                                </svg>
+                            </div>
+                            <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3 text-center">
+                                <span className="font-semibold text-white">Hospital Org Chart</span>
+                            </div>
+                        </div>
+
+                        {/* HR Department Chart */}
+                        <div 
+                            onClick={() => { loadSampleTemplate('hr'); setChartStyle('hr'); }}
+                            className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-200"
+                        >
+                            <div className="h-48 bg-gradient-to-br from-orange-50 to-white flex items-center justify-center p-4">
+                                <svg className="w-full h-full max-w-[200px]" viewBox="0 0 200 130" fill="none">
+                                    {/* HR Director */}
+                                    <rect x="55" y="5" width="90" height="28" rx="4" fill="#ea580c" />
+                                    <rect x="62" y="10" width="76" height="5" rx="2" fill="white" opacity="0.9" />
+                                    <rect x="70" y="19" width="60" height="3" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <line x1="100" y1="33" x2="100" y2="44" stroke="#f97316" strokeWidth="2" />
+                                    <line x1="35" y1="44" x2="165" y2="44" stroke="#f97316" strokeWidth="2" />
+                                    
+                                    {/* HR Managers */}
+                                    <line x1="35" y1="44" x2="35" y2="52" stroke="#f97316" strokeWidth="2" />
+                                    <line x1="100" y1="44" x2="100" y2="52" stroke="#f97316" strokeWidth="2" />
+                                    <line x1="165" y1="44" x2="165" y2="52" stroke="#f97316" strokeWidth="2" />
+                                    
+                                    <rect x="10" y="52" width="50" height="20" rx="3" fill="#fb923c" />
+                                    <rect x="15" y="56" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    
+                                    <rect x="75" y="52" width="50" height="20" rx="3" fill="#fb923c" />
+                                    <rect x="80" y="56" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    
+                                    <rect x="140" y="52" width="50" height="20" rx="3" fill="#fb923c" />
+                                    <rect x="145" y="56" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    
+                                    {/* Specialists */}
+                                    <line x1="35" y1="72" x2="35" y2="80" stroke="#fb923c" strokeWidth="2" />
+                                    <line x1="100" y1="72" x2="100" y2="80" stroke="#fb923c" strokeWidth="2" />
+                                    <line x1="165" y1="72" x2="165" y2="80" stroke="#fb923c" strokeWidth="2" />
+                                    
+                                    <rect x="10" y="80" width="50" height="16" rx="2" fill="#fdba74" />
+                                    <rect x="75" y="80" width="50" height="16" rx="2" fill="#fdba74" />
+                                    <rect x="140" y="80" width="50" height="16" rx="2" fill="#fdba74" />
+                                    
+                                    {/* Coordinators */}
+                                    <line x1="35" y1="96" x2="35" y2="102" stroke="#fdba74" strokeWidth="1.5" />
+                                    <line x1="100" y1="96" x2="100" y2="102" stroke="#fdba74" strokeWidth="1.5" />
+                                    <rect x="15" y="102" width="40" height="14" rx="2" fill="#fed7aa" stroke="#fb923c" />
+                                    <rect x="80" y="102" width="40" height="14" rx="2" fill="#fed7aa" stroke="#fb923c" />
+                                </svg>
+                            </div>
+                            <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3 text-center">
+                                <span className="font-semibold text-white">Human Resources Org Chart</span>
+                            </div>
+                        </div>
+
+                        {/* School Org Chart */}
+                        <div 
+                            onClick={() => { loadSampleTemplate('school'); setChartStyle('school'); }}
+                            className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-200"
+                        >
+                            <div className="h-48 bg-gradient-to-br from-indigo-50 to-white flex items-center justify-center p-4">
+                                <svg className="w-full h-full max-w-[200px]" viewBox="0 0 200 130" fill="none">
+                                    {/* Principal */}
+                                    <rect x="55" y="5" width="90" height="28" rx="4" fill="#4f46e5" />
+                                    <rect x="62" y="10" width="76" height="5" rx="2" fill="white" opacity="0.9" />
+                                    <rect x="70" y="19" width="60" height="3" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <line x1="100" y1="33" x2="100" y2="44" stroke="#6366f1" strokeWidth="2" />
+                                    <line x1="50" y1="44" x2="150" y2="44" stroke="#6366f1" strokeWidth="2" />
+                                    
+                                    {/* Vice Principals */}
+                                    <line x1="50" y1="44" x2="50" y2="52" stroke="#6366f1" strokeWidth="2" />
+                                    <line x1="150" y1="44" x2="150" y2="52" stroke="#6366f1" strokeWidth="2" />
+                                    
+                                    <rect x="20" y="52" width="60" height="22" rx="3" fill="#818cf8" />
+                                    <rect x="26" y="56" width="48" height="4" rx="2" fill="white" opacity="0.8" />
+                                    <rect x="30" y="64" width="40" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <rect x="120" y="52" width="60" height="22" rx="3" fill="#818cf8" />
+                                    <rect x="126" y="56" width="48" height="4" rx="2" fill="white" opacity="0.8" />
+                                    <rect x="130" y="64" width="40" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    {/* Department Heads */}
+                                    <line x1="50" y1="74" x2="50" y2="82" stroke="#818cf8" strokeWidth="2" />
+                                    <line x1="30" y1="82" x2="70" y2="82" stroke="#818cf8" strokeWidth="2" />
+                                    <line x1="30" y1="82" x2="30" y2="88" stroke="#818cf8" strokeWidth="2" />
+                                    <line x1="70" y1="82" x2="70" y2="88" stroke="#818cf8" strokeWidth="2" />
+                                    
+                                    <rect x="10" y="88" width="40" height="16" rx="2" fill="#a5b4fc" />
+                                    <rect x="55" y="88" width="40" height="16" rx="2" fill="#a5b4fc" />
+                                    
+                                    <line x1="150" y1="74" x2="150" y2="82" stroke="#818cf8" strokeWidth="2" />
+                                    <line x1="130" y1="82" x2="170" y2="82" stroke="#818cf8" strokeWidth="2" />
+                                    <line x1="130" y1="82" x2="130" y2="88" stroke="#818cf8" strokeWidth="2" />
+                                    <line x1="170" y1="82" x2="170" y2="88" stroke="#818cf8" strokeWidth="2" />
+                                    
+                                    <rect x="110" y="88" width="40" height="16" rx="2" fill="#a5b4fc" />
+                                    <rect x="155" y="88" width="40" height="16" rx="2" fill="#a5b4fc" />
+                                    
+                                    {/* Teachers */}
+                                    <line x1="30" y1="104" x2="30" y2="110" stroke="#a5b4fc" strokeWidth="1.5" />
+                                    <line x1="75" y1="104" x2="75" y2="110" stroke="#a5b4fc" strokeWidth="1.5" />
+                                    <rect x="15" y="110" width="30" height="12" rx="2" fill="#c7d2fe" stroke="#818cf8" />
+                                    <rect x="60" y="110" width="30" height="12" rx="2" fill="#c7d2fe" stroke="#818cf8" />
+                                    <rect x="115" y="110" width="30" height="12" rx="2" fill="#c7d2fe" stroke="#818cf8" />
+                                    <rect x="160" y="110" width="30" height="12" rx="2" fill="#c7d2fe" stroke="#818cf8" />
+                                </svg>
+                            </div>
+                            <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-3 text-center">
+                                <span className="font-semibold text-white">School Org Chart</span>
+                            </div>
+                        </div>
+
+                        {/* Photo Org Chart */}
+                        <div 
+                            onClick={() => { loadSampleTemplate('photo'); setChartStyle('photo'); }}
+                            className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-200"
+                        >
+                            <div className="h-48 bg-gradient-to-br from-pink-50 to-white flex items-center justify-center p-4">
+                                <svg className="w-full h-full max-w-[200px]" viewBox="0 0 200 130" fill="none">
+                                    {/* Top person with photo */}
+                                    <circle cx="100" cy="18" r="14" fill="#fecdd3" stroke="#f43f5e" strokeWidth="2" />
+                                    <circle cx="100" cy="15" r="5" fill="#f43f5e" opacity="0.5" />
+                                    <path d="M91 22c0-4 4-6 9-6s9 2 9 6" fill="#f43f5e" opacity="0.3" />
+                                    <rect x="70" y="36" width="60" height="20" rx="4" fill="#f43f5e" />
+                                    <rect x="76" y="40" width="48" height="3" rx="1" fill="white" opacity="0.8" />
+                                    <rect x="82" y="46" width="36" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <line x1="100" y1="56" x2="100" y2="65" stroke="#f43f5e" strokeWidth="2" />
+                                    <line x1="50" y1="65" x2="150" y2="65" stroke="#f43f5e" strokeWidth="2" />
+                                    <line x1="50" y1="65" x2="50" y2="72" stroke="#f43f5e" strokeWidth="2" />
+                                    <line x1="150" y1="65" x2="150" y2="72" stroke="#f43f5e" strokeWidth="2" />
+                                    
+                                    {/* Left person */}
+                                    <circle cx="50" cy="82" r="10" fill="#fecdd3" stroke="#fb7185" strokeWidth="2" />
+                                    <circle cx="50" cy="80" r="4" fill="#fb7185" opacity="0.5" />
+                                    <rect x="25" y="96" width="50" height="16" rx="3" fill="#fb7185" />
+                                    <rect x="30" y="100" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    
+                                    {/* Right person */}
+                                    <circle cx="150" cy="82" r="10" fill="#fecdd3" stroke="#fb7185" strokeWidth="2" />
+                                    <circle cx="150" cy="80" r="4" fill="#fb7185" opacity="0.5" />
+                                    <rect x="125" y="96" width="50" height="16" rx="3" fill="#fb7185" />
+                                    <rect x="130" y="100" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                </svg>
+                            </div>
+                            <div className="bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-3 text-center">
+                                <span className="font-semibold text-white">Photo Org Chart</span>
+                            </div>
+                        </div>
+
+                        {/* Horizontal Org Chart */}
+                        <div 
+                            onClick={() => { startBlankChart('horizontal'); }}
+                            className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-200"
+                        >
+                            <div className="h-48 bg-gradient-to-br from-amber-50 to-white flex items-center justify-center p-4">
+                                <svg className="w-full h-full max-w-[200px]" viewBox="0 0 200 130" fill="none">
+                                    {/* Left side - Main */}
+                                    <rect x="5" y="50" width="55" height="30" rx="4" fill="#f59e0b" />
+                                    <rect x="12" y="56" width="41" height="4" rx="2" fill="white" opacity="0.9" />
+                                    <rect x="15" y="64" width="35" height="3" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <line x1="60" y1="65" x2="75" y2="65" stroke="#f59e0b" strokeWidth="2" />
+                                    <line x1="75" y1="30" x2="75" y2="100" stroke="#f59e0b" strokeWidth="2" />
+                                    
+                                    {/* Right side branches */}
+                                    <line x1="75" y1="30" x2="85" y2="30" stroke="#f59e0b" strokeWidth="2" />
+                                    <line x1="75" y1="65" x2="85" y2="65" stroke="#f59e0b" strokeWidth="2" />
+                                    <line x1="75" y1="100" x2="85" y2="100" stroke="#f59e0b" strokeWidth="2" />
+                                    
+                                    <rect x="85" y="18" width="50" height="24" rx="3" fill="#fbbf24" />
+                                    <rect x="90" y="23" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    <rect x="93" y="29" width="34" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <rect x="85" y="53" width="50" height="24" rx="3" fill="#fbbf24" />
+                                    <rect x="90" y="58" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    <rect x="93" y="64" width="34" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <rect x="85" y="88" width="50" height="24" rx="3" fill="#fbbf24" />
+                                    <rect x="90" y="93" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    <rect x="93" y="99" width="34" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    {/* Sub-branches */}
+                                    <line x1="135" y1="30" x2="145" y2="30" stroke="#fbbf24" strokeWidth="2" />
+                                    <line x1="145" y1="20" x2="145" y2="40" stroke="#fbbf24" strokeWidth="2" />
+                                    <line x1="145" y1="20" x2="155" y2="20" stroke="#fbbf24" strokeWidth="2" />
+                                    <line x1="145" y1="40" x2="155" y2="40" stroke="#fbbf24" strokeWidth="2" />
+                                    
+                                    <rect x="155" y="12" width="40" height="16" rx="2" fill="#fcd34d" />
+                                    <rect x="155" y="32" width="40" height="16" rx="2" fill="#fcd34d" />
+                                    
+                                    <line x1="135" y1="65" x2="145" y2="65" stroke="#fbbf24" strokeWidth="2" />
+                                    <rect x="145" y="57" width="40" height="16" rx="2" fill="#fcd34d" />
+                                </svg>
+                            </div>
+                            <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 text-center">
+                                <span className="font-semibold text-white">Horizontal Org Chart</span>
+                            </div>
+                        </div>
+
+                        {/* ENGINEERING DIAGRAMS SECTION */}
+                        
+                        {/* Wiring Diagram */}
+                        <div 
+                            onClick={() => { loadSampleTemplate('wiring'); setChartStyle('wiring'); }}
+                            className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-200"
+                        >
+                            <div className="h-48 bg-gradient-to-br from-red-50 to-white flex items-center justify-center p-4">
+                                <svg className="w-full h-full max-w-[200px]" viewBox="0 0 200 130" fill="none">
+                                    {/* Power Source - Red Terminal */}
+                                    <rect x="70" y="5" width="60" height="28" rx="4" fill="#dc2626" />
+                                    <rect x="78" y="10" width="44" height="4" rx="2" fill="white" opacity="0.9" />
+                                    <rect x="82" y="18" width="36" height="3" rx="1" fill="white" opacity="0.5" />
+                                    <circle cx="100" cy="33" r="4" fill="#fca5a5" stroke="#dc2626" strokeWidth="2" />
+                                    
+                                    {/* Thick wiring lines */}
+                                    <line x1="100" y1="37" x2="100" y2="50" stroke="#dc2626" strokeWidth="4" strokeLinecap="round" />
+                                    <line x1="50" y1="50" x2="150" y2="50" stroke="#dc2626" strokeWidth="4" strokeLinecap="round" />
+                                    
+                                    {/* Distribution Panels - Blue */}
+                                    <line x1="50" y1="50" x2="50" y2="58" stroke="#2563eb" strokeWidth="4" strokeLinecap="round" />
+                                    <line x1="150" y1="50" x2="150" y2="58" stroke="#2563eb" strokeWidth="4" strokeLinecap="round" />
+                                    <circle cx="50" cy="58" r="3" fill="#bfdbfe" stroke="#2563eb" strokeWidth="2" />
+                                    <circle cx="150" cy="58" r="3" fill="#bfdbfe" stroke="#2563eb" strokeWidth="2" />
+                                    
+                                    <rect x="25" y="60" width="50" height="22" rx="3" fill="#2563eb" />
+                                    <rect x="30" y="64" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    
+                                    <rect x="125" y="60" width="50" height="22" rx="3" fill="#2563eb" />
+                                    <rect x="130" y="64" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    
+                                    {/* Output Terminals - Green */}
+                                    <line x1="50" y1="82" x2="50" y2="88" stroke="#16a34a" strokeWidth="3" />
+                                    <line x1="30" y1="88" x2="70" y2="88" stroke="#16a34a" strokeWidth="3" />
+                                    <line x1="30" y1="88" x2="30" y2="94" stroke="#16a34a" strokeWidth="3" />
+                                    <line x1="70" y1="88" x2="70" y2="94" stroke="#16a34a" strokeWidth="3" />
+                                    
+                                    <circle cx="30" cy="94" r="3" fill="#bbf7d0" stroke="#16a34a" strokeWidth="2" />
+                                    <circle cx="70" cy="94" r="3" fill="#bbf7d0" stroke="#16a34a" strokeWidth="2" />
+                                    
+                                    <rect x="10" y="96" width="40" height="18" rx="2" fill="#16a34a" />
+                                    <rect x="50" y="96" width="40" height="18" rx="2" fill="#16a34a" />
+                                    
+                                    <line x1="150" y1="82" x2="150" y2="88" stroke="#16a34a" strokeWidth="3" />
+                                    <line x1="130" y1="88" x2="170" y2="88" stroke="#16a34a" strokeWidth="3" />
+                                    <rect x="110" y="96" width="40" height="18" rx="2" fill="#16a34a" />
+                                    <rect x="150" y="96" width="40" height="18" rx="2" fill="#16a34a" />
+                                </svg>
+                            </div>
+                            <div className="bg-gradient-to-r from-red-500 to-red-600 px-4 py-3 text-center">
+                                <span className="font-semibold text-white">Wiring Diagram</span>
+                            </div>
+                        </div>
+
+                        {/* P&ID Diagram */}
+                        <div 
+                            onClick={() => { loadSampleTemplate('pid'); setChartStyle('pid'); }}
+                            className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-200"
+                        >
+                            <div className="h-48 bg-gradient-to-br from-slate-100 to-white flex items-center justify-center p-4">
+                                <svg className="w-full h-full max-w-[200px]" viewBox="0 0 200 130" fill="none">
+                                    {/* Main Process Controller */}
+                                    <rect x="55" y="5" width="90" height="30" rx="4" fill="#334155" />
+                                    <rect x="62" y="10" width="76" height="5" rx="2" fill="white" opacity="0.9" />
+                                    <rect x="70" y="19" width="60" height="3" rx="1" fill="#06b6d4" opacity="0.8" />
+                                    {/* Flow indicator */}
+                                    <circle cx="100" cy="35" r="5" fill="#06b6d4" opacity="0.5" />
+                                    
+                                    <line x1="100" y1="40" x2="100" y2="52" stroke="#64748b" strokeWidth="3" />
+                                    <line x1="35" y1="52" x2="165" y2="52" stroke="#64748b" strokeWidth="3" />
+                                    
+                                    {/* Department Units - Cyan */}
+                                    <line x1="35" y1="52" x2="35" y2="62" stroke="#64748b" strokeWidth="3" />
+                                    <line x1="100" y1="52" x2="100" y2="62" stroke="#64748b" strokeWidth="3" />
+                                    <line x1="165" y1="52" x2="165" y2="62" stroke="#64748b" strokeWidth="3" />
+                                    
+                                    <rect x="10" y="62" width="50" height="24" rx="3" fill="#0891b2" />
+                                    <rect x="15" y="66" width="40" height="4" rx="2" fill="white" opacity="0.8" />
+                                    <rect x="18" y="74" width="34" height="2" rx="1" fill="white" opacity="0.5" />
+                                    
+                                    <rect x="75" y="62" width="50" height="24" rx="3" fill="#0891b2" />
+                                    <rect x="80" y="66" width="40" height="4" rx="2" fill="white" opacity="0.8" />
+                                    
+                                    <rect x="140" y="62" width="50" height="24" rx="3" fill="#0891b2" />
+                                    <rect x="145" y="66" width="40" height="4" rx="2" fill="white" opacity="0.8" />
+                                    
+                                    {/* Control Points - Teal */}
+                                    <line x1="35" y1="86" x2="35" y2="94" stroke="#0891b2" strokeWidth="2" />
+                                    <line x1="100" y1="86" x2="100" y2="94" stroke="#0891b2" strokeWidth="2" />
+                                    <line x1="165" y1="86" x2="165" y2="94" stroke="#0891b2" strokeWidth="2" />
+                                    
+                                    {/* Valve symbols */}
+                                    <polygon points="27,94 35,102 43,94" fill="#14b8a6" />
+                                    <polygon points="27,110 35,102 43,110" fill="#14b8a6" />
+                                    
+                                    <circle cx="100" cy="102" r="8" fill="#14b8a6" />
+                                    <text x="100" y="106" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">S</text>
+                                    
+                                    <rect x="157" y="94" width="16" height="16" fill="none" stroke="#14b8a6" strokeWidth="2" />
+                                    <line x1="157" y1="94" x2="173" y2="110" stroke="#14b8a6" strokeWidth="2" />
+                                </svg>
+                            </div>
+                            <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-4 py-3 text-center">
+                                <span className="font-semibold text-white">P&ID (Process Flow)</span>
+                            </div>
+                        </div>
+
+                        {/* Circuit Diagram */}
+                        <div 
+                            onClick={() => { loadSampleTemplate('circuit'); setChartStyle('circuit'); }}
+                            className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-200"
+                        >
+                            <div className="h-48 bg-gradient-to-br from-yellow-50 to-white flex items-center justify-center p-4">
+                                <svg className="w-full h-full max-w-[200px]" viewBox="0 0 200 130" fill="none">
+                                    {/* Power Source - Yellow */}
+                                    <rect x="60" y="5" width="80" height="26" rx="2" fill="#eab308" stroke="#854d0e" strokeWidth="2" />
+                                    <text x="100" y="22" textAnchor="middle" fill="#854d0e" fontSize="10" fontWeight="bold">VCC</text>
+                                    <line x1="75" y1="8" x2="75" y2="14" stroke="#854d0e" strokeWidth="2" />
+                                    <line x1="72" y1="11" x2="78" y2="11" stroke="#854d0e" strokeWidth="2" />
+                                    
+                                    <line x1="100" y1="31" x2="100" y2="42" stroke="#374151" strokeWidth="2" />
+                                    <line x1="50" y1="42" x2="150" y2="42" stroke="#374151" strokeWidth="2" />
+                                    
+                                    {/* Control Logic - Gray switches */}
+                                    <line x1="50" y1="42" x2="50" y2="50" stroke="#374151" strokeWidth="2" />
+                                    <line x1="150" y1="42" x2="150" y2="50" stroke="#374151" strokeWidth="2" />
+                                    
+                                    {/* Switch symbols */}
+                                    <circle cx="50" cy="50" r="3" fill="#374151" />
+                                    <line x1="50" y1="53" x2="60" y2="60" stroke="#374151" strokeWidth="2" />
+                                    <circle cx="50" cy="68" r="3" fill="#374151" />
+                                    
+                                    <rect x="25" y="55" width="50" height="20" rx="2" fill="#6b7280" stroke="#374151" strokeWidth="2" />
+                                    <rect x="30" y="60" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    
+                                    <circle cx="150" cy="50" r="3" fill="#374151" />
+                                    <rect x="125" y="55" width="50" height="20" rx="2" fill="#6b7280" stroke="#374151" strokeWidth="2" />
+                                    <rect x="130" y="60" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    
+                                    {/* Processors - Blue */}
+                                    <line x1="50" y1="75" x2="50" y2="82" stroke="#374151" strokeWidth="2" />
+                                    <line x1="150" y1="75" x2="150" y2="82" stroke="#374151" strokeWidth="2" />
+                                    
+                                    <rect x="25" y="82" width="50" height="18" rx="2" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" />
+                                    <rect x="30" y="86" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    
+                                    <rect x="125" y="82" width="50" height="18" rx="2" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" />
+                                    <rect x="130" y="86" width="40" height="3" rx="1" fill="white" opacity="0.8" />
+                                    
+                                    {/* Outputs - Green LEDs */}
+                                    <line x1="50" y1="100" x2="50" y2="106" stroke="#374151" strokeWidth="2" />
+                                    <line x1="30" y1="106" x2="70" y2="106" stroke="#374151" strokeWidth="2" />
+                                    
+                                    <circle cx="30" cy="116" r="8" fill="#22c55e" stroke="#166534" strokeWidth="2" />
+                                    <circle cx="30" cy="116" r="4" fill="#bbf7d0" />
+                                    
+                                    <circle cx="70" cy="116" r="8" fill="#22c55e" stroke="#166534" strokeWidth="2" />
+                                    <circle cx="70" cy="116" r="4" fill="#bbf7d0" />
+                                    
+                                    <line x1="150" y1="100" x2="150" y2="108" stroke="#374151" strokeWidth="2" />
+                                    <circle cx="150" cy="118" r="8" fill="#22c55e" stroke="#166534" strokeWidth="2" />
+                                    <circle cx="150" cy="118" r="4" fill="#bbf7d0" />
+                                </svg>
+                            </div>
+                            <div className="bg-gradient-to-r from-gray-600 to-gray-700 px-4 py-3 text-center">
+                                <span className="font-semibold text-white">Circuit Diagram</span>
+                            </div>
+                        </div>
+
+                        {/* Mechanical Diagram */}
+                        <div 
+                            onClick={() => { loadSampleTemplate('mechanical'); setChartStyle('mechanical'); }}
+                            className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-200"
+                        >
+                            <div className="h-48 bg-gradient-to-br from-indigo-50 to-white flex items-center justify-center p-4">
+                                <svg className="w-full h-full max-w-[200px]" viewBox="0 0 200 130" fill="none">
+                                    {/* Main Assembly - Indigo with technical drawing style */}
+                                    <rect x="50" y="8" width="100" height="30" rx="0" fill="white" stroke="#6366f1" strokeWidth="2" />
+                                    <line x1="55" y1="13" x2="145" y2="13" stroke="#6366f1" strokeWidth="1" strokeDasharray="4,2" />
+                                    <rect x="58" y="18" width="84" height="5" rx="1" fill="#6366f1" opacity="0.3" />
+                                    <rect x="65" y="26" width="70" height="3" rx="1" fill="#6366f1" opacity="0.2" />
+                                    {/* Dimension lines */}
+                                    <line x1="50" y1="5" x2="150" y2="5" stroke="#a5b4fc" strokeWidth="1" />
+                                    <line x1="50" y1="3" x2="50" y2="7" stroke="#a5b4fc" strokeWidth="1" />
+                                    <line x1="150" y1="3" x2="150" y2="7" stroke="#a5b4fc" strokeWidth="1" />
+                                    
+                                    <line x1="100" y1="38" x2="100" y2="50" stroke="#6366f1" strokeWidth="2" strokeDasharray="6,3" />
+                                    <line x1="50" y1="50" x2="150" y2="50" stroke="#6366f1" strokeWidth="2" strokeDasharray="6,3" />
+                                    
+                                    {/* Sub-assemblies - Purple */}
+                                    <line x1="50" y1="50" x2="50" y2="58" stroke="#8b5cf6" strokeWidth="2" strokeDasharray="6,3" />
+                                    <line x1="150" y1="50" x2="150" y2="58" stroke="#8b5cf6" strokeWidth="2" strokeDasharray="6,3" />
+                                    
+                                    <rect x="20" y="58" width="60" height="24" rx="0" fill="white" stroke="#8b5cf6" strokeWidth="2" />
+                                    <line x1="25" y1="63" x2="75" y2="63" stroke="#8b5cf6" strokeWidth="1" strokeDasharray="4,2" />
+                                    <rect x="28" y="68" width="44" height="4" rx="1" fill="#8b5cf6" opacity="0.3" />
+                                    
+                                    <rect x="120" y="58" width="60" height="24" rx="0" fill="white" stroke="#8b5cf6" strokeWidth="2" />
+                                    <line x1="125" y1="63" x2="175" y2="63" stroke="#8b5cf6" strokeWidth="1" strokeDasharray="4,2" />
+                                    <rect x="128" y="68" width="44" height="4" rx="1" fill="#8b5cf6" opacity="0.3" />
+                                    
+                                    {/* Parts - Violet */}
+                                    <line x1="50" y1="82" x2="50" y2="88" stroke="#a78bfa" strokeWidth="2" strokeDasharray="6,3" />
+                                    <line x1="30" y1="88" x2="70" y2="88" stroke="#a78bfa" strokeWidth="2" strokeDasharray="6,3" />
+                                    
+                                    <rect x="10" y="90" width="40" height="18" rx="0" fill="white" stroke="#a78bfa" strokeWidth="2" />
+                                    <rect x="14" y="94" width="32" height="3" rx="1" fill="#a78bfa" opacity="0.4" />
+                                    
+                                    <rect x="50" y="90" width="40" height="18" rx="0" fill="white" stroke="#a78bfa" strokeWidth="2" />
+                                    <rect x="54" y="94" width="32" height="3" rx="1" fill="#a78bfa" opacity="0.4" />
+                                    
+                                    <line x1="150" y1="82" x2="150" y2="88" stroke="#a78bfa" strokeWidth="2" strokeDasharray="6,3" />
+                                    <line x1="130" y1="88" x2="170" y2="88" stroke="#a78bfa" strokeWidth="2" strokeDasharray="6,3" />
+                                    
+                                    <rect x="110" y="90" width="40" height="18" rx="0" fill="white" stroke="#a78bfa" strokeWidth="2" />
+                                    <rect x="114" y="94" width="32" height="3" rx="1" fill="#a78bfa" opacity="0.4" />
+                                    
+                                    <rect x="150" y="90" width="40" height="18" rx="0" fill="white" stroke="#a78bfa" strokeWidth="2" />
+                                    <rect x="154" y="94" width="32" height="3" rx="1" fill="#a78bfa" opacity="0.4" />
+                                    
+                                    {/* Center lines */}
+                                    <line x1="100" y1="115" x2="100" y2="125" stroke="#c4b5fd" strokeWidth="1" strokeDasharray="8,4" />
+                                </svg>
+                            </div>
+                            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-4 py-3 text-center">
+                                <span className="font-semibold text-white">Mechanical Layout</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {/* Continue with existing chart button */}
+                    {orgMembers.length > 0 && (
+                        <div className="mt-8 text-center">
+                            <button
+                                onClick={() => setCurrentView('editor')}
+                                className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold text-lg hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl"
+                            >
+                                Continue Editing Existing Chart ({orgMembers.length} members)
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 p-4 sm:p-6 lg:p-8 xl:p-10">
             {/* Main Content */}
@@ -3260,6 +4327,16 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                             </p>
                         </div>
                         <div className="flex gap-3 flex-wrap">
+                            {/* Back to Templates Button */}
+                            <button
+                                onClick={() => setCurrentView('gallery')}
+                                className="px-4 lg:px-6 py-2 lg:py-3 bg-gray-600 text-white rounded-xl font-semibold hover:bg-gray-700 transition-colors shadow-md hover:shadow-lg flex items-center gap-2 text-sm lg:text-base"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                                </svg>
+                                Templates
+                            </button>
                             <label className="px-4 lg:px-6 py-2 lg:py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors shadow-md hover:shadow-lg flex items-center gap-2 text-sm lg:text-base cursor-pointer">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -3327,7 +4404,15 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                                     <label className="block text-sm font-semibold text-gray-700 mb-2">Chart Style</label>
                                     <select
                                         value={chartStyle}
-                                        onChange={(e) => setChartStyle(e.target.value)}
+                                        onChange={(e) => {
+                                            const newStyle = e.target.value
+                                            setChartStyle(newStyle)
+                                            // Load template data for styles that have templates
+                                            const stylesWithTemplates = ['twolevel', 'threelevel', 'fourlevel', 'photo', 'company', 'corporate', 'nonprofit', 'hospital', 'hr', 'school', 'inverted', 'wiring', 'pid', 'circuit', 'mechanical']
+                                            if (stylesWithTemplates.includes(newStyle)) {
+                                                loadSampleTemplate(newStyle, false) // false = don't switch view, already in editor
+                                            }
+                                        }}
                                         className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
                                     >
                                         <optgroup label="Basic Styles">
@@ -3393,80 +4478,6 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                             </div>
                             <div className="mt-4 text-xs text-gray-500">
                                 <p>Current size: {getPaperDimensions().width} × {getPaperDimensions().height} px ({paperSize} - {orientation})</p>
-                            </div>
-                            
-                            {/* Load Sample Template Section */}
-                            <div className="mt-4 pt-4 border-t border-gray-200">
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Quick Load Sample Template</label>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                    <button
-                                        onClick={() => {
-                                            if (confirm('Load Company template? This will replace current data.')) {
-                                                loadSampleTemplate('company')
-                                                setChartStyle('company')
-                                            }
-                                        }}
-                                        className="px-3 py-2 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg border border-slate-300 transition-colors"
-                                    >
-                                        Company
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            if (confirm('Load Hospital template? This will replace current data.')) {
-                                                loadSampleTemplate('hospital')
-                                                setChartStyle('hospital')
-                                            }
-                                        }}
-                                        className="px-3 py-2 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg border border-blue-300 transition-colors"
-                                    >
-                                        Hospital
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            if (confirm('Load School template? This will replace current data.')) {
-                                                loadSampleTemplate('school')
-                                                setChartStyle('school')
-                                            }
-                                        }}
-                                        className="px-3 py-2 text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg border border-indigo-300 transition-colors"
-                                    >
-                                        School
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            if (confirm('Load Non-Profit template? This will replace current data.')) {
-                                                loadSampleTemplate('nonprofit')
-                                                setChartStyle('nonprofit')
-                                            }
-                                        }}
-                                        className="px-3 py-2 text-xs bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg border border-emerald-300 transition-colors"
-                                    >
-                                        Non-Profit
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            if (confirm('Load HR template? This will replace current data.')) {
-                                                loadSampleTemplate('hr')
-                                                setChartStyle('hr')
-                                            }
-                                        }}
-                                        className="px-3 py-2 text-xs bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg border border-orange-300 transition-colors"
-                                    >
-                                        HR Dept
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            if (confirm('Load Corporate template? This will replace current data.')) {
-                                                loadSampleTemplate('corporate')
-                                                setChartStyle('corporate')
-                                            }
-                                        }}
-                                        className="px-3 py-2 text-xs bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg border border-zinc-300 transition-colors"
-                                    >
-                                        Corporate
-                                    </button>
-                                </div>
-                                <p className="mt-2 text-xs text-gray-400">Click to load pre-built organization chart samples</p>
                             </div>
                         </div>
 
@@ -3703,10 +4714,11 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                                     ref={chartContainerRef}
                                     className="relative bg-gray-50 rounded-lg overflow-auto mx-auto border-2 border-gray-300"
                                     style={{
-                                        width: `${Math.min(getPaperDimensions().width, 1200)}px`,
-                                        height: `${Math.min(getPaperDimensions().height, 800)}px`,
-                                        maxWidth: '100%',
-                                        aspectRatio: `${getPaperDimensions().width} / ${getPaperDimensions().height}`
+                                        width: `${getPaperDimensions().width}px`,
+                                        height: `${getPaperDimensions().height}px`,
+                                        minWidth: '800px',
+                                        minHeight: '600px',
+                                        maxWidth: '100%'
                                     }}
                                 >
                                     {/* Background Organization Chart Image */}
@@ -3734,10 +4746,11 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                                     ref={chartContainerRef}
                                     className="relative bg-gray-50 rounded-lg overflow-auto mx-auto border-2 border-gray-300"
                                     style={{
-                                        width: `${Math.min(getPaperDimensions().width, 1200)}px`,
-                                        height: `${Math.min(getPaperDimensions().height, 800)}px`,
-                                        maxWidth: '100%',
-                                        aspectRatio: `${getPaperDimensions().width} / ${getPaperDimensions().height}`
+                                        width: `${getPaperDimensions().width}px`,
+                                        height: `${getPaperDimensions().height}px`,
+                                        minWidth: '800px',
+                                        minHeight: '600px',
+                                        maxWidth: '100%'
                                     }}
                                     onDragOver={(e) => {
                                         e.preventDefault()
