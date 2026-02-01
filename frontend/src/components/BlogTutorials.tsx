@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import React from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   BookOpen,
   Plus,
@@ -22,8 +23,34 @@ import {
   TrendingUp,
   Star,
   Users,
+  Briefcase,
+  Bell,
+  Phone,
+  PhoneOff,
+  Video,
+  VideoOff,
+  Mic,
+  MicOff,
+  UserPlus,
+  Settings,
+  MoreVertical,
+  AtSign,
+  Hash,
+  Lock,
+  Globe,
+  ChevronDown,
+  ChevronRight,
+  Image,
+  File,
+  Trash2,
+  Edit,
+  Reply,
+  Check,
+  XCircle,
 } from 'lucide-react';
 import { getCurrentUser, logActivity } from '../utils/userTracking';
+
+// =============== INTERFACES ===============
 
 interface BlogPost {
   id: string;
@@ -57,7 +84,9 @@ interface Document {
   name: string;
   type: string;
   url: string;
+  size?: string;
   uploadedBy: string;
+  uploadedById?: string;
   uploadedAt: string;
   downloads: number;
 }
@@ -83,10 +112,113 @@ interface DocumentResponse {
   documentName: string;
   documentUrl: string;
   createdAt: string;
+  mentionedUsers: string[]; // User IDs who were mentioned
 }
 
+// Jobs Interfaces
+interface JobPost {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  type: 'full-time' | 'part-time' | 'contract' | 'remote';
+  description: string;
+  requirements: string[];
+  salary?: string;
+  author: string;
+  authorId: string;
+  createdAt: string;
+  updatedAt: string;
+  status: 'open' | 'filled' | 'closed';
+  applicants: JobApplicant[];
+  views: number;
+  category: string;
+}
+
+interface JobApplicant {
+  id: string;
+  userId: string;
+  userName: string;
+  appliedAt: string;
+  status: 'pending' | 'reviewed' | 'accepted' | 'rejected';
+  message: string;
+  resumeUrl?: string;
+}
+
+// Chat Interfaces
+interface ChatUser {
+  id: string;
+  name: string;
+  avatar?: string;
+  status: 'online' | 'offline' | 'away';
+  lastSeen?: string;
+}
+
+interface ChatMessage {
+  id: string;
+  chatId: string;
+  senderId: string;
+  senderName: string;
+  content: string;
+  type: 'text' | 'document' | 'image' | 'system';
+  mentions: string[]; // User IDs mentioned in message
+  attachments: ChatAttachment[];
+  createdAt: string;
+  readBy: string[];
+  replyTo?: string; // Message ID being replied to
+}
+
+interface ChatAttachment {
+  id: string;
+  name: string;
+  type: string;
+  url: string;
+  size: string;
+}
+
+interface Chat {
+  id: string;
+  type: 'private' | 'group';
+  name?: string; // For group chats
+  participants: string[]; // User IDs
+  participantNames: { [key: string]: string };
+  createdBy: string;
+  createdAt: string;
+  lastMessage?: ChatMessage;
+  unreadCount: { [key: string]: number };
+  admins?: string[]; // For group chats
+}
+
+interface VoiceCall {
+  id: string;
+  chatId: string;
+  initiatorId: string;
+  initiatorName: string;
+  participants: string[];
+  status: 'ringing' | 'ongoing' | 'ended' | 'missed';
+  startedAt: string;
+  endedAt?: string;
+}
+
+// Notification Interface
+interface Notification {
+  id: string;
+  userId: string;
+  type: 'job_status' | 'mention' | 'message' | 'document_response' | 'job_application' | 'voice_call' | 'group_invite';
+  title: string;
+  message: string;
+  data: any;
+  read: boolean;
+  createdAt: string;
+}
+
+// =============== MAIN COMPONENT ===============
+
 export function BlogTutorials() {
-  const [activeTab, setActiveTab] = useState<'posts' | 'documents' | 'create'>('posts');
+  // Main tabs
+  const [activeTab, setActiveTab] = useState<'posts' | 'documents' | 'jobs' | 'chat'>('posts');
+  
+  // Posts state
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [documentRequests, setDocumentRequests] = useState<DocumentRequest[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,6 +227,33 @@ export function BlogTutorials() {
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showCreateRequest, setShowCreateRequest] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+
+  // Jobs state
+  const [jobs, setJobs] = useState<JobPost[]>([]);
+  const [showCreateJob, setShowCreateJob] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<JobPost | null>(null);
+  const [jobFilter, setJobFilter] = useState<'all' | 'open' | 'filled' | 'closed' | 'my-jobs'>('all');
+
+  // Chat state
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [chatMessages, setChatMessages] = useState<{ [chatId: string]: ChatMessage[] }>({});
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [showNewGroup, setShowNewGroup] = useState(false);
+  const [chatMessage, setChatMessage] = useState('');
+  const [mentionSearch, setMentionSearch] = useState('');
+  const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+  const [chatUsers, setChatUsers] = useState<ChatUser[]>([]);
+  
+  // Voice call state
+  const [activeCall, setActiveCall] = useState<VoiceCall | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOn, setIsVideoOn] = useState(false);
+
+  // Notifications state
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
   // New Post Form
   const [newPost, setNewPost] = useState({
@@ -114,17 +273,66 @@ export function BlogTutorials() {
     category: 'safety-tips',
   });
 
+  // New Job Form
+  const [newJob, setNewJob] = useState({
+    title: '',
+    company: '',
+    location: '',
+    type: 'full-time' as JobPost['type'],
+    description: '',
+    requirements: '',
+    salary: '',
+    category: 'safety',
+  });
+
+  // New Group Form
+  const [newGroup, setNewGroup] = useState({
+    name: '',
+    selectedMembers: [] as string[],
+  });
+
+  // Document upload state
+  const [uploadingDocument, setUploadingDocument] = useState(false);
+  const [documentResponseData, setDocumentResponseData] = useState({
+    message: '',
+    mentionedUsers: [] as string[],
+  });
+  const [showDocumentResponse, setShowDocumentResponse] = useState<string | null>(null);
+
+  const chatInputRef = useRef<HTMLTextAreaElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // =============== EFFECTS ===============
+
   useEffect(() => {
     loadPosts();
     loadDocumentRequests();
+    loadJobs();
+    loadChats();
+    loadNotifications();
+    loadChatUsers();
   }, []);
+
+  useEffect(() => {
+    const unread = notifications.filter(n => !n.read).length;
+    setUnreadNotificationCount(unread);
+  }, [notifications]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatMessages, selectedChat]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // =============== LOADERS ===============
 
   const loadPosts = () => {
     const stored = localStorage.getItem('blogPosts');
     if (stored) {
       setPosts(JSON.parse(stored));
     } else {
-      // Initialize with sample posts
       const samplePosts: BlogPost[] = [
         {
           id: 'post_1',
@@ -231,10 +439,11 @@ All employees should receive fire safety training annually.`,
               requestId: 'req_1',
               respondent: 'EHS Professional',
               respondentId: 'user_3',
-              message: 'I have a great template we use. It covers all OSHA requirements.',
+              message: '@Safety Manager I have a great template we use. It covers all OSHA requirements.',
               documentName: 'OSHA_Confined_Space_Checklist.pdf',
               documentUrl: '#',
               createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
+              mentionedUsers: ['user_2'],
             }
           ],
           status: 'fulfilled',
@@ -245,10 +454,132 @@ All employees should receive fire safety training annually.`,
     }
   };
 
+  const loadJobs = () => {
+    const stored = localStorage.getItem('jobPosts');
+    if (stored) {
+      setJobs(JSON.parse(stored));
+    } else {
+      const sampleJobs: JobPost[] = [
+        {
+          id: 'job_1',
+          title: 'Safety Manager',
+          company: 'BuildSafe Construction',
+          location: 'New York, NY',
+          type: 'full-time',
+          description: 'We are looking for an experienced Safety Manager to oversee all safety operations at our construction sites.',
+          requirements: ['5+ years experience', 'OSHA certification', 'Strong leadership skills'],
+          salary: '$80,000 - $100,000',
+          author: 'HR Manager',
+          authorId: 'hr_1',
+          createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+          updatedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+          status: 'open',
+          applicants: [],
+          views: 156,
+          category: 'management',
+        },
+        {
+          id: 'job_2',
+          title: 'EHS Coordinator',
+          company: 'SafetyFirst Inc.',
+          location: 'Remote',
+          type: 'remote',
+          description: 'Join our team as an EHS Coordinator. You will be responsible for developing and implementing safety programs.',
+          requirements: ['3+ years experience', 'Knowledge of OSHA regulations', 'Excellent communication skills'],
+          salary: '$60,000 - $75,000',
+          author: 'Hiring Manager',
+          authorId: 'hire_1',
+          createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
+          updatedAt: new Date(Date.now() - 86400000 * 7).toISOString(),
+          status: 'open',
+          applicants: [],
+          views: 234,
+          category: 'coordinator',
+        }
+      ];
+      localStorage.setItem('jobPosts', JSON.stringify(sampleJobs));
+      setJobs(sampleJobs);
+    }
+  };
+
+  const loadChats = () => {
+    const stored = localStorage.getItem('chats');
+    const storedMessages = localStorage.getItem('chatMessages');
+    
+    if (stored) {
+      setChats(JSON.parse(stored));
+    }
+    if (storedMessages) {
+      setChatMessages(JSON.parse(storedMessages));
+    }
+  };
+
+  const loadNotifications = () => {
+    const stored = localStorage.getItem('notifications');
+    if (stored) {
+      setNotifications(JSON.parse(stored));
+    }
+  };
+
+  const loadChatUsers = () => {
+    // Simulate loading users - in real app, this would come from backend
+    const users: ChatUser[] = [
+      { id: 'user_1', name: 'John Safety', status: 'online' },
+      { id: 'user_2', name: 'Safety Manager', status: 'online' },
+      { id: 'user_3', name: 'EHS Professional', status: 'away' },
+      { id: 'admin_1', name: 'Safety Admin', status: 'online' },
+      { id: 'expert_1', name: 'Fire Safety Expert', status: 'offline' },
+      { id: 'hr_1', name: 'HR Manager', status: 'online' },
+    ];
+    setChatUsers(users);
+  };
+
+  // =============== HELPERS ===============
+
   const showMessage = (type: 'success' | 'error' | 'info', text: string) => {
     setSaveMessage({ type, text });
     setTimeout(() => setSaveMessage(null), 3000);
   };
+
+  const createNotification = (notification: Omit<Notification, 'id' | 'createdAt'>) => {
+    const newNotification: Notification = {
+      ...notification,
+      id: 'notif_' + Date.now(),
+      createdAt: new Date().toISOString(),
+    };
+    
+    const updatedNotifications = [newNotification, ...notifications];
+    setNotifications(updatedNotifications);
+    localStorage.setItem('notifications', JSON.stringify(updatedNotifications));
+    
+    return newNotification;
+  };
+
+  const markNotificationAsRead = (notificationId: string) => {
+    const updated = notifications.map(n => 
+      n.id === notificationId ? { ...n, read: true } : n
+    );
+    setNotifications(updated);
+    localStorage.setItem('notifications', JSON.stringify(updated));
+  };
+
+  const markAllNotificationsAsRead = () => {
+    const updated = notifications.map(n => ({ ...n, read: true }));
+    setNotifications(updated);
+    localStorage.setItem('notifications', JSON.stringify(updated));
+  };
+
+  const getCurrentUserId = () => {
+    const user = getCurrentUser();
+    return user.id;
+  };
+
+  const getCurrentUserName = () => {
+    const user = getCurrentUser();
+    return user.name;
+  };
+
+  // =============== POST HANDLERS ===============
 
   const handleCreatePost = () => {
     if (!newPost.title || !newPost.content) {
@@ -322,6 +653,8 @@ All employees should receive fire safety training annually.`,
     showMessage('success', 'Comment added!');
   };
 
+  // =============== DOCUMENT REQUEST HANDLERS ===============
+
   const handleCreateDocumentRequest = () => {
     if (!newRequest.title || !newRequest.description) {
       showMessage('error', 'Please fill in all fields!');
@@ -352,6 +685,480 @@ All employees should receive fire safety training annually.`,
     showMessage('success', 'Document request created!');
   };
 
+  const handleDocumentResponse = (requestId: string) => {
+    if (!documentResponseData.message) {
+      showMessage('error', 'Please add a message!');
+      return;
+    }
+
+    const currentUser = getCurrentUser();
+    const response: DocumentResponse = {
+      id: 'res_' + Date.now(),
+      requestId,
+      respondent: currentUser.name,
+      respondentId: currentUser.id,
+      message: documentResponseData.message,
+      documentName: 'Uploaded_Document.pdf', // In real app, this would be from file upload
+      documentUrl: '#',
+      createdAt: new Date().toISOString(),
+      mentionedUsers: documentResponseData.mentionedUsers,
+    };
+
+    const request = documentRequests.find(r => r.id === requestId);
+    
+    // Notify mentioned users
+    documentResponseData.mentionedUsers.forEach(userId => {
+      createNotification({
+        userId,
+        type: 'document_response',
+        title: 'Document Shared With You',
+        message: `${currentUser.name} mentioned you and shared a document for "${request?.title}"`,
+        data: { requestId, responseId: response.id },
+        read: false,
+      });
+    });
+
+    // Notify the original requester if not already mentioned
+    if (request && !documentResponseData.mentionedUsers.includes(request.requesterId)) {
+      createNotification({
+        userId: request.requesterId,
+        type: 'document_response',
+        title: 'Document Response',
+        message: `${currentUser.name} responded to your document request "${request.title}"`,
+        data: { requestId, responseId: response.id },
+        read: false,
+      });
+    }
+
+    const updatedRequests = documentRequests.map(req => {
+      if (req.id === requestId) {
+        return {
+          ...req,
+          responses: [...req.responses, response],
+          status: 'fulfilled' as const,
+        };
+      }
+      return req;
+    });
+
+    setDocumentRequests(updatedRequests);
+    localStorage.setItem('documentRequests', JSON.stringify(updatedRequests));
+    
+    setDocumentResponseData({ message: '', mentionedUsers: [] });
+    setShowDocumentResponse(null);
+    showMessage('success', 'Document shared successfully!');
+  };
+
+  // =============== JOB HANDLERS ===============
+
+  const handleCreateJob = () => {
+    if (!newJob.title || !newJob.company || !newJob.description) {
+      showMessage('error', 'Please fill in required fields!');
+      return;
+    }
+
+    const currentUser = getCurrentUser();
+    const job: JobPost = {
+      id: 'job_' + Date.now(),
+      title: newJob.title,
+      company: newJob.company,
+      location: newJob.location,
+      type: newJob.type,
+      description: newJob.description,
+      requirements: newJob.requirements.split('\n').filter(r => r.trim()),
+      salary: newJob.salary,
+      author: currentUser.name,
+      authorId: currentUser.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: 'open',
+      applicants: [],
+      views: 0,
+      category: newJob.category,
+    };
+
+    const updatedJobs = [job, ...jobs];
+    setJobs(updatedJobs);
+    localStorage.setItem('jobPosts', JSON.stringify(updatedJobs));
+
+    logActivity('Job Posted', `Posted job: ${job.title}`, 'user');
+    
+    setNewJob({
+      title: '',
+      company: '',
+      location: '',
+      type: 'full-time',
+      description: '',
+      requirements: '',
+      salary: '',
+      category: 'safety',
+    });
+    setShowCreateJob(false);
+    showMessage('success', 'Job posted successfully!');
+  };
+
+  const handleUpdateJobStatus = (jobId: string, newStatus: JobPost['status']) => {
+    const job = jobs.find(j => j.id === jobId);
+    if (!job) return;
+
+    const updatedJobs = jobs.map(j => {
+      if (j.id === jobId) {
+        return { ...j, status: newStatus, updatedAt: new Date().toISOString() };
+      }
+      return j;
+    });
+
+    setJobs(updatedJobs);
+    localStorage.setItem('jobPosts', JSON.stringify(updatedJobs));
+
+    // Notify the job poster about status change
+    createNotification({
+      userId: job.authorId,
+      type: 'job_status',
+      title: 'Job Status Updated',
+      message: `Your job posting "${job.title}" has been marked as ${newStatus.toUpperCase()}. ${newStatus === 'filled' ? 'Congratulations on finding a candidate!' : ''}`,
+      data: { jobId, status: newStatus },
+      read: false,
+    });
+
+    showMessage('success', `Job marked as ${newStatus}!`);
+  };
+
+  const handleApplyForJob = (jobId: string, message: string) => {
+    const currentUser = getCurrentUser();
+    const job = jobs.find(j => j.id === jobId);
+    if (!job) return;
+
+    const applicant: JobApplicant = {
+      id: 'app_' + Date.now(),
+      userId: currentUser.id,
+      userName: currentUser.name,
+      appliedAt: new Date().toISOString(),
+      status: 'pending',
+      message,
+    };
+
+    const updatedJobs = jobs.map(j => {
+      if (j.id === jobId) {
+        return { ...j, applicants: [...j.applicants, applicant] };
+      }
+      return j;
+    });
+
+    setJobs(updatedJobs);
+    localStorage.setItem('jobPosts', JSON.stringify(updatedJobs));
+
+    // Notify job poster
+    createNotification({
+      userId: job.authorId,
+      type: 'job_application',
+      title: 'New Job Application',
+      message: `${currentUser.name} applied for your job posting "${job.title}"`,
+      data: { jobId, applicantId: applicant.id },
+      read: false,
+    });
+
+    showMessage('success', 'Application submitted!');
+  };
+
+  // =============== CHAT HANDLERS ===============
+
+  const handleStartPrivateChat = (userId: string) => {
+    const currentUser = getCurrentUser();
+    const otherUser = chatUsers.find(u => u.id === userId);
+    if (!otherUser) return;
+
+    // Check if chat already exists
+    const existingChat = chats.find(c => 
+      c.type === 'private' && 
+      c.participants.includes(currentUser.id) && 
+      c.participants.includes(userId)
+    );
+
+    if (existingChat) {
+      setSelectedChat(existingChat);
+      setShowNewChat(false);
+      return;
+    }
+
+    const chat: Chat = {
+      id: 'chat_' + Date.now(),
+      type: 'private',
+      participants: [currentUser.id, userId],
+      participantNames: {
+        [currentUser.id]: currentUser.name,
+        [userId]: otherUser.name,
+      },
+      createdBy: currentUser.id,
+      createdAt: new Date().toISOString(),
+      unreadCount: { [currentUser.id]: 0, [userId]: 0 },
+    };
+
+    const updatedChats = [chat, ...chats];
+    setChats(updatedChats);
+    localStorage.setItem('chats', JSON.stringify(updatedChats));
+    
+    setSelectedChat(chat);
+    setShowNewChat(false);
+  };
+
+  const handleCreateGroup = () => {
+    if (!newGroup.name || newGroup.selectedMembers.length === 0) {
+      showMessage('error', 'Please provide group name and select members!');
+      return;
+    }
+
+    const currentUser = getCurrentUser();
+    const allParticipants = [currentUser.id, ...newGroup.selectedMembers];
+    
+    const participantNames: { [key: string]: string } = {
+      [currentUser.id]: currentUser.name,
+    };
+    newGroup.selectedMembers.forEach(id => {
+      const user = chatUsers.find(u => u.id === id);
+      if (user) {
+        participantNames[id] = user.name;
+      }
+    });
+
+    const chat: Chat = {
+      id: 'chat_' + Date.now(),
+      type: 'group',
+      name: newGroup.name,
+      participants: allParticipants,
+      participantNames,
+      createdBy: currentUser.id,
+      createdAt: new Date().toISOString(),
+      unreadCount: Object.fromEntries(allParticipants.map(id => [id, 0])),
+      admins: [currentUser.id],
+    };
+
+    const updatedChats = [chat, ...chats];
+    setChats(updatedChats);
+    localStorage.setItem('chats', JSON.stringify(updatedChats));
+
+    // Notify group members
+    newGroup.selectedMembers.forEach(userId => {
+      createNotification({
+        userId,
+        type: 'group_invite',
+        title: 'Added to Group',
+        message: `${currentUser.name} added you to the group "${newGroup.name}"`,
+        data: { chatId: chat.id },
+        read: false,
+      });
+    });
+
+    setNewGroup({ name: '', selectedMembers: [] });
+    setSelectedChat(chat);
+    setShowNewGroup(false);
+    showMessage('success', 'Group created!');
+  };
+
+  const handleSendMessage = () => {
+    if (!chatMessage.trim() || !selectedChat) return;
+
+    const currentUser = getCurrentUser();
+    
+    // Parse mentions from message
+    const mentionRegex = /@(\w+)/g;
+    const mentions: string[] = [];
+    let match;
+    while ((match = mentionRegex.exec(chatMessage)) !== null) {
+      const mentionedUser = chatUsers.find(u => 
+        u.name.toLowerCase().includes(match[1].toLowerCase())
+      );
+      if (mentionedUser) {
+        mentions.push(mentionedUser.id);
+      }
+    }
+
+    const message: ChatMessage = {
+      id: 'msg_' + Date.now(),
+      chatId: selectedChat.id,
+      senderId: currentUser.id,
+      senderName: currentUser.name,
+      content: chatMessage,
+      type: 'text',
+      mentions,
+      attachments: [],
+      createdAt: new Date().toISOString(),
+      readBy: [currentUser.id],
+    };
+
+    const updatedMessages = {
+      ...chatMessages,
+      [selectedChat.id]: [...(chatMessages[selectedChat.id] || []), message],
+    };
+    setChatMessages(updatedMessages);
+    localStorage.setItem('chatMessages', JSON.stringify(updatedMessages));
+
+    // Update chat's last message
+    const updatedChats = chats.map(c => {
+      if (c.id === selectedChat.id) {
+        const newUnreadCount = { ...c.unreadCount };
+        c.participants.forEach(p => {
+          if (p !== currentUser.id) {
+            newUnreadCount[p] = (newUnreadCount[p] || 0) + 1;
+          }
+        });
+        return { ...c, lastMessage: message, unreadCount: newUnreadCount };
+      }
+      return c;
+    });
+    setChats(updatedChats);
+    localStorage.setItem('chats', JSON.stringify(updatedChats));
+
+    // Notify mentioned users
+    mentions.forEach(userId => {
+      createNotification({
+        userId,
+        type: 'mention',
+        title: selectedChat.type === 'group' ? `Mentioned in ${selectedChat.name}` : 'Mentioned in Chat',
+        message: `${currentUser.name} mentioned you: "${chatMessage.substring(0, 50)}${chatMessage.length > 50 ? '...' : ''}"`,
+        data: { chatId: selectedChat.id, messageId: message.id },
+        read: false,
+      });
+    });
+
+    // Notify other participants (if not already mentioned)
+    selectedChat.participants.forEach(userId => {
+      if (userId !== currentUser.id && !mentions.includes(userId)) {
+        createNotification({
+          userId,
+          type: 'message',
+          title: selectedChat.type === 'group' ? `New message in ${selectedChat.name}` : `Message from ${currentUser.name}`,
+          message: `${currentUser.name}: ${chatMessage.substring(0, 50)}${chatMessage.length > 50 ? '...' : ''}`,
+          data: { chatId: selectedChat.id, messageId: message.id },
+          read: false,
+        });
+      }
+    });
+
+    setChatMessage('');
+    setShowMentionDropdown(false);
+  };
+
+  const handleSendDocument = (file: File) => {
+    if (!selectedChat) return;
+
+    const currentUser = getCurrentUser();
+    
+    const attachment: ChatAttachment = {
+      id: 'attach_' + Date.now(),
+      name: file.name,
+      type: file.type,
+      url: URL.createObjectURL(file),
+      size: formatFileSize(file.size),
+    };
+
+    const message: ChatMessage = {
+      id: 'msg_' + Date.now(),
+      chatId: selectedChat.id,
+      senderId: currentUser.id,
+      senderName: currentUser.name,
+      content: `Shared a document: ${file.name}`,
+      type: 'document',
+      mentions: [],
+      attachments: [attachment],
+      createdAt: new Date().toISOString(),
+      readBy: [currentUser.id],
+    };
+
+    const updatedMessages = {
+      ...chatMessages,
+      [selectedChat.id]: [...(chatMessages[selectedChat.id] || []), message],
+    };
+    setChatMessages(updatedMessages);
+    localStorage.setItem('chatMessages', JSON.stringify(updatedMessages));
+
+    showMessage('success', 'Document sent!');
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Voice call handlers
+  const handleStartVoiceCall = () => {
+    if (!selectedChat) return;
+
+    const currentUser = getCurrentUser();
+    const call: VoiceCall = {
+      id: 'call_' + Date.now(),
+      chatId: selectedChat.id,
+      initiatorId: currentUser.id,
+      initiatorName: currentUser.name,
+      participants: [currentUser.id],
+      status: 'ringing',
+      startedAt: new Date().toISOString(),
+    };
+
+    setActiveCall(call);
+
+    // Notify other participants
+    selectedChat.participants.forEach(userId => {
+      if (userId !== currentUser.id) {
+        createNotification({
+          userId,
+          type: 'voice_call',
+          title: 'Incoming Voice Call',
+          message: `${currentUser.name} is calling...`,
+          data: { callId: call.id, chatId: selectedChat.id },
+          read: false,
+        });
+      }
+    });
+
+    // Simulate call being answered after 2 seconds
+    setTimeout(() => {
+      setActiveCall(prev => prev ? { ...prev, status: 'ongoing' } : null);
+    }, 2000);
+  };
+
+  const handleEndCall = () => {
+    if (activeCall) {
+      setActiveCall({ ...activeCall, status: 'ended', endedAt: new Date().toISOString() });
+      setTimeout(() => setActiveCall(null), 1000);
+    }
+  };
+
+  // Handle mention input
+  const handleChatInputChange = (value: string) => {
+    setChatMessage(value);
+    
+    // Check for @ mentions
+    const lastAtIndex = value.lastIndexOf('@');
+    if (lastAtIndex !== -1 && lastAtIndex === value.length - 1) {
+      setShowMentionDropdown(true);
+      setMentionSearch('');
+    } else if (lastAtIndex !== -1) {
+      const textAfterAt = value.substring(lastAtIndex + 1);
+      if (!textAfterAt.includes(' ')) {
+        setShowMentionDropdown(true);
+        setMentionSearch(textAfterAt);
+      } else {
+        setShowMentionDropdown(false);
+      }
+    } else {
+      setShowMentionDropdown(false);
+    }
+  };
+
+  const handleSelectMention = (user: ChatUser) => {
+    const lastAtIndex = chatMessage.lastIndexOf('@');
+    const newMessage = chatMessage.substring(0, lastAtIndex) + `@${user.name} `;
+    setChatMessage(newMessage);
+    setShowMentionDropdown(false);
+    chatInputRef.current?.focus();
+  };
+
+  // =============== FILTERS ===============
+
   const categories = [
     { id: 'all', name: 'All Categories', icon: BookOpen },
     { id: 'safety-tips', name: 'Safety Tips', icon: AlertCircle },
@@ -378,11 +1185,33 @@ All employees should receive fire safety training annually.`,
     return matchesSearch;
   });
 
+  const filteredJobs = jobs.filter(job => {
+    const currentUser = getCurrentUser();
+    const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         job.description.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (jobFilter === 'my-jobs') {
+      return matchesSearch && job.authorId === currentUser.id;
+    }
+    if (jobFilter === 'all') {
+      return matchesSearch;
+    }
+    return matchesSearch && job.status === jobFilter;
+  });
+
+  const filteredMentionUsers = chatUsers.filter(user => 
+    user.name.toLowerCase().includes(mentionSearch.toLowerCase()) &&
+    selectedChat?.participants.includes(user.id)
+  );
+
+  // =============== RENDER ===============
+
   return (
     <div className="p-4 sm:p-8 bg-slate-50 min-h-screen">
       {/* Message Toast */}
       {saveMessage && (
-        <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 animate-fade-in ${
+        <div className={`fixed top-4 right-4 z-[100] px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 animate-fade-in ${
           saveMessage.type === 'success' ? 'bg-green-600 text-white' :
           saveMessage.type === 'error' ? 'bg-red-600 text-white' :
           'bg-blue-600 text-white'
@@ -391,6 +1220,44 @@ All employees should receive fire safety training annually.`,
           {saveMessage.type === 'error' && <AlertCircle className="w-5 h-5" />}
           {saveMessage.type === 'info' && <AlertCircle className="w-5 h-5" />}
           <span>{saveMessage.text}</span>
+        </div>
+      )}
+
+      {/* Active Call Overlay */}
+      {activeCall && (
+        <div className="fixed inset-0 bg-slate-900/95 z-[90] flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+              <Phone className="w-12 h-12 text-white" />
+            </div>
+            <h3 className="text-2xl text-white mb-2">
+              {activeCall.status === 'ringing' ? 'Calling...' : 'Voice Call'}
+            </h3>
+            <p className="text-slate-400 mb-8">
+              {activeCall.status === 'ongoing' ? 'Connected' : 'Waiting for answer...'}
+            </p>
+            
+            <div className="flex items-center justify-center gap-4">
+              <button
+                onClick={() => setIsMuted(!isMuted)}
+                className={`p-4 rounded-full ${isMuted ? 'bg-red-600' : 'bg-slate-700'} text-white transition-colors`}
+              >
+                {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+              </button>
+              <button
+                onClick={handleEndCall}
+                className="p-4 rounded-full bg-red-600 text-white"
+              >
+                <PhoneOff className="w-6 h-6" />
+              </button>
+              <button
+                onClick={() => setIsVideoOn(!isVideoOn)}
+                className={`p-4 rounded-full ${isVideoOn ? 'bg-blue-600' : 'bg-slate-700'} text-white transition-colors`}
+              >
+                {isVideoOn ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -404,10 +1271,86 @@ All employees should receive fire safety training annually.`,
                 Safety Blog & Community
               </h1>
               <p className="text-blue-100">
-                Share knowledge, request documents, and learn from the safety community
+                Share knowledge, request documents, find jobs, and connect with the safety community
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 items-center">
+              {/* Notification Bell */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="p-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg relative"
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadNotificationCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center">
+                      {unreadNotificationCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notifications Dropdown */}
+                {showNotifications && (
+                  <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-xl shadow-2xl border border-slate-200 z-50 max-h-[500px] overflow-hidden">
+                    <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+                      <h3 className="font-semibold text-slate-900">Notifications</h3>
+                      <button
+                        onClick={markAllNotificationsAsRead}
+                        className="text-sm text-blue-600 hover:text-blue-700"
+                      >
+                        Mark all as read
+                      </button>
+                    </div>
+                    <div className="max-h-[400px] overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center text-slate-500">
+                          <Bell className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                          <p>No notifications yet</p>
+                        </div>
+                      ) : (
+                        notifications.slice(0, 20).map(notif => (
+                          <div
+                            key={notif.id}
+                            onClick={() => markNotificationAsRead(notif.id)}
+                            className={`p-4 border-b border-slate-100 cursor-pointer hover:bg-slate-50 ${
+                              !notif.read ? 'bg-blue-50' : ''
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                notif.type === 'mention' ? 'bg-purple-100 text-purple-600' :
+                                notif.type === 'message' ? 'bg-blue-100 text-blue-600' :
+                                notif.type === 'job_status' ? 'bg-green-100 text-green-600' :
+                                notif.type === 'document_response' ? 'bg-orange-100 text-orange-600' :
+                                'bg-slate-100 text-slate-600'
+                              }`}>
+                                {notif.type === 'mention' && <AtSign className="w-5 h-5" />}
+                                {notif.type === 'message' && <MessageCircle className="w-5 h-5" />}
+                                {notif.type === 'job_status' && <Briefcase className="w-5 h-5" />}
+                                {notif.type === 'document_response' && <FileText className="w-5 h-5" />}
+                                {notif.type === 'voice_call' && <Phone className="w-5 h-5" />}
+                                {notif.type === 'group_invite' && <Users className="w-5 h-5" />}
+                                {notif.type === 'job_application' && <User className="w-5 h-5" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-slate-900 text-sm">{notif.title}</p>
+                                <p className="text-slate-600 text-sm truncate">{notif.message}</p>
+                                <p className="text-xs text-slate-400 mt-1">
+                                  {new Date(notif.createdAt).toLocaleString()}
+                                </p>
+                              </div>
+                              {!notif.read && (
+                                <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-2" />
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button
                 onClick={() => setShowCreatePost(true)}
                 className="px-6 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-lg flex items-center gap-2 transition-colors border border-white/30"
@@ -428,10 +1371,10 @@ All employees should receive fire safety training annually.`,
 
         {/* Tabs */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6 p-2">
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => setActiveTab('posts')}
-              className={`flex-1 px-6 py-3 rounded-lg transition-all ${
+              className={`flex-1 min-w-[120px] px-6 py-3 rounded-lg transition-all ${
                 activeTab === 'posts'
                   ? 'bg-blue-600 text-white shadow-md'
                   : 'text-slate-700 hover:bg-slate-100'
@@ -444,7 +1387,7 @@ All employees should receive fire safety training annually.`,
             </button>
             <button
               onClick={() => setActiveTab('documents')}
-              className={`flex-1 px-6 py-3 rounded-lg transition-all ${
+              className={`flex-1 min-w-[120px] px-6 py-3 rounded-lg transition-all ${
                 activeTab === 'documents'
                   ? 'bg-blue-600 text-white shadow-md'
                   : 'text-slate-700 hover:bg-slate-100'
@@ -452,40 +1395,97 @@ All employees should receive fire safety training annually.`,
             >
               <div className="flex items-center justify-center gap-2">
                 <FileText className="w-5 h-5" />
-                <span>Document Requests ({documentRequests.length})</span>
+                <span>Documents ({documentRequests.length})</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('jobs')}
+              className={`flex-1 min-w-[120px] px-6 py-3 rounded-lg transition-all ${
+                activeTab === 'jobs'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Briefcase className="w-5 h-5" />
+                <span>Jobs ({jobs.length})</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('chat')}
+              className={`flex-1 min-w-[120px] px-6 py-3 rounded-lg transition-all ${
+                activeTab === 'chat'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <MessageCircle className="w-5 h-5" />
+                <span>Chat</span>
+                {chats.some(c => Object.values(c.unreadCount).some(count => (count as number) > 0)) && (
+                  <span className="w-2 h-2 bg-red-500 rounded-full" />
+                )}
               </div>
             </button>
           </div>
         </div>
 
-        {/* Search and Filter */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search posts, documents, tags..."
-                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+        {/* Search and Filter - Not for Chat */}
+        {activeTab !== 'chat' && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={
+                    activeTab === 'posts' ? 'Search posts, documents, tags...' :
+                    activeTab === 'jobs' ? 'Search jobs, companies...' :
+                    'Search document requests...'
+                  }
+                  className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              {activeTab === 'posts' && (
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              )}
+              {activeTab === 'jobs' && (
+                <div className="flex gap-2">
+                  <select
+                    value={jobFilter}
+                    onChange={(e) => setJobFilter(e.target.value as any)}
+                    className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">All Jobs</option>
+                    <option value="open">Open Positions</option>
+                    <option value="filled">Filled</option>
+                    <option value="closed">Closed</option>
+                    <option value="my-jobs">My Posted Jobs</option>
+                  </select>
+                  <button
+                    onClick={() => setShowCreateJob(true)}
+                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Post Job
+                  </button>
+                </div>
+              )}
             </div>
-            {activeTab === 'posts' && (
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
-            )}
           </div>
-        </div>
+        )}
 
-        {/* Content */}
+        {/* =============== POSTS TAB =============== */}
         {activeTab === 'posts' && (
           <div className="space-y-6">
             {filteredPosts.map(post => (
@@ -514,7 +1514,7 @@ All employees should receive fire safety training annually.`,
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-4 flex-wrap">
                   <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
                     {post.category.replace('-', ' ').toUpperCase()}
                   </span>
@@ -570,6 +1570,7 @@ All employees should receive fire safety training annually.`,
           </div>
         )}
 
+        {/* =============== DOCUMENTS TAB =============== */}
         {activeTab === 'documents' && (
           <div className="space-y-6">
             {filteredRequests.map(request => (
@@ -597,6 +1598,67 @@ All employees should receive fire safety training annually.`,
                     {request.status.toUpperCase()}
                   </span>
                 </div>
+
+                {/* Response Button */}
+                {request.status === 'open' && (
+                  <button
+                    onClick={() => setShowDocumentResponse(request.id)}
+                    className="mb-4 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-2"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Share Document
+                  </button>
+                )}
+
+                {/* Document Response Form */}
+                {showDocumentResponse === request.id && (
+                  <div className="mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <h4 className="font-medium text-slate-900 mb-3">Share a Document</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm text-slate-600 mb-1">Message (use @ to mention users)</label>
+                        <textarea
+                          value={documentResponseData.message}
+                          onChange={(e) => {
+                            setDocumentResponseData({ ...documentResponseData, message: e.target.value });
+                            // Parse mentions
+                            const mentions = e.target.value.match(/@(\w+)/g) || [];
+                            const mentionedIds = mentions.map(m => {
+                              const name = m.substring(1);
+                              const user = chatUsers.find(u => u.name.toLowerCase().includes(name.toLowerCase()));
+                              return user?.id;
+                            }).filter(Boolean) as string[];
+                            setDocumentResponseData(prev => ({ ...prev, mentionedUsers: mentionedIds }));
+                          }}
+                          placeholder={`@${request.requester} Here's the document you requested...`}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          rows={3}
+                        />
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <label className="flex-1 px-4 py-3 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors text-center">
+                          <input type="file" className="hidden" />
+                          <Upload className="w-5 h-5 mx-auto mb-1 text-slate-400" />
+                          <span className="text-sm text-slate-600">Upload Document</span>
+                        </label>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleDocumentResponse(request.id)}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                        >
+                          Share Document
+                        </button>
+                        <button
+                          onClick={() => setShowDocumentResponse(null)}
+                          className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {request.responses.length > 0 && (
                   <div className="mt-4 space-y-3 pl-4 border-l-2 border-blue-200">
@@ -630,7 +1692,457 @@ All employees should receive fire safety training annually.`,
             )}
           </div>
         )}
+
+        {/* =============== JOBS TAB =============== */}
+        {activeTab === 'jobs' && (
+          <div className="space-y-6">
+            {filteredJobs.map(job => {
+              const currentUser = getCurrentUser();
+              const isOwner = job.authorId === currentUser.id;
+              
+              return (
+                <div key={job.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-xl font-semibold text-slate-900">{job.title}</h3>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          job.status === 'open' ? 'bg-green-100 text-green-700' :
+                          job.status === 'filled' ? 'bg-blue-100 text-blue-700' :
+                          'bg-slate-100 text-slate-700'
+                        }`}>
+                          {job.status.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-slate-600">
+                        <span className="font-medium text-slate-800">{job.company}</span>
+                        <span>{job.location}</span>
+                        <span className="px-2 py-0.5 bg-slate-100 rounded text-xs">
+                          {job.type.replace('-', ' ')}
+                        </span>
+                      </div>
+                    </div>
+                    {job.salary && (
+                      <div className="text-right">
+                        <p className="text-lg font-semibold text-green-600">{job.salary}</p>
+                        <p className="text-xs text-slate-500">per year</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-slate-700 mb-4 line-clamp-3">{job.description}</p>
+
+                  {job.requirements.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium text-slate-700 mb-2">Requirements:</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {job.requirements.slice(0, 4).map((req, idx) => (
+                          <span key={idx} className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-sm">
+                            {req}
+                          </span>
+                        ))}
+                        {job.requirements.length > 4 && (
+                          <span className="px-2 py-1 text-slate-500 text-sm">
+                            +{job.requirements.length - 4} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+                    <div className="flex items-center gap-4 text-sm text-slate-600">
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        {job.author}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        {new Date(job.createdAt).toLocaleDateString()}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Eye className="w-4 h-4" />
+                        {job.views} views
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        {job.applicants.length} applicants
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {isOwner && (
+                        <>
+                          {job.status === 'open' && (
+                            <>
+                              <button
+                                onClick={() => handleUpdateJobStatus(job.id, 'filled')}
+                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm flex items-center gap-2"
+                              >
+                                <Check className="w-4 h-4" />
+                                Mark as Filled
+                              </button>
+                              <button
+                                onClick={() => handleUpdateJobStatus(job.id, 'closed')}
+                                className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-sm flex items-center gap-2"
+                              >
+                                <XCircle className="w-4 h-4" />
+                                Close
+                              </button>
+                            </>
+                          )}
+                          {job.status !== 'open' && (
+                            <button
+                              onClick={() => handleUpdateJobStatus(job.id, 'open')}
+                              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                            >
+                              Reopen Position
+                            </button>
+                          )}
+                        </>
+                      )}
+                      <button
+                        onClick={() => setSelectedJob(job)}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                      >
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {filteredJobs.length === 0 && (
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+                <Briefcase className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <h3 className="text-slate-900 mb-2">No jobs found</h3>
+                <p className="text-slate-600 mb-4">Be the first to post a job opening!</p>
+                <button
+                  onClick={() => setShowCreateJob(true)}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg inline-flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  Post a Job
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* =============== CHAT TAB =============== */}
+        {activeTab === 'chat' && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" style={{ height: 'calc(100vh - 350px)', minHeight: '500px' }}>
+            <div className="flex h-full">
+              {/* Chat Sidebar */}
+              <div className="w-80 border-r border-slate-200 flex flex-col">
+                {/* Chat Header */}
+                <div className="p-4 border-b border-slate-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-slate-900">Messages</h3>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowNewChat(true)}
+                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+                        title="New Chat"
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => setShowNewGroup(true)}
+                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+                        title="New Group"
+                      >
+                        <Users className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search conversations..."
+                      className="w-full pl-9 pr-3 py-2 bg-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Chat List */}
+                <div className="flex-1 overflow-y-auto">
+                  {chats.length === 0 ? (
+                    <div className="p-8 text-center text-slate-500">
+                      <MessageCircle className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                      <p className="text-sm">No conversations yet</p>
+                      <p className="text-xs mt-1">Start a new chat or create a group</p>
+                    </div>
+                  ) : (
+                    chats.map(chat => {
+                      const currentUser = getCurrentUser();
+                      const otherParticipant = chat.type === 'private' 
+                        ? chat.participants.find(p => p !== currentUser.id)
+                        : null;
+                      const otherUser = otherParticipant ? chatUsers.find(u => u.id === otherParticipant) : null;
+                      const unread = chat.unreadCount[currentUser.id] || 0;
+
+                      return (
+                        <div
+                          key={chat.id}
+                          onClick={() => setSelectedChat(chat)}
+                          className={`p-4 border-b border-slate-100 cursor-pointer hover:bg-slate-50 ${
+                            selectedChat?.id === chat.id ? 'bg-blue-50' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="relative">
+                              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                chat.type === 'group' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
+                              }`}>
+                                {chat.type === 'group' ? (
+                                  <Users className="w-6 h-6" />
+                                ) : (
+                                  <User className="w-6 h-6" />
+                                )}
+                              </div>
+                              {otherUser && (
+                                <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
+                                  otherUser.status === 'online' ? 'bg-green-500' :
+                                  otherUser.status === 'away' ? 'bg-yellow-500' : 'bg-slate-400'
+                                }`} />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <p className="font-medium text-slate-900 truncate">
+                                  {chat.type === 'group' ? chat.name : (otherUser?.name || 'Unknown')}
+                                </p>
+                                {chat.lastMessage && (
+                                  <span className="text-xs text-slate-500">
+                                    {new Date(chat.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <p className="text-sm text-slate-500 truncate">
+                                  {chat.lastMessage?.content || 'No messages yet'}
+                                </p>
+                                {unread > 0 && (
+                                  <span className="ml-2 px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full">
+                                    {unread}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* Chat Area */}
+              <div className="flex-1 flex flex-col">
+                {selectedChat ? (
+                  <>
+                    {/* Chat Header */}
+                    <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          selectedChat.type === 'group' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
+                        }`}>
+                          {selectedChat.type === 'group' ? (
+                            <Users className="w-5 h-5" />
+                          ) : (
+                            <User className="w-5 h-5" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-slate-900">
+                            {selectedChat.type === 'group' 
+                              ? selectedChat.name 
+                              : Object.values(selectedChat.participantNames).find(name => name !== getCurrentUserName())
+                            }
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {selectedChat.type === 'group' 
+                              ? `${selectedChat.participants.length} members`
+                              : 'Private Chat'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleStartVoiceCall}
+                          className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+                          title="Voice Call"
+                        >
+                          <Phone className="w-5 h-5" />
+                        </button>
+                        <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-600" title="Video Call">
+                          <Video className="w-5 h-5" />
+                        </button>
+                        <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-600">
+                          <MoreVertical className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                      {(chatMessages[selectedChat.id] || []).map(message => {
+                        const currentUser = getCurrentUser();
+                        const isOwn = message.senderId === currentUser.id;
+
+                        return (
+                          <div
+                            key={message.id}
+                            className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div className={`max-w-[70%] ${isOwn ? 'order-2' : ''}`}>
+                              {!isOwn && (
+                                <p className="text-xs text-slate-500 mb-1 ml-1">{message.senderName}</p>
+                              )}
+                              <div className={`rounded-2xl px-4 py-2 ${
+                                isOwn 
+                                  ? 'bg-blue-600 text-white rounded-br-md' 
+                                  : 'bg-slate-100 text-slate-900 rounded-bl-md'
+                              }`}>
+                                {message.type === 'document' && message.attachments.length > 0 && (
+                                  <div className={`flex items-center gap-2 p-2 rounded-lg mb-2 ${
+                                    isOwn ? 'bg-blue-700' : 'bg-slate-200'
+                                  }`}>
+                                    <File className="w-8 h-8" />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium truncate">{message.attachments[0].name}</p>
+                                      <p className="text-xs opacity-75">{message.attachments[0].size}</p>
+                                    </div>
+                                    <button className={`p-1 rounded ${isOwn ? 'hover:bg-blue-600' : 'hover:bg-slate-300'}`}>
+                                      <Download className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                )}
+                                <p className="text-sm whitespace-pre-wrap">
+                                  {message.content.split(/(@\w+)/g).map((part, idx) => {
+                                    if (part.startsWith('@')) {
+                                      return (
+                                        <span key={idx} className={`font-medium ${isOwn ? 'text-blue-200' : 'text-blue-600'}`}>
+                                          {part}
+                                        </span>
+                                      );
+                                    }
+                                    return part;
+                                  })}
+                                </p>
+                              </div>
+                              <p className={`text-xs text-slate-400 mt-1 ${isOwn ? 'text-right mr-1' : 'ml-1'}`}>
+                                {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div ref={messagesEndRef} />
+                    </div>
+
+                    {/* Message Input */}
+                    <div className="p-4 border-t border-slate-200">
+                      <div className="relative">
+                        {/* Mention Dropdown */}
+                        {showMentionDropdown && filteredMentionUsers.length > 0 && (
+                          <div className="absolute bottom-full left-0 mb-2 w-64 bg-white rounded-lg shadow-lg border border-slate-200 max-h-48 overflow-y-auto">
+                            {filteredMentionUsers.map(user => (
+                              <div
+                                key={user.id}
+                                onClick={() => handleSelectMention(user)}
+                                className="px-4 py-2 hover:bg-slate-50 cursor-pointer flex items-center gap-3"
+                              >
+                                <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                                  <User className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-slate-900">{user.name}</p>
+                                  <p className={`text-xs ${
+                                    user.status === 'online' ? 'text-green-600' :
+                                    user.status === 'away' ? 'text-yellow-600' : 'text-slate-400'
+                                  }`}>
+                                    {user.status}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex items-end gap-3">
+                          <label className="p-2 hover:bg-slate-100 rounded-lg cursor-pointer text-slate-600">
+                            <input
+                              type="file"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleSendDocument(file);
+                              }}
+                            />
+                            <Paperclip className="w-5 h-5" />
+                          </label>
+                          <textarea
+                            ref={chatInputRef}
+                            value={chatMessage}
+                            onChange={(e) => handleChatInputChange(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSendMessage();
+                              }
+                            }}
+                            placeholder="Type a message... (Use @ to mention)"
+                            className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                            rows={1}
+                          />
+                          <button
+                            onClick={handleSendMessage}
+                            disabled={!chatMessage.trim()}
+                            className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-lg"
+                          >
+                            <Send className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-center p-8">
+                    <div>
+                      <MessageCircle className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-slate-900 mb-2">Select a conversation</h3>
+                      <p className="text-slate-500 mb-4">Choose a chat from the sidebar or start a new one</p>
+                      <div className="flex justify-center gap-3">
+                        <button
+                          onClick={() => setShowNewChat(true)}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          New Chat
+                        </button>
+                        <button
+                          onClick={() => setShowNewGroup(true)}
+                          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-2"
+                        >
+                          <Users className="w-4 h-4" />
+                          Create Group
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* =============== MODALS =============== */}
 
       {/* Create Post Modal */}
       {showCreatePost && (
@@ -757,6 +2269,247 @@ All employees should receive fire safety training annually.`,
         </div>
       )}
 
+      {/* Create Job Modal */}
+      {showCreateJob && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white">
+              <h3 className="text-xl text-slate-900">Post a Job</h3>
+              <button
+                onClick={() => setShowCreateJob(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-700 mb-2">Job Title *</label>
+                  <input
+                    type="text"
+                    value={newJob.title}
+                    onChange={(e) => setNewJob({ ...newJob, title: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Safety Manager"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 mb-2">Company *</label>
+                  <input
+                    type="text"
+                    value={newJob.company}
+                    onChange={(e) => setNewJob({ ...newJob, company: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Your company name"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-700 mb-2">Location</label>
+                  <input
+                    type="text"
+                    value={newJob.location}
+                    onChange={(e) => setNewJob({ ...newJob, location: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., New York, NY or Remote"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 mb-2">Job Type</label>
+                  <select
+                    value={newJob.type}
+                    onChange={(e) => setNewJob({ ...newJob, type: e.target.value as JobPost['type'] })}
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="full-time">Full Time</option>
+                    <option value="part-time">Part Time</option>
+                    <option value="contract">Contract</option>
+                    <option value="remote">Remote</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 mb-2">Salary Range</label>
+                <input
+                  type="text"
+                  value={newJob.salary}
+                  onChange={(e) => setNewJob({ ...newJob, salary: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., $60,000 - $80,000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 mb-2">Job Description *</label>
+                <textarea
+                  value={newJob.description}
+                  onChange={(e) => setNewJob({ ...newJob, description: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={6}
+                  placeholder="Describe the role, responsibilities, and what you're looking for..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 mb-2">Requirements (one per line)</label>
+                <textarea
+                  value={newJob.requirements}
+                  onChange={(e) => setNewJob({ ...newJob, requirements: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={4}
+                  placeholder="5+ years experience&#10;OSHA certification&#10;Strong communication skills"
+                />
+              </div>
+
+              <button
+                onClick={handleCreateJob}
+                className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center gap-2 transition-colors"
+              >
+                <Briefcase className="w-4 h-4" />
+                Post Job
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Job Detail Modal */}
+      {selectedJob && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">
+              <div>
+                <h3 className="text-2xl text-slate-900">{selectedJob.title}</h3>
+                <p className="text-slate-600">{selectedJob.company} • {selectedJob.location}</p>
+              </div>
+              <button
+                onClick={() => setSelectedJob(null)}
+                className="p-2 hover:bg-slate-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <span className={`px-3 py-1 rounded-full text-sm ${
+                  selectedJob.status === 'open' ? 'bg-green-100 text-green-700' :
+                  selectedJob.status === 'filled' ? 'bg-blue-100 text-blue-700' :
+                  'bg-slate-100 text-slate-700'
+                }`}>
+                  {selectedJob.status.toUpperCase()}
+                </span>
+                <span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm">
+                  {selectedJob.type.replace('-', ' ')}
+                </span>
+                {selectedJob.salary && (
+                  <span className="text-green-600 font-semibold">{selectedJob.salary}</span>
+                )}
+              </div>
+
+              <div className="prose max-w-none mb-6">
+                <h4 className="text-lg font-semibold text-slate-900 mb-2">Description</h4>
+                <p className="text-slate-700 whitespace-pre-wrap">{selectedJob.description}</p>
+              </div>
+
+              {selectedJob.requirements.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold text-slate-900 mb-3">Requirements</h4>
+                  <ul className="space-y-2">
+                    {selectedJob.requirements.map((req, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-slate-700">
+                        <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span>{req}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="flex items-center gap-4 text-sm text-slate-600 mb-6">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Posted by {selectedJob.author}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  {new Date(selectedJob.createdAt).toLocaleDateString()}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  {selectedJob.applicants.length} applicants
+                </div>
+              </div>
+
+              {selectedJob.status === 'open' && selectedJob.authorId !== getCurrentUser().id && (
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <h4 className="font-semibold text-slate-900 mb-3">Apply for this position</h4>
+                  <textarea
+                    placeholder="Tell us why you're a great fit for this role..."
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
+                    rows={4}
+                    id="job-application-message"
+                  />
+                  <button
+                    onClick={() => {
+                      const message = (document.getElementById('job-application-message') as HTMLTextAreaElement)?.value || '';
+                      handleApplyForJob(selectedJob.id, message);
+                      setSelectedJob(null);
+                    }}
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                  >
+                    Submit Application
+                  </button>
+                </div>
+              )}
+
+              {/* Show applicants if owner */}
+              {selectedJob.authorId === getCurrentUser().id && selectedJob.applicants.length > 0 && (
+                <div className="mt-6 border-t border-slate-200 pt-6">
+                  <h4 className="text-lg font-semibold text-slate-900 mb-4">
+                    Applicants ({selectedJob.applicants.length})
+                  </h4>
+                  <div className="space-y-4">
+                    {selectedJob.applicants.map(applicant => (
+                      <div key={applicant.id} className="p-4 bg-slate-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                              <User className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-slate-900">{applicant.userName}</p>
+                              <p className="text-sm text-slate-500">
+                                Applied {new Date(applicant.appliedAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            applicant.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                            applicant.status === 'accepted' ? 'bg-green-100 text-green-700' :
+                            applicant.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                            'bg-blue-100 text-blue-700'
+                          }`}>
+                            {applicant.status}
+                          </span>
+                        </div>
+                        {applicant.message && (
+                          <p className="text-slate-700 text-sm mt-2">{applicant.message}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Post Detail Modal */}
       {selectedPost && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -852,6 +2605,133 @@ All employees should receive fire safety training annually.`,
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Private Chat Modal */}
+      {showNewChat && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-xl text-slate-900">Start New Chat</h3>
+              <button
+                onClick={() => setShowNewChat(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 max-h-96 overflow-y-auto">
+              <p className="text-sm text-slate-600 mb-4">Select a user to start chatting</p>
+              <div className="space-y-2">
+                {chatUsers.filter(u => u.id !== getCurrentUser().id).map(user => (
+                  <div
+                    key={user.id}
+                    onClick={() => handleStartPrivateChat(user.id)}
+                    className="p-3 hover:bg-slate-50 rounded-lg cursor-pointer flex items-center gap-3"
+                  >
+                    <div className="relative">
+                      <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                        <User className="w-5 h-5" />
+                      </div>
+                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
+                        user.status === 'online' ? 'bg-green-500' :
+                        user.status === 'away' ? 'bg-yellow-500' : 'bg-slate-400'
+                      }`} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-slate-900">{user.name}</p>
+                      <p className={`text-sm ${
+                        user.status === 'online' ? 'text-green-600' :
+                        user.status === 'away' ? 'text-yellow-600' : 'text-slate-400'
+                      }`}>
+                        {user.status}
+                      </p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-slate-400" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Group Chat Modal */}
+      {showNewGroup && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-xl text-slate-900">Create Group</h3>
+              <button
+                onClick={() => setShowNewGroup(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-slate-700 mb-2">Group Name</label>
+                <input
+                  type="text"
+                  value={newGroup.name}
+                  onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Safety Team"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 mb-2">Add Members</label>
+                <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg">
+                  {chatUsers.filter(u => u.id !== getCurrentUser().id).map(user => (
+                    <label
+                      key={user.id}
+                      className="flex items-center gap-3 p-3 hover:bg-slate-50 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={newGroup.selectedMembers.includes(user.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setNewGroup({
+                              ...newGroup,
+                              selectedMembers: [...newGroup.selectedMembers, user.id]
+                            });
+                          } else {
+                            setNewGroup({
+                              ...newGroup,
+                              selectedMembers: newGroup.selectedMembers.filter(id => id !== user.id)
+                            });
+                          }
+                        }}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                        <User className="w-4 h-4" />
+                      </div>
+                      <span className="text-slate-900">{user.name}</span>
+                    </label>
+                  ))}
+                </div>
+                {newGroup.selectedMembers.length > 0 && (
+                  <p className="text-sm text-slate-500 mt-2">
+                    {newGroup.selectedMembers.length} member(s) selected
+                  </p>
+                )}
+              </div>
+
+              <button
+                onClick={handleCreateGroup}
+                disabled={!newGroup.name || newGroup.selectedMembers.length === 0}
+                className="w-full px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 text-white rounded-lg flex items-center justify-center gap-2 transition-colors"
+              >
+                <Users className="w-4 h-4" />
+                Create Group
+              </button>
             </div>
           </div>
         </div>

@@ -1,0 +1,382 @@
+// Prisma Schema for Signage Creators Platform
+// PostgreSQL Database
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// =====================
+// User & Authentication
+// =====================
+
+model User {
+  id                String   @id @default(uuid())
+  email             String   @unique
+  password          String
+  firstName         String?
+  lastName          String?
+  role              UserRole @default(USER)
+  isActive          Boolean  @default(true)
+  emailVerified     Boolean  @default(false)
+  avatar            String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  sessions          Session[]
+  signages          Signage[]
+  authorizedPersons AuthorizedPerson[]
+  emergencyPlans    EmergencyPlan[]
+  organizationCharts OrganizationChart[]
+  customTemplates   CustomTemplate[]
+  blogPosts         BlogPost[]
+  companyBranding   CompanyBranding?
+  userSettings      UserSettings?
+
+  @@index([email])
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  refreshToken String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshToken])
+}
+
+model UserSettings {
+  id                   String  @id @default(uuid())
+  userId               String  @unique
+  defaultPaperSize     String  @default("a4")
+  defaultOrientation   String  @default("landscape")
+  defaultResolution    String  @default("300dpi")
+  autoFitToPage        Boolean @default(true)
+  printBackgrounds     Boolean @default(true)
+  language             String  @default("en")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// =====================
+// Company Branding
+// =====================
+
+model CompanyBranding {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  companyName     String?
+  contactInfo     String?
+  clientLogo      String?  // Base64 or URL
+  contractorLogo  String?  // Base64 or URL
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// =====================
+// Signage
+// =====================
+
+model Signage {
+  id              String          @id @default(uuid())
+  userId          String
+  title           String
+  purpose         String?
+  description     String?
+  category        SignageCategory
+  customColor     String?
+  location        String?
+  hazards         String[]
+  ppe             String[]
+  customPPEImages Json?           // Array of {image: string, name: string}
+  procedures      String[]
+  permitRequired  String          @default("no")
+  permitDetails   String?
+  emergencyContacts Json?         // Array of {label: string, number: string}
+  qrCode          String?
+  qrCodeConfig    Json?           // QRCodeConfig object
+  size            String          @default("a4")
+  customWidth     Int?
+  customHeight    Int?
+  resolution      String          @default("300dpi")
+  warningIcon     String?
+  backgroundImage String?
+  footerText      String?
+  titleColor      String?
+  thumbnail       String?         // Preview thumbnail
+  isTemplate      Boolean         @default(false)
+  isPublic        Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([category])
+  @@index([isTemplate])
+}
+
+enum SignageCategory {
+  danger
+  warning
+  caution
+  mandatory
+  prohibition
+  emergency
+  fire
+  chemical
+  electrical
+  stp
+  traffic
+  informational
+  custom
+}
+
+// =====================
+// Authorized Persons
+// =====================
+
+model AuthorizedPerson {
+  id              String          @id @default(uuid())
+  userId          String
+  shift           String?
+  name            String
+  designation     String?
+  employeeId      String?
+  department      String?
+  contact         String?
+  certifications  String?
+  validFrom       DateTime?
+  validUntil      DateTime?
+  photo           String?         // Base64 or URL
+  format          String          @default("badge")
+  category        SignageCategory @default(mandatory)
+  paperSize       String?
+  orientation     String?
+  backgroundColor String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// =====================
+// Emergency Response
+// =====================
+
+model EmergencyPlan {
+  id                   String   @id @default(uuid())
+  userId               String
+  name                 String
+  location             String?
+  description          String?
+  emergencyType        String?
+  assemblyPoints       String[]
+  evacuationRoutes     Json?    // Array of route objects
+  emergencyContacts    Json?    // Array of contact objects
+  teamMembers          Json?    // Array of team member objects
+  procedures           String[]
+  equipment            String[]
+  floorPlan            String?  // Base64 or URL
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// =====================
+// Organization Charts
+// =====================
+
+model OrganizationChart {
+  id          String   @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  chartData   Json     // Hierarchical organization data
+  style       Json?    // Styling options
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// =====================
+// Templates
+// =====================
+
+model Template {
+  id                  String          @id @default(uuid())
+  name                String
+  description         String?
+  detailedDescription String?
+  category            SignageCategory
+  subcategory         String?
+  industry            String?
+  hazards             String[]
+  safetyProcedures    String[]
+  requiredPPE         String[]
+  emergencyContacts   String[]
+  tags                String[]
+  icon                String?
+  previewImage        String?
+  isActive            Boolean         @default(true)
+  usageCount          Int             @default(0)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@index([category])
+  @@index([industry])
+  @@index([tags])
+}
+
+model CustomTemplate {
+  id          String          @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  category    SignageCategory
+  data        Json            // Full template data
+  thumbnail   String?
+  isPublic    Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([category])
+}
+
+// =====================
+// Blog & Tutorials
+// =====================
+
+model BlogPost {
+  id          String        @id @default(uuid())
+  userId      String
+  title       String
+  slug        String        @unique
+  excerpt     String?
+  content     String
+  coverImage  String?
+  category    BlogCategory
+  tags        String[]
+  isPublished Boolean       @default(false)
+  publishedAt DateTime?
+  viewCount   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments BlogComment[]
+
+  @@index([userId])
+  @@index([slug])
+  @@index([category])
+  @@index([isPublished])
+}
+
+model BlogComment {
+  id        String   @id @default(uuid())
+  postId    String
+  name      String
+  email     String
+  content   String
+  isApproved Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+}
+
+enum BlogCategory {
+  safety_tips
+  industry_news
+  tutorials
+  case_studies
+  regulations
+  best_practices
+}
+
+// =====================
+// Analytics & Tracking
+// =====================
+
+model SignageHistory {
+  id          String          @id @default(uuid())
+  userId      String?
+  signageId   String?
+  action      String          // created, downloaded, printed, shared
+  category    SignageCategory?
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime        @default(now())
+
+  @@index([userId])
+  @@index([signageId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model SystemStats {
+  id                     String   @id @default(uuid())
+  date                   DateTime @default(now()) @db.Date
+  totalSignagesCreated   Int      @default(0)
+  totalDownloads         Int      @default(0)
+  totalUsers             Int      @default(0)
+  activeUsers            Int      @default(0)
+  topCategories          Json?
+  topTemplates           Json?
+
+  @@unique([date])
+  @@index([date])
+}
+
+// =====================
+// File Uploads
+// =====================
+
+model Upload {
+  id          String   @id @default(uuid())
+  userId      String?
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int
+  path        String
+  url         String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
