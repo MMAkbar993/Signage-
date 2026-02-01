@@ -941,18 +941,41 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                 // Backup original style
                 styleBackups.set(element, element.getAttribute('style') || '')
                 
-                // Convert color properties to inline styles (browser converts oklch to rgb)
-                const colorProps = ['color', 'backgroundColor', 'borderColor', 
-                    'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor']
+                // Convert ALL important visual properties to inline styles for html2canvas
+                // This is critical for print/PDF to capture text and colors correctly
+                const allVisualProps = [
+                    // Colors
+                    'color', 'backgroundColor', 'borderColor', 
+                    'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
+                    // Text properties - CRITICAL for print
+                    'fontSize', 'fontFamily', 'fontWeight', 'fontStyle',
+                    'textAlign', 'textTransform', 'letterSpacing', 'lineHeight',
+                    'textDecoration', 'whiteSpace', 'wordWrap', 'overflow',
+                    // Display and visibility
+                    'display', 'visibility', 'opacity',
+                    // Layout
+                    'width', 'height', 'minWidth', 'minHeight', 'maxWidth', 'maxHeight',
+                    'padding', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+                    'margin', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
+                    // Flexbox
+                    'flexDirection', 'justifyContent', 'alignItems', 'flexWrap', 'gap',
+                    // Border
+                    'borderWidth', 'borderStyle', 'borderRadius',
+                    // Background
+                    'backgroundImage', 'backgroundSize', 'backgroundPosition',
+                    // Box model
+                    'boxShadow', 'boxSizing'
+                ]
                 
-                colorProps.forEach(prop => {
+                allVisualProps.forEach(prop => {
                     try {
-                        const value = computedStyle.getPropertyValue(prop)
+                        const kebabProp = prop.replace(/([A-Z])/g, '-$1').toLowerCase()
+                        const value = computedStyle.getPropertyValue(kebabProp)
                         if (value && 
                             value.trim() !== '' &&
-                            value !== 'transparent' &&
+                            value !== 'none' &&
                             !value.toLowerCase().includes('oklch')) {
-                            element.style.setProperty(prop, value, 'important')
+                            element.style.setProperty(kebabProp, value)
                         }
                     } catch (e) {
                         // Ignore errors
@@ -967,43 +990,140 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
             // For print/PDF, use higher scale (minimum 2x, up to 4x for 300+ DPI)
             const finalScale = forPrint ? Math.max(2, Math.min(scale, 4)) : Math.min(scale, 2)
 
+            // Get the actual rendered dimensions including absolutely positioned children
+            const chartRect = chartContainerRef.current.getBoundingClientRect()
+            const scrollWidth = Math.max(chartContainerRef.current.scrollWidth, chartRect.width)
+            const scrollHeight = Math.max(chartContainerRef.current.scrollHeight, chartRect.height)
+
             const options = {
                 scale: finalScale,
                 useCORS: true,
                 allowTaint: true,
                 backgroundColor: '#f9fafb', // gray-50 background
-                width: chartContainerRef.current.scrollWidth,
-                height: chartContainerRef.current.scrollHeight,
-                logging: false,
-                windowWidth: chartContainerRef.current.scrollWidth,
-                windowHeight: chartContainerRef.current.scrollHeight,
+                width: scrollWidth,
+                height: scrollHeight,
+                logging: true, // Enable logging for debugging
+                windowWidth: scrollWidth,
+                windowHeight: scrollHeight,
                 removeContainer: false,
-                imageTimeout: 15000,
-                foreignObjectRendering: false, // Disable foreign object rendering to avoid oklch issues
+                imageTimeout: 30000, // Increased timeout
+                foreignObjectRendering: false, // Disable to avoid oklch issues
+                x: 0,
+                y: 0,
+                scrollX: 0,
+                scrollY: 0,
+                // Ensure we capture the full element including overflow
+                ignoreElements: (element: Element) => {
+                    // Ignore elements with opacity-0 class (hover buttons)
+                    if (element.classList && element.classList.contains('opacity-0')) {
+                        return true
+                    }
+                    return false
+                },
                 onclone: (clonedDoc) => {
                     // Inject a style that will override any oklch colors with safe fallbacks
                     // This must be done first, before other processing
                     const overrideStyle = clonedDoc.createElement('style')
-                    overrideStyle.id = 'oklch-override'
+                    overrideStyle.id = 'print-export-override'
                     overrideStyle.textContent = `
-                        /* Override any oklch colors with safe fallbacks */
+                        /* Override any oklch colors with safe fallbacks and ensure text visibility */
                         * {
-                            /* Force all color properties to use computed rgb values */
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                        /* Ensure all text is visible and properly styled */
+                        div, span, p, h1, h2, h3, h4, h5, h6 {
+                            visibility: visible !important;
+                        }
+                        /* Ensure the chart container handles overflow correctly */
+                        #org-chart-print-container {
+                            overflow: visible !important;
+                            position: relative !important;
+                        }
+                        /* Ensure cards are fully visible with all content */
+                        #org-chart-print-container > div {
+                            visibility: visible !important;
+                            opacity: 1 !important;
+                        }
+                        /* Ensure absolute positioned cards are visible */
+                        [style*="position: absolute"],
+                        [style*="position:absolute"] {
+                            visibility: visible !important;
+                            opacity: 1 !important;
+                        }
+                        /* Hide interactive elements */
+                        button, input, label, select {
+                            display: none !important;
+                        }
+                        /* Hide hover-only elements */
+                        .opacity-0, [class*="group-hover"] {
+                            display: none !important;
                         }
                     `
                     clonedDoc.head.insertBefore(overrideStyle, clonedDoc.head.firstChild)
                     
-                    // Hide any UI elements that shouldn't be in export
-                    const clonedElement = clonedDoc.querySelector('[ref]') || clonedDoc.body
-                    if (clonedElement) {
-                        // Remove any hover effects or temporary elements
-                        const hoverElements = clonedElement.querySelectorAll('.opacity-0, .group-hover\\:opacity-100')
-                        hoverElements.forEach(el => {
-                            if (el.classList.contains('opacity-0')) {
-                                el.style.display = 'none'
-                            }
+                    // Find the chart container in the cloned document
+                    const clonedChartContainer = clonedDoc.getElementById('org-chart-print-container')
+                    if (clonedChartContainer) {
+                        // Ensure the container has correct dimensions
+                        clonedChartContainer.style.overflow = 'visible'
+                        clonedChartContainer.style.position = 'relative'
+                        
+                        // Process all member cards (direct children that are absolutely positioned)
+                        const memberCards = clonedChartContainer.querySelectorAll(':scope > div[draggable="true"]')
+                        memberCards.forEach((card) => {
+                            const cardEl = card as HTMLElement
+                            cardEl.style.visibility = 'visible'
+                            cardEl.style.opacity = '1'
+                            
+                            // Process all text elements within the card
+                            const textElements = cardEl.querySelectorAll('div, span, p')
+                            textElements.forEach((textEl) => {
+                                const el = textEl as HTMLElement
+                                // Ensure text is visible
+                                el.style.visibility = 'visible'
+                                el.style.opacity = '1'
+                                
+                                // If the element has text content, ensure it has a visible color
+                                if (el.textContent && el.textContent.trim() !== '') {
+                                    const computedColor = window.getComputedStyle(el).color
+                                    // If color is transparent or not set, use black or white based on background
+                                    if (!computedColor || computedColor === 'rgba(0, 0, 0, 0)') {
+                                        el.style.color = '#000000'
+                                    }
+                                }
+                            })
+                            
+                            // Ensure images (avatars) are visible
+                            const images = cardEl.querySelectorAll('img')
+                            images.forEach((img) => {
+                                (img as HTMLElement).style.visibility = 'visible'
+                                ;(img as HTMLElement).style.opacity = '1'
+                            })
+                            
+                            // Ensure SVGs (default avatars) are visible
+                            const svgs = cardEl.querySelectorAll('svg')
+                            svgs.forEach((svg) => {
+                                const svgEl = svg as SVGSVGElement
+                                svgEl.style.visibility = 'visible'
+                                svgEl.style.opacity = '1'
+                            })
+                        })
+                        
+                        // Also process any SVG connection lines
+                        const svgElements = clonedChartContainer.querySelectorAll(':scope > svg')
+                        svgElements.forEach((svg) => {
+                            const svgEl = svg as SVGSVGElement
+                            svgEl.style.visibility = 'visible'
+                            svgEl.style.opacity = '1'
                         })
                     }
+                    
+                    // Hide any UI elements that shouldn't be in export
+                    const hoverElements = clonedDoc.querySelectorAll('.opacity-0, .group-hover\\:opacity-100')
+                    hoverElements.forEach(el => {
+                        (el as HTMLElement).style.display = 'none'
+                    })
                     
                     // Remove or replace stylesheets that contain oklch colors
                     // html2canvas reads CSS rules directly, so we need to handle them aggressively
@@ -1128,69 +1248,86 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                         }
                     }
                     
-                    // Convert all oklch/modern CSS colors to standard formats (rgb/hex)
-                    // The browser automatically converts oklch to rgb in computed styles
-                    // We need to set these as inline styles so html2canvas can read them
+                    // Convert all styles to inline styles for html2canvas
+                    // This ensures ALL visual properties are captured correctly including text
                     const allElements = clonedDoc.querySelectorAll('*')
                     
                     allElements.forEach((el) => {
                         const element = el as HTMLElement
                         try {
                             // Get computed styles from the cloned document's window
-                            // Browser will have already converted oklch to rgb
                             const computedStyle = win.getComputedStyle(element)
                             
-                            // Convert all color-related properties to inline styles
-                            // This ensures html2canvas only sees rgb/hex values
-                            const colorProps = [
-                                'color',
-                                'backgroundColor',
-                                'borderColor',
-                                'borderTopColor',
-                                'borderRightColor',
-                                'borderBottomColor',
-                                'borderLeftColor',
-                                'outlineColor',
-                                'textDecorationColor',
-                                'columnRuleColor',
-                                'fill', // SVG fill
-                                'stroke' // SVG stroke
+                            // List ALL visual properties that need to be captured
+                            // This is critical for print/PDF export
+                            const allVisualProps = [
+                                // Colors
+                                'color', 'background-color', 'border-color',
+                                'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color',
+                                'outline-color', 'text-decoration-color', 'fill', 'stroke',
+                                // Text properties - CRITICAL for text to appear
+                                'font-size', 'font-family', 'font-weight', 'font-style',
+                                'text-align', 'text-transform', 'letter-spacing', 'line-height',
+                                'text-decoration', 'white-space', 'word-wrap', 'word-break',
+                                // Display and visibility
+                                'display', 'visibility', 'opacity',
+                                // Dimensions
+                                'width', 'height', 'min-width', 'min-height', 'max-width', 'max-height',
+                                // Spacing
+                                'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+                                'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+                                // Flexbox
+                                'flex-direction', 'justify-content', 'align-items', 'flex-wrap', 'gap',
+                                // Border
+                                'border-width', 'border-style', 'border-radius',
+                                'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
+                                // Background
+                                'background-image', 'background-size', 'background-position', 'background-repeat',
+                                // Position
+                                'position', 'top', 'left', 'right', 'bottom', 'z-index',
+                                // Box model
+                                'box-shadow', 'box-sizing', 'overflow', 'overflow-x', 'overflow-y'
                             ]
                             
-                            colorProps.forEach(prop => {
+                            allVisualProps.forEach(prop => {
                                 try {
-                                    // Get the computed value
-                                    let value = computedStyle.getPropertyValue(prop)
-                                    if (!value) {
-                                        value = (computedStyle as any)[prop]
+                                    const value = computedStyle.getPropertyValue(prop)
+                                    
+                                    // Skip empty values and oklch
+                                    if (!value || value.trim() === '' || value.toLowerCase().includes('oklch')) {
+                                        // Handle oklch fallbacks
+                                        if (value && value.toLowerCase().includes('oklch')) {
+                                            if (prop === 'background-color') {
+                                                element.style.setProperty(prop, '#ffffff', 'important')
+                                            } else if (prop === 'color') {
+                                                element.style.setProperty(prop, '#000000', 'important')
+                                            }
+                                        }
+                                        return
                                     }
                                     
-                                    // Only set if it's a valid color value and doesn't contain unsupported functions
-                                    if (value && 
-                                        value.trim() !== '' &&
-                                        value !== 'transparent' && 
-                                        value !== 'rgba(0, 0, 0, 0)' &&
-                                        value !== 'none' &&
-                                        !value.toLowerCase().includes('oklch') &&
-                                        !value.toLowerCase().includes('lab(') &&
-                                        !value.toLowerCase().includes('lch(') &&
-                                        !value.toLowerCase().includes('color(')) {
-                                        // Set as inline style with important to override any CSS rules
-                                        element.style.setProperty(prop, value, 'important')
-                                    } else if (value && value.toLowerCase().includes('oklch')) {
-                                        // If we find oklch, set a fallback color
-                                        if (prop === 'backgroundColor') {
-                                            element.style.setProperty(prop, '#ffffff', 'important')
-                                        } else if (prop === 'color') {
-                                            element.style.setProperty(prop, '#000000', 'important')
-                                        } else {
-                                            element.style.setProperty(prop, 'transparent', 'important')
-                                        }
+                                    // Skip default/auto values that don't need to be set
+                                    if (value === 'auto' || value === 'normal' || value === 'none') {
+                                        return
                                     }
+                                    
+                                    // Set the property as inline style
+                                    element.style.setProperty(prop, value)
                                 } catch (e) {
                                     // Skip this property if there's an error
                                 }
                             })
+                            
+                            // Ensure text content is visible by setting explicit text styles
+                            if (element.textContent && element.textContent.trim() !== '') {
+                                // Make sure text color is set and visible
+                                const textColor = computedStyle.getPropertyValue('color')
+                                if (!textColor || textColor === 'rgba(0, 0, 0, 0)' || textColor.includes('oklch')) {
+                                    element.style.setProperty('color', '#000000', 'important')
+                                }
+                                // Ensure visibility
+                                element.style.setProperty('visibility', 'visible', 'important')
+                            }
                             
                             // Also check background-image for gradients that might use oklch
                             const bgImage = computedStyle.getPropertyValue('background-image')
@@ -1234,7 +1371,262 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
         }
     }
 
-    // Download as PNG
+    // Helper to convert oklch or any color to RGB using canvas
+    const colorToRgb = (color: string): string => {
+        if (!color || color === 'transparent' || color === 'none' || color === 'rgba(0, 0, 0, 0)') {
+            return color
+        }
+        try {
+            const canvas = document.createElement('canvas')
+            canvas.width = 1
+            canvas.height = 1
+            const ctx = canvas.getContext('2d')
+            if (!ctx) return color
+            ctx.fillStyle = color
+            ctx.fillRect(0, 0, 1, 1)
+            const data = ctx.getImageData(0, 0, 1, 1).data
+            return `rgb(${data[0]}, ${data[1]}, ${data[2]})`
+        } catch {
+            return color
+        }
+    }
+
+    // Create a cloned chart with inline styles for export
+    const createExportableChart = (): { html: string, width: number, height: number } => {
+        if (!chartContainerRef.current) {
+            throw new Error('Chart container not found')
+        }
+
+        const chartWidth = chartContainerRef.current.scrollWidth
+        const chartHeight = chartContainerRef.current.scrollHeight
+
+        // Clone the chart container
+        const chartClone = chartContainerRef.current.cloneNode(true) as HTMLElement
+
+        // Apply inline styles to all elements
+        const originalElements = chartContainerRef.current.querySelectorAll('*')
+        const clonedElements = chartClone.querySelectorAll('*')
+
+        // Apply styles to the container
+        chartClone.style.position = 'relative'
+        chartClone.style.width = chartWidth + 'px'
+        chartClone.style.height = chartHeight + 'px'
+        chartClone.style.overflow = 'visible'
+        chartClone.style.backgroundColor = '#f9fafb'
+
+        // Comprehensive style copying for all elements
+        originalElements.forEach((original, index) => {
+            const cloned = clonedElements[index]
+            if (!cloned || !(original instanceof HTMLElement)) return
+            
+            const clonedEl = cloned as HTMLElement
+            const computedStyle = window.getComputedStyle(original)
+
+            // Hide interactive elements
+            if (clonedEl.tagName === 'BUTTON' || clonedEl.tagName === 'INPUT' || 
+                clonedEl.tagName === 'LABEL' || clonedEl.tagName === 'SELECT') {
+                clonedEl.style.display = 'none'
+                return
+            }
+            if (clonedEl.classList.contains('opacity-0') || clonedEl.className.includes('group-hover')) {
+                clonedEl.style.display = 'none'
+                return
+            }
+
+            // Copy ALL computed styles
+            const propsToCompute = [
+                'position', 'top', 'left', 'right', 'bottom', 'z-index',
+                'display', 'visibility', 'opacity',
+                'width', 'height', 'min-width', 'min-height', 'max-width', 'max-height',
+                'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+                'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+                'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
+                'border-top-style', 'border-right-style', 'border-bottom-style', 'border-left-style',
+                'border-radius',
+                'font-family', 'font-size', 'font-weight', 'font-style',
+                'text-align', 'text-transform', 'text-decoration', 'line-height', 'letter-spacing',
+                'flex-direction', 'justify-content', 'align-items', 'flex-wrap', 'gap',
+                'overflow', 'white-space', 'word-wrap'
+            ]
+
+            propsToCompute.forEach(prop => {
+                try {
+                    const value = computedStyle.getPropertyValue(prop)
+                    if (value && value !== 'auto' && value !== 'normal' && value !== 'none') {
+                        clonedEl.style.setProperty(prop, value)
+                    }
+                } catch { /* ignore */ }
+            })
+
+            // Handle colors separately - convert oklch to rgb
+            const backgroundColor = computedStyle.backgroundColor
+            if (backgroundColor && backgroundColor !== 'rgba(0, 0, 0, 0)' && backgroundColor !== 'transparent') {
+                clonedEl.style.backgroundColor = colorToRgb(backgroundColor)
+            }
+
+            const textColor = computedStyle.color
+            if (textColor) {
+                clonedEl.style.color = colorToRgb(textColor)
+            }
+
+            const borderColor = computedStyle.borderColor
+            if (borderColor) {
+                clonedEl.style.borderColor = colorToRgb(borderColor)
+            }
+
+            // Copy box-shadow
+            const boxShadow = computedStyle.boxShadow
+            if (boxShadow && boxShadow !== 'none') {
+                clonedEl.style.boxShadow = boxShadow
+            }
+        })
+
+        // Fix SVG connection lines - they are direct children of the container
+        // We need to completely rebuild the SVGs to ensure they work in export
+        const originalSvgs = chartContainerRef.current.querySelectorAll(':scope > svg')
+        const clonedSvgs = chartClone.querySelectorAll(':scope > svg')
+
+        clonedSvgs.forEach((svg, svgIndex) => {
+            const originalSvg = originalSvgs[svgIndex] as SVGSVGElement
+            if (!originalSvg) return
+
+            const svgEl = svg as SVGSVGElement
+            
+            // Get the computed position from original SVG
+            const originalStyle = originalSvg.style
+            const left = originalStyle.left
+            const top = originalStyle.top
+            const width = originalStyle.width
+            const height = originalStyle.height
+
+            // Set position styles explicitly
+            svgEl.style.cssText = `position: absolute; left: ${left}; top: ${top}; width: ${width}; height: ${height}; overflow: visible; pointer-events: none; z-index: 0;`
+
+            // Process all paths inside the SVG (connection lines)
+            const paths = svg.querySelectorAll('path')
+            const originalPaths = originalSvg.querySelectorAll('path')
+
+            paths.forEach((path, pathIndex) => {
+                const originalPath = originalPaths[pathIndex]
+                if (!originalPath) return
+
+                const pathEl = path as SVGPathElement
+                const originalPathEl = originalPath as SVGPathElement
+
+                // Copy ALL attributes from original path
+                const attrs = ['d', 'stroke', 'stroke-width', 'fill', 'stroke-linecap', 'stroke-dasharray', 'transform', 'marker-end']
+                attrs.forEach(attr => {
+                    const value = originalPathEl.getAttribute(attr)
+                    if (value) {
+                        pathEl.setAttribute(attr, value)
+                    }
+                })
+
+                // Ensure stroke is visible (convert oklch if needed)
+                const strokeAttr = pathEl.getAttribute('stroke')
+                if (strokeAttr) {
+                    pathEl.setAttribute('stroke', colorToRgb(strokeAttr))
+                }
+            })
+
+            // Process circles (for wiring diagram dots)
+            const circles = svg.querySelectorAll('circle')
+            const originalCircles = originalSvg.querySelectorAll('circle')
+
+            circles.forEach((circle, circleIndex) => {
+                const originalCircle = originalCircles[circleIndex]
+                if (!originalCircle) return
+
+                const attrs = ['cx', 'cy', 'r', 'fill', 'stroke', 'stroke-width']
+                attrs.forEach(attr => {
+                    const value = originalCircle.getAttribute(attr)
+                    if (value) {
+                        circle.setAttribute(attr, value)
+                    }
+                })
+
+                // Convert fill color
+                const fillAttr = circle.getAttribute('fill')
+                if (fillAttr) {
+                    circle.setAttribute('fill', colorToRgb(fillAttr))
+                }
+            })
+
+            // Process defs (for arrowhead markers)
+            const defs = svg.querySelector('defs')
+            const originalDefs = originalSvg.querySelector('defs')
+            if (defs && originalDefs) {
+                // Copy the entire defs content
+                defs.innerHTML = originalDefs.innerHTML
+
+                // Fix colors in marker polygons
+                defs.querySelectorAll('polygon').forEach((polygon, pIndex) => {
+                    const originalPolygon = originalDefs.querySelectorAll('polygon')[pIndex]
+                    if (originalPolygon) {
+                        const fill = originalPolygon.getAttribute('fill')
+                        if (fill) {
+                            polygon.setAttribute('fill', colorToRgb(fill))
+                        }
+                        const points = originalPolygon.getAttribute('points')
+                        if (points) {
+                            polygon.setAttribute('points', points)
+                        }
+                    }
+                })
+            }
+        })
+
+        // Also fix SVGs inside cards (avatar icons)
+        const allSvgs = chartClone.querySelectorAll('svg')
+        const originalAllSvgs = chartContainerRef.current.querySelectorAll('svg')
+
+        allSvgs.forEach((svg, index) => {
+            const originalSvg = originalAllSvgs[index]
+            if (!originalSvg) return
+
+            // Copy viewBox and other attributes
+            const viewBox = originalSvg.getAttribute('viewBox')
+            const className = originalSvg.getAttribute('class')
+            const fill = originalSvg.getAttribute('fill')
+            const stroke = originalSvg.getAttribute('stroke')
+
+            if (viewBox) svg.setAttribute('viewBox', viewBox)
+            if (fill) svg.setAttribute('fill', fill)
+            if (stroke) svg.setAttribute('stroke', stroke)
+
+            // Get computed fill color for SVG icons
+            const computedFill = window.getComputedStyle(originalSvg).fill
+            if (computedFill && computedFill !== 'none') {
+                svg.setAttribute('fill', colorToRgb(computedFill))
+            }
+
+            const computedStroke = window.getComputedStyle(originalSvg).stroke
+            if (computedStroke && computedStroke !== 'none') {
+                svg.setAttribute('stroke', colorToRgb(computedStroke))
+            }
+
+            // Copy path attributes inside avatar SVGs
+            svg.querySelectorAll('path').forEach((path, pIndex) => {
+                const origPath = originalSvg.querySelectorAll('path')[pIndex]
+                if (origPath) {
+                    const pathD = origPath.getAttribute('d')
+                    const pathFill = origPath.getAttribute('fill') || window.getComputedStyle(origPath).fill
+                    const pathStroke = origPath.getAttribute('stroke')
+                    
+                    if (pathD) path.setAttribute('d', pathD)
+                    if (pathFill && pathFill !== 'none') path.setAttribute('fill', colorToRgb(pathFill))
+                    if (pathStroke) path.setAttribute('stroke', colorToRgb(pathStroke))
+                }
+            })
+        })
+
+        // Remove draggable
+        chartClone.querySelectorAll('[draggable]').forEach(el => el.removeAttribute('draggable'))
+
+        return { html: chartClone.outerHTML, width: chartWidth, height: chartHeight }
+    }
+
+    // Download as PNG using iframe rendering
     const handleDownloadPNG = async () => {
         try {
             if (!chartContainerRef.current) {
@@ -1250,12 +1642,63 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
             document.body.appendChild(loadingMsg)
 
             try {
-                const canvas = await renderChartToCanvas(300, true)
+                const { html, width, height } = createExportableChart()
+
+                // Create a hidden iframe to render the chart
+                const iframe = document.createElement('iframe')
+                iframe.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:' + (width + 100) + 'px;height:' + (height + 100) + 'px;border:none;'
+                document.body.appendChild(iframe)
+
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
+                if (!iframeDoc) {
+                    throw new Error('Could not access iframe document')
+                }
+
+                // Write content to iframe
+                iframeDoc.open()
+                iframeDoc.write(`
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f9fafb; font-family: Arial, sans-serif; }
+        svg { overflow: visible !important; }
+    </style>
+</head>
+<body>
+    <div id="chart-wrapper" style="padding: 20px;">
+        ${html}
+    </div>
+</body>
+</html>
+                `)
+                iframeDoc.close()
+
+                // Wait for iframe to load
+                await new Promise(resolve => setTimeout(resolve, 500))
+
+                // Use html2canvas on the iframe content
+                const chartWrapper = iframeDoc.getElementById('chart-wrapper')
+                if (!chartWrapper) {
+                    throw new Error('Chart wrapper not found in iframe')
+                }
+
+                const canvas = await html2canvas(chartWrapper, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#f9fafb',
+                    logging: false
+                })
+
+                // Clean up iframe
+                document.body.removeChild(iframe)
 
                 const msg = document.getElementById('png-loading-msg')
                 if (msg) document.body.removeChild(msg)
 
-                // Convert to blob with high quality
+                // Download the canvas as PNG
                 canvas.toBlob((blob) => {
                     if (!blob) {
                         alert('Failed to create image. Please try again.')
@@ -1268,7 +1711,9 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                     a.click()
                     URL.revokeObjectURL(url)
                 }, 'image/png', 1.0)
+
             } catch (renderError) {
+                console.error('Render error:', renderError)
                 const msg = document.getElementById('png-loading-msg')
                 if (msg) document.body.removeChild(msg)
                 throw renderError
@@ -1281,7 +1726,38 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
         }
     }
 
-    // Print chart
+    // Helper function to convert computed styles to inline styles
+    const applyInlineStyles = (element: HTMLElement, clonedElement: HTMLElement) => {
+        const computedStyle = window.getComputedStyle(element)
+        
+        // List of important CSS properties to copy
+        const importantProps = [
+            'position', 'top', 'left', 'right', 'bottom', 'z-index',
+            'display', 'visibility', 'opacity',
+            'width', 'height', 'min-width', 'min-height', 'max-width', 'max-height',
+            'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+            'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+            'border', 'border-width', 'border-style', 'border-color', 'border-radius',
+            'background', 'background-color', 'background-image', 'background-size',
+            'color', 'font-family', 'font-size', 'font-weight', 'font-style',
+            'text-align', 'text-transform', 'text-decoration', 'line-height', 'letter-spacing',
+            'flex', 'flex-direction', 'justify-content', 'align-items', 'flex-wrap', 'gap',
+            'box-shadow', 'overflow', 'white-space', 'word-wrap'
+        ]
+        
+        importantProps.forEach(prop => {
+            try {
+                const value = computedStyle.getPropertyValue(prop)
+                if (value && value !== 'none' && value !== 'auto' && !value.includes('oklch')) {
+                    clonedElement.style.setProperty(prop, value)
+                }
+            } catch (e) {
+                // Ignore errors
+            }
+        })
+    }
+
+    // Print chart using DOM cloning (more reliable than canvas)
     const handlePrint = async () => {
         try {
             if (!chartContainerRef.current) {
@@ -1289,93 +1765,226 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                 return
             }
 
-            // Show loading indicator
-            const loadingMsg = document.createElement('div')
-            loadingMsg.id = 'print-loading-msg'
-            loadingMsg.textContent = 'Preparing high-quality print...'
-            loadingMsg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#000;color:#fff;padding:20px;border-radius:8px;z-index:10000;font-family:Arial,sans-serif;'
-            document.body.appendChild(loadingMsg)
+            // Get paper dimensions in mm (for @page CSS)
+            const paperMm = getPaperDimensionsMm()
+            
+            // Get chart dimensions
+            const chartWidth = chartContainerRef.current.scrollWidth
+            const chartHeight = chartContainerRef.current.scrollHeight
+            
+            // Calculate available print area (paper size minus margins, converted to px at 96dpi)
+            // 1 inch = 25.4mm, screen is typically 96dpi
+            const pxPerMm = 96 / 25.4
+            const marginMm = 10 // 10mm margin
+            const availableWidthPx = (paperMm.width - marginMm * 2) * pxPerMm
+            const availableHeightPx = (paperMm.height - marginMm * 2) * pxPerMm
+            
+            // Calculate scale to fit chart on one page
+            const scaleX = availableWidthPx / chartWidth
+            const scaleY = availableHeightPx / chartHeight
+            const scale = Math.min(scaleX, scaleY, 1) // Don't scale up, only down
 
             // Create a new window for printing
-            const printWindow = window.open('', '_blank')
+            const printWindow = window.open('', '_blank', 'width=1200,height=800')
             if (!printWindow) {
-                const msg = document.getElementById('print-loading-msg')
-                if (msg) document.body.removeChild(msg)
-                alert('Please allow popups to print.')
+                alert('Please allow popups for printing.')
                 return
             }
 
-            const dimensions = getPaperDimensionsMm()
-            const dpi = 300 // High resolution for print
+            // Clone the chart container
+            const chartClone = chartContainerRef.current.cloneNode(true) as HTMLElement
+            
+            // Apply inline styles to all elements in the clone
+            const originalElements = chartContainerRef.current.querySelectorAll('*')
+            const clonedElements = chartClone.querySelectorAll('*')
+            
+            // Apply styles to the container itself
+            applyInlineStyles(chartContainerRef.current, chartClone)
+            chartClone.style.position = 'relative'
+            chartClone.style.width = chartWidth + 'px'
+            chartClone.style.height = chartHeight + 'px'
+            chartClone.style.overflow = 'visible'
+            chartClone.style.transform = 'none'
+            chartClone.style.backgroundColor = '#f9fafb'
+            chartClone.style.borderRadius = '8px'
+            
+            // Apply styles to all child elements
+            originalElements.forEach((original, index) => {
+                const cloned = clonedElements[index] as HTMLElement
+                if (cloned && original instanceof HTMLElement) {
+                    applyInlineStyles(original, cloned)
+                    
+                    // Hide buttons and interactive elements
+                    if (cloned.tagName === 'BUTTON' || cloned.tagName === 'INPUT' || cloned.tagName === 'LABEL') {
+                        cloned.style.display = 'none'
+                    }
+                    
+                    // Hide hover-only elements
+                    if (cloned.classList.contains('opacity-0') || 
+                        cloned.className.includes('group-hover')) {
+                        cloned.style.display = 'none'
+                    }
+                }
+            })
 
-            // Render chart to image at high resolution
-            const canvas = await renderChartToCanvas(dpi, true)
+            // Remove draggable attribute from cloned elements
+            const draggables = chartClone.querySelectorAll('[draggable]')
+            draggables.forEach(el => {
+                el.removeAttribute('draggable')
+            })
 
-            // Get high-quality image data
-            const imgData = canvas.toDataURL('image/png', 1.0)
+            // Fix SVG elements - ensure stroke and fill attributes are properly set
+            const svgElements = chartClone.querySelectorAll('svg')
+            svgElements.forEach((svg, svgIndex) => {
+                const originalSvg = chartContainerRef.current?.querySelectorAll('svg')[svgIndex]
+                if (!originalSvg) return
 
-            const msg = document.getElementById('print-loading-msg')
-            if (msg) document.body.removeChild(msg)
+                // Copy SVG attributes
+                const svgEl = svg as SVGSVGElement
+                svgEl.style.overflow = 'visible'
+                svgEl.style.position = 'absolute'
+                
+                // Get computed style of original SVG
+                const svgStyle = window.getComputedStyle(originalSvg)
+                svgEl.style.left = svgStyle.left
+                svgEl.style.top = svgStyle.top
+                svgEl.style.width = svgStyle.width
+                svgEl.style.height = svgStyle.height
 
-            // Create print HTML with high-resolution image
-            printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Print Organization Chart</title>
-            <style>
-              @page {
-                size: ${dimensions.width}mm ${dimensions.height}mm;
-                margin: 0;
-              }
-              * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-              }
-              body {
-                margin: 0;
-                padding: 0;
-                width: ${dimensions.width}mm;
-                height: ${dimensions.height}mm;
-                overflow: hidden;
-              }
-              img {
-                width: 100%;
-                height: 100%;
-                object-fit: contain;
-                display: block;
-                image-rendering: -webkit-optimize-contrast;
-                image-rendering: crisp-edges;
-              }
-            </style>
-          </head>
-          <body>
-            <img src="${imgData}" alt="Organization Chart" style="width: ${dimensions.width}mm; height: ${dimensions.height}mm;" />
-            <script>
-              window.onload = function() {
-                // Small delay to ensure image is loaded
-                setTimeout(function() {
-                  window.print();
-                  window.onafterprint = function() {
+                // Process all path and line elements inside SVG
+                const paths = svg.querySelectorAll('path, line, circle, rect, polyline, polygon')
+                const originalPaths = originalSvg.querySelectorAll('path, line, circle, rect, polyline, polygon')
+                
+                paths.forEach((path, pathIndex) => {
+                    const originalPath = originalPaths[pathIndex]
+                    if (!originalPath) return
+
+                    const pathEl = path as SVGElement
+                    const originalPathEl = originalPath as SVGElement
+                    
+                    // Get stroke color from original element
+                    const stroke = originalPathEl.getAttribute('stroke') || 
+                                   window.getComputedStyle(originalPathEl).stroke
+                    const strokeWidth = originalPathEl.getAttribute('stroke-width') || 
+                                        window.getComputedStyle(originalPathEl).strokeWidth
+                    const fill = originalPathEl.getAttribute('fill') || 
+                                 window.getComputedStyle(originalPathEl).fill
+                    const strokeLinecap = originalPathEl.getAttribute('stroke-linecap')
+                    const strokeDasharray = originalPathEl.getAttribute('stroke-dasharray')
+                    
+                    // Set as inline attributes (not style) for SVG compatibility
+                    if (stroke && stroke !== 'none') {
+                        pathEl.setAttribute('stroke', stroke)
+                    }
+                    if (strokeWidth) {
+                        pathEl.setAttribute('stroke-width', strokeWidth)
+                    }
+                    if (fill) {
+                        pathEl.setAttribute('fill', fill)
+                    }
+                    if (strokeLinecap) {
+                        pathEl.setAttribute('stroke-linecap', strokeLinecap)
+                    }
+                    if (strokeDasharray) {
+                        pathEl.setAttribute('stroke-dasharray', strokeDasharray)
+                    }
+                    
+                    // Also set as inline style for print compatibility
+                    pathEl.style.stroke = stroke || ''
+                    pathEl.style.strokeWidth = strokeWidth || ''
+                    pathEl.style.fill = fill || 'none'
+                })
+            })
+
+            // Build the print document HTML with exact paper size
+            const printHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Print Organization Chart</title>
+    <style>
+        @page {
+            size: ${paperMm.width}mm ${paperMm.height}mm;
+            margin: ${marginMm}mm;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: white;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        .print-wrapper {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: white;
+        }
+        .chart-container {
+            position: relative;
+            background: #f9fafb;
+            transform: scale(${scale.toFixed(4)});
+            transform-origin: center center;
+            border-radius: 8px;
+        }
+        /* Ensure SVG lines are visible */
+        svg {
+            overflow: visible !important;
+            position: absolute !important;
+        }
+        svg path, svg line, svg polyline, svg polygon {
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        /* Prevent page breaks */
+        .print-wrapper, .chart-container {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        /* Ensure all positioned elements render correctly */
+        [style*="position: absolute"],
+        [style*="position:absolute"] {
+            position: absolute !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-wrapper">
+        <div class="chart-container">
+            ${chartClone.outerHTML}
+        </div>
+    </div>
+    <script>
+        window.onload = function() {
+            setTimeout(function() {
+                window.print();
+                window.onafterprint = function() {
                     window.close();
-                  };
-                }, 250);
-              };
-            </script>
-          </body>
-        </html>
-      `)
+                };
+            }, 300);
+        };
+    </script>
+</body>
+</html>`
+
+            printWindow.document.write(printHTML)
             printWindow.document.close()
         } catch (error) {
             console.error('Print error:', error)
-            const msg = document.getElementById('print-loading-msg')
-            if (msg) document.body.removeChild(msg)
             alert('Print failed. Please try again.')
         }
     }
 
-    // Download as PDF
+    // Download as PDF using iframe rendering
     const handleDownloadPDF = async () => {
         try {
             if (!chartContainerRef.current) {
@@ -1390,35 +1999,111 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
             loadingMsg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#000;color:#fff;padding:20px;border-radius:8px;z-index:10000;font-family:Arial,sans-serif;'
             document.body.appendChild(loadingMsg)
 
-            const dimensions = getPaperDimensionsMm()
-            const dpi = 300
+            try {
+                const { html, width, height } = createExportableChart()
+                const dimensions = getPaperDimensionsMm()
 
-            // Render chart to image at high resolution
-            const canvas = await renderChartToCanvas(dpi, true)
+                // Create a hidden iframe to render the chart
+                const iframe = document.createElement('iframe')
+                iframe.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:' + (width + 100) + 'px;height:' + (height + 100) + 'px;border:none;'
+                document.body.appendChild(iframe)
 
-            // Create PDF
-            const pdf = new jsPDF({
-                orientation: orientation === 'landscape' ? 'landscape' : 'portrait',
-                unit: 'mm',
-                format: paperSize === 'Legal' ? [dimensions.width, dimensions.height] : paperSize.toLowerCase(),
-                compress: true
-            })
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
+                if (!iframeDoc) {
+                    throw new Error('Could not access iframe document')
+                }
 
-            // Convert canvas to image data with high quality
-            const imgData = canvas.toDataURL('image/png', 1.0)
+                // Write content to iframe
+                iframeDoc.open()
+                iframeDoc.write(`
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f9fafb; font-family: Arial, sans-serif; }
+        svg { overflow: visible !important; }
+    </style>
+</head>
+<body>
+    <div id="chart-wrapper" style="padding: 20px;">
+        ${html}
+    </div>
+</body>
+</html>
+                `)
+                iframeDoc.close()
 
-            // Calculate dimensions to fit PDF page
-            const pdfWidth = pdf.internal.pageSize.getWidth()
-            const pdfHeight = pdf.internal.pageSize.getHeight()
+                // Wait for iframe to load
+                await new Promise(resolve => setTimeout(resolve, 500))
 
-            // Add image to PDF with proper dimensions
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'SLOW')
+                // Use html2canvas on the iframe content
+                const chartWrapper = iframeDoc.getElementById('chart-wrapper')
+                if (!chartWrapper) {
+                    throw new Error('Chart wrapper not found in iframe')
+                }
 
-            const msg = document.getElementById('pdf-loading-msg')
-            if (msg) document.body.removeChild(msg)
+                const canvas = await html2canvas(chartWrapper, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#f9fafb',
+                    logging: false
+                })
 
-            // Download PDF
-            pdf.save(`organization-chart-${paperSize}-${orientation}.pdf`)
+                // Clean up iframe
+                document.body.removeChild(iframe)
+
+                // Create PDF
+                const pdf = new jsPDF({
+                    orientation: orientation === 'landscape' ? 'landscape' : 'portrait',
+                    unit: 'mm',
+                    format: paperSize === 'Legal' ? [dimensions.width, dimensions.height] : paperSize.toLowerCase(),
+                    compress: true
+                })
+
+                // Convert canvas to image data with high quality
+                const imgData = canvas.toDataURL('image/png', 1.0)
+
+                // Calculate dimensions to fit PDF page
+                const pdfWidth = pdf.internal.pageSize.getWidth()
+                const pdfHeight = pdf.internal.pageSize.getHeight()
+
+                // Calculate aspect ratio to fit chart in PDF
+                const canvasAspect = canvas.width / canvas.height
+                const pdfAspect = pdfWidth / pdfHeight
+
+                let imgWidth, imgHeight, imgX, imgY
+
+                if (canvasAspect > pdfAspect) {
+                    // Chart is wider than PDF - fit to width
+                    imgWidth = pdfWidth
+                    imgHeight = pdfWidth / canvasAspect
+                    imgX = 0
+                    imgY = (pdfHeight - imgHeight) / 2
+                } else {
+                    // Chart is taller than PDF - fit to height
+                    imgHeight = pdfHeight
+                    imgWidth = pdfHeight * canvasAspect
+                    imgX = (pdfWidth - imgWidth) / 2
+                    imgY = 0
+                }
+
+                // Add image to PDF centered
+                pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth, imgHeight, undefined, 'FAST')
+
+                const msg = document.getElementById('pdf-loading-msg')
+                if (msg) document.body.removeChild(msg)
+
+                // Download PDF
+                pdf.save(`organization-chart-${paperSize}-${orientation}.pdf`)
+
+            } catch (renderError) {
+                console.error('Render error:', renderError)
+                const msg = document.getElementById('pdf-loading-msg')
+                if (msg) document.body.removeChild(msg)
+                throw renderError
+            }
         } catch (error) {
             console.error('PDF export error:', error)
             const msg = document.getElementById('pdf-loading-msg')
@@ -1985,7 +2670,6 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                     fill="none"
                     strokeDasharray={strokeDasharray}
                     strokeLinecap={strokeLinecap as any}
-                    markerEnd={`url(#arrowhead-${parentId}-${childId})`}
                 />
 
                 {/* Connection dots for wiring diagram */}
@@ -2032,21 +2716,6 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                     </>
                 )}
 
-                <defs>
-                    <marker
-                        id={`arrowhead-${parentId}-${childId}`}
-                        markerWidth={chartStyle === 'wiring' ? 12 : 10}
-                        markerHeight={chartStyle === 'wiring' ? 12 : 10}
-                        refX={chartStyle === 'wiring' ? 6 : 5}
-                        refY={chartStyle === 'wiring' ? 4 : 3}
-                        orient="auto"
-                    >
-                        <polygon 
-                            points={chartStyle === 'wiring' ? "0 0, 12 4, 0 8" : "0 0, 10 3, 0 6"} 
-                            fill={lineColor} 
-                        />
-                    </marker>
-                </defs>
             </svg>
         )
     }
@@ -4546,10 +5215,105 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 p-4 sm:p-6 lg:p-8 xl:p-10">
+            {/* Print-specific styles for native browser printing */}
+            <style>{`
+                @media print {
+                    /* Force colors to print */
+                    * {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                        color-adjust: exact !important;
+                    }
+                    
+                    /* Hide everything except the chart container */
+                    body > * {
+                        display: none !important;
+                    }
+                    
+                    /* Hide elements that should not print */
+                    .no-print,
+                    button,
+                    select,
+                    input,
+                    label,
+                    nav,
+                    header,
+                    footer {
+                        display: none !important;
+                    }
+                    
+                    /* Show and position the chart container */
+                    #org-chart-print-container {
+                        display: block !important;
+                        visibility: visible !important;
+                        position: fixed !important;
+                        left: 0 !important;
+                        top: 0 !important;
+                        width: 100% !important;
+                        height: auto !important;
+                        max-width: none !important;
+                        margin: 0 !important;
+                        padding: 5mm !important;
+                        background: white !important;
+                        overflow: visible !important;
+                        z-index: 99999 !important;
+                        border: none !important;
+                        transform: scale(0.65) !important;
+                        transform-origin: top left !important;
+                    }
+                    
+                    /* Show all children of the chart container */
+                    #org-chart-print-container,
+                    #org-chart-print-container * {
+                        visibility: visible !important;
+                    }
+                    
+                    /* Preserve absolutely positioned elements */
+                    #org-chart-print-container [style*="position: absolute"],
+                    #org-chart-print-container [style*="position:absolute"] {
+                        position: absolute !important;
+                    }
+                    
+                    /* Preserve SVG elements for connection lines */
+                    #org-chart-print-container svg {
+                        display: block !important;
+                        visibility: visible !important;
+                        overflow: visible !important;
+                    }
+                    
+                    #org-chart-print-container svg path,
+                    #org-chart-print-container svg line {
+                        visibility: visible !important;
+                        stroke: inherit !important;
+                    }
+                    
+                    /* Preserve card backgrounds and styles */
+                    #org-chart-print-container [class*="bg-"],
+                    #org-chart-print-container [class*="gradient"] {
+                        background: inherit !important;
+                        color: inherit !important;
+                    }
+                    
+                    /* Page settings */
+                    @page {
+                        size: landscape;
+                        margin: 5mm;
+                    }
+                    
+                    /* Make sure the root element and body are visible */
+                    html, body {
+                        visibility: visible !important;
+                        background: white !important;
+                        overflow: visible !important;
+                        height: auto !important;
+                    }
+                }
+            `}</style>
+            
             {/* Main Content */}
             <div className="w-full max-w-[1920px] mx-auto">
                 {/* Page Header */}
-                <div className="mb-6 lg:mb-8">
+                <div className="mb-6 lg:mb-8 no-print">
                     <div className="flex items-center justify-between mb-2">
                         <div>
                             <h1 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 mb-2">
@@ -4673,12 +5437,6 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                                             <option value="hr">HR Department Chart</option>
                                             <option value="school">School Org Chart</option>
                                         </optgroup>
-                                        <optgroup label="Engineering Diagrams">
-                                            <option value="wiring">Wiring Diagram</option>
-                                            <option value="pid">P&ID (Process Flow)</option>
-                                            <option value="circuit">Circuit Diagram</option>
-                                            <option value="mechanical">Mechanical Layout</option>
-                                        </optgroup>
                                     </select>
                                 </div>
 
@@ -4720,62 +5478,6 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                             <p className="text-sm text-gray-600 mb-6">
                                 Add members with <span className="font-semibold">name, designation, and contact number</span>. Photo is optional.
                             </p>
-
-                            {/* Import From Data Card */}
-                            <div className="mb-6 bg-white rounded-xl border-2 border-gray-200 shadow-sm overflow-hidden">
-                                {/* Icon Section */}
-                                <div className="p-6 flex items-center justify-center" style={{ minHeight: '180px' }}>
-                                    <div className="relative w-full max-w-xs">
-                                        {/* Database Icon */}
-                                        <div className="absolute left-0 top-0">
-                                            <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
-                                            </svg>
-                                        </div>
-                                        
-                                        {/* Arrow */}
-                                        <div className="absolute left-20 top-6">
-                                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
-                                            </svg>
-                                        </div>
-                                        
-                                        {/* Hierarchical Chart Icon */}
-                                        <div className="absolute right-0 top-8">
-                                            <svg className="w-20 h-20 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-                                                {/* Top rectangle */}
-                                                <rect x="10" y="1" width="4" height="4" rx="0.5" />
-                                                {/* Middle rectangles */}
-                                                <rect x="5" y="8" width="4" height="4" rx="0.5" />
-                                                <rect x="15" y="8" width="4" height="4" rx="0.5" />
-                                                {/* Bottom rectangles */}
-                                                <rect x="2" y="15" width="3.5" height="4" rx="0.5" />
-                                                <rect x="8.5" y="15" width="3.5" height="4" rx="0.5" />
-                                                <rect x="18.5" y="15" width="3.5" height="4" rx="0.5" />
-                                                {/* Connection lines */}
-                                                <line x1="12" y1="5" x2="7" y2="8" strokeWidth="1.5" />
-                                                <line x1="12" y1="5" x2="17" y2="8" strokeWidth="1.5" />
-                                                <line x1="7" y1="12" x2="3.75" y2="15" strokeWidth="1.5" />
-                                                <line x1="7" y1="12" x2="10.25" y2="15" strokeWidth="1.5" />
-                                                <line x1="17" y1="12" x2="20.25" y2="15" strokeWidth="1.5" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                {/* Button Section */}
-                                <label className="block cursor-pointer">
-                                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 px-6 py-4 text-center hover:from-yellow-500 hover:to-orange-600 transition-all">
-                                        <span className="text-gray-900 font-semibold text-sm lg:text-base">Import From Data</span>
-                                    </div>
-                                    <input
-                                        type="file"
-                                        accept=".json,.csv,.txt"
-                                        onChange={handleImportFromData}
-                                        className="hidden"
-                                    />
-                                </label>
-                            </div>
 
                             <div>
                                 <div className="flex items-center justify-between mb-4">
@@ -4929,7 +5631,8 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                                 )}
                             </div>
                         </div>
-                    </div>
+                    </div>       
+                    
 
                     {/* Right Side - Organization Chart Preview */}
                     <div className="lg:col-span-2 space-y-6">
@@ -4944,6 +5647,7 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
 
                             {orgMembers.length === 0 ? (
                                 <div
+                                    id="org-chart-print-container"
                                     ref={chartContainerRef}
                                     className="relative bg-gray-50 rounded-lg overflow-auto mx-auto border-2 border-gray-300"
                                     style={{
@@ -4976,6 +5680,7 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
                                 </div>
                             ) : (
                                 <div
+                                    id="org-chart-print-container"
                                     ref={chartContainerRef}
                                     className="relative bg-gray-50 rounded-lg overflow-auto mx-auto border-2 border-gray-300"
                                     style={{
