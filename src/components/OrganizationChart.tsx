@@ -15,121 +15,334 @@ const getSampleOrgChartData = (templateType: string) => {
         // Default Company Org Chart
         company: {
             members: [
+                // Level 1 - CEO
                 { id: baseTime + 1, name: 'John Smith', role: 'CEO', phone: '+1 555-0100', email: 'ceo@company.com', parentId: null, photo: null },
-                { id: baseTime + 2, name: 'Sarah Johnson', role: 'CFO', phone: '+1 555-0101', email: 'cfo@company.com', parentId: baseTime + 1, photo: null },
-                { id: baseTime + 3, name: 'Michael Chen', role: 'CTO', phone: '+1 555-0102', email: 'cto@company.com', parentId: baseTime + 1, photo: null },
-                { id: baseTime + 4, name: 'Emily Davis', role: 'COO', phone: '+1 555-0103', email: 'coo@company.com', parentId: baseTime + 1, photo: null },
-                { id: baseTime + 5, name: 'Robert Wilson', role: 'Finance Manager', phone: '+1 555-0104', email: 'finance@company.com', parentId: baseTime + 2, photo: null },
-                { id: baseTime + 6, name: 'Lisa Anderson', role: 'Dev Lead', phone: '+1 555-0105', email: 'devlead@company.com', parentId: baseTime + 3, photo: null },
-                { id: baseTime + 7, name: 'David Brown', role: 'Operations Manager', phone: '+1 555-0106', email: 'ops@company.com', parentId: baseTime + 4, photo: null },
+                // Level 2 - VPs
+                { id: baseTime + 2, name: 'Sarah Johnson', role: 'VP of Marketing', phone: '+1 555-0101', email: 'marketing@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Michael Chen', role: 'VP of Sales', phone: '+1 555-0102', email: 'sales@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 4, name: 'Emily Davis', role: 'VP of Admin', phone: '+1 555-0103', email: 'admin@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 5, name: 'Robert Wilson', role: 'VP of Shipping', phone: '+1 555-0104', email: 'shipping@company.com', parentId: baseTime + 1, photo: null },
+                // Level 3 - Under VP of Marketing
+                { id: baseTime + 6, name: 'Lisa Anderson', role: 'Software Engineer', phone: '+1 555-0105', email: 'engineer@company.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 7, name: 'David Brown', role: 'UX/UI Designer', phone: '+1 555-0106', email: 'designer@company.com', parentId: baseTime + 2, photo: null },
+                // Level 3 - Under VP of Sales
+                { id: baseTime + 8, name: 'Jennifer White', role: 'Content Editor', phone: '+1 555-0107', email: 'content@company.com', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 9, name: 'Mark Taylor', role: 'Graphic Designer', phone: '+1 555-0108', email: 'graphic@company.com', parentId: baseTime + 3, photo: null },
+                // Level 3 - Under VP of Admin
+                { id: baseTime + 10, name: 'Susan Martinez', role: 'Sales Manager', phone: '+1 555-0109', email: 'salesmgr@company.com', parentId: baseTime + 4, photo: null },
+                { id: baseTime + 11, name: 'Kevin Lee', role: 'Sales Manager', phone: '+1 555-0110', email: 'salesmgr2@company.com', parentId: baseTime + 4, photo: null },
+                // Level 3 - Under VP of Shipping
+                { id: baseTime + 12, name: 'Amy Clark', role: 'Shipping Clerk', phone: '+1 555-0111', email: 'shipping1@company.com', parentId: baseTime + 5, photo: null },
+                { id: baseTime + 13, name: 'Tom Harris', role: 'Shipping Clerk', phone: '+1 555-0112', email: 'shipping2@company.com', parentId: baseTime + 5, photo: null },
+                // Level 4 - Under some Level 3
+                { id: baseTime + 14, name: 'Nancy King', role: 'Developer', phone: '+1 555-0113', email: 'dev@company.com', parentId: baseTime + 6, photo: null },
+                { id: baseTime + 15, name: 'Chris Moore', role: 'QA Tester', phone: '+1 555-0114', email: 'qa@company.com', parentId: baseTime + 7, photo: null },
+                { id: baseTime + 16, name: 'Rachel Adams', role: 'Writer', phone: '+1 555-0115', email: 'writer@company.com', parentId: baseTime + 8, photo: null },
+                { id: baseTime + 17, name: 'Paul Young', role: 'Illustrator', phone: '+1 555-0116', email: 'illustrator@company.com', parentId: baseTime + 9, photo: null },
             ],
             positions: {
-                [baseTime + 1]: { x: 450, y: 50 },
-                [baseTime + 2]: { x: 150, y: 200 },
-                [baseTime + 3]: { x: 450, y: 200 },
-                [baseTime + 4]: { x: 750, y: 200 },
-                [baseTime + 5]: { x: 150, y: 380 },
-                [baseTime + 6]: { x: 450, y: 380 },
-                [baseTime + 7]: { x: 750, y: 380 },
+                // Level 1
+                [baseTime + 1]: { x: 450, y: 30 },
+                // Level 2 - 4 VPs
+                [baseTime + 2]: { x: 120, y: 130 },
+                [baseTime + 3]: { x: 330, y: 130 },
+                [baseTime + 4]: { x: 540, y: 130 },
+                [baseTime + 5]: { x: 750, y: 130 },
+                // Level 3 - 2 under each VP
+                [baseTime + 6]: { x: 60, y: 250 },
+                [baseTime + 7]: { x: 180, y: 250 },
+                [baseTime + 8]: { x: 270, y: 250 },
+                [baseTime + 9]: { x: 390, y: 250 },
+                [baseTime + 10]: { x: 480, y: 250 },
+                [baseTime + 11]: { x: 600, y: 250 },
+                [baseTime + 12]: { x: 690, y: 250 },
+                [baseTime + 13]: { x: 810, y: 250 },
+                // Level 4
+                [baseTime + 14]: { x: 60, y: 380 },
+                [baseTime + 15]: { x: 180, y: 380 },
+                [baseTime + 16]: { x: 270, y: 380 },
+                [baseTime + 17]: { x: 390, y: 380 },
             }
         },
         // Hospital Org Chart
         hospital: {
             members: [
-                { id: baseTime + 1, name: 'Dr. James Wilson', role: 'Medical Director', phone: '+1 555-0200', email: 'director@hospital.com', parentId: null, photo: null },
-                { id: baseTime + 2, name: 'Dr. Maria Garcia', role: 'Chief of Surgery', phone: '+1 555-0201', email: 'surgery@hospital.com', parentId: baseTime + 1, photo: null },
-                { id: baseTime + 3, name: 'Dr. Robert Lee', role: 'Chief of Medicine', phone: '+1 555-0202', email: 'medicine@hospital.com', parentId: baseTime + 1, photo: null },
-                { id: baseTime + 4, name: 'Nancy Thompson', role: 'Head Nurse', phone: '+1 555-0203', email: 'nursing@hospital.com', parentId: baseTime + 1, photo: null },
-                { id: baseTime + 5, name: 'Dr. Sarah Kim', role: 'Surgeon', phone: '+1 555-0204', email: 'surgeon@hospital.com', parentId: baseTime + 2, photo: null },
-                { id: baseTime + 6, name: 'Dr. Michael Park', role: 'Physician', phone: '+1 555-0205', email: 'physician@hospital.com', parentId: baseTime + 3, photo: null },
-                { id: baseTime + 7, name: 'Jennifer Adams', role: 'Staff Nurse', phone: '+1 555-0206', email: 'nurse@hospital.com', parentId: baseTime + 4, photo: null },
+                // Level 1 - Board Members (3)
+                { id: baseTime + 1, name: 'William Carter', role: 'Board Member', phone: '+1 555-0200', email: 'board1@hospital.com', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'Margaret Ellis', role: 'Board Member', phone: '+1 555-0201', email: 'board2@hospital.com', parentId: null, photo: null },
+                { id: baseTime + 3, name: 'Richard Hayes', role: 'Board Member', phone: '+1 555-0202', email: 'board3@hospital.com', parentId: null, photo: null },
+                // Level 2 - CEO/President
+                { id: baseTime + 4, name: 'Dr. James Wilson', role: 'CEO/President', phone: '+1 555-0203', email: 'ceo@hospital.com', parentId: baseTime + 2, photo: null },
+                // Level 3 - COO
+                { id: baseTime + 5, name: 'Dr. Maria Garcia', role: 'COO', phone: '+1 555-0204', email: 'coo@hospital.com', parentId: baseTime + 4, photo: null },
+                // Level 4 - Vice Presidents (5)
+                { id: baseTime + 6, name: 'Dr. Robert Lee', role: 'Vice President', phone: '+1 555-0205', email: 'vp1@hospital.com', parentId: baseTime + 5, photo: null },
+                { id: baseTime + 7, name: 'Nancy Thompson', role: 'Vice President', phone: '+1 555-0206', email: 'vp2@hospital.com', parentId: baseTime + 5, photo: null },
+                { id: baseTime + 8, name: 'Dr. Sarah Kim', role: 'Vice President', phone: '+1 555-0207', email: 'vp3@hospital.com', parentId: baseTime + 5, photo: null },
+                { id: baseTime + 9, name: 'Dr. Michael Park', role: 'Vice President', phone: '+1 555-0208', email: 'vp4@hospital.com', parentId: baseTime + 5, photo: null },
+                { id: baseTime + 10, name: 'Jennifer Adams', role: 'Vice President', phone: '+1 555-0209', email: 'vp5@hospital.com', parentId: baseTime + 5, photo: null },
+                // Level 5 - Staff under each VP (3 each)
+                { id: baseTime + 11, name: 'Staff Member', role: 'Staff', phone: '+1 555-0210', email: 'staff1@hospital.com', parentId: baseTime + 6, photo: null },
+                { id: baseTime + 12, name: 'Staff Member', role: 'Staff', phone: '+1 555-0211', email: 'staff2@hospital.com', parentId: baseTime + 6, photo: null },
+                { id: baseTime + 13, name: 'Staff Member', role: 'Staff', phone: '+1 555-0212', email: 'staff3@hospital.com', parentId: baseTime + 6, photo: null },
+                { id: baseTime + 14, name: 'Staff Member', role: 'Staff', phone: '+1 555-0213', email: 'staff4@hospital.com', parentId: baseTime + 7, photo: null },
+                { id: baseTime + 15, name: 'Staff Member', role: 'Staff', phone: '+1 555-0214', email: 'staff5@hospital.com', parentId: baseTime + 7, photo: null },
+                { id: baseTime + 16, name: 'Staff Member', role: 'Staff', phone: '+1 555-0215', email: 'staff6@hospital.com', parentId: baseTime + 7, photo: null },
+                { id: baseTime + 17, name: 'Staff Member', role: 'Staff', phone: '+1 555-0216', email: 'staff7@hospital.com', parentId: baseTime + 8, photo: null },
+                { id: baseTime + 18, name: 'Staff Member', role: 'Staff', phone: '+1 555-0217', email: 'staff8@hospital.com', parentId: baseTime + 8, photo: null },
+                { id: baseTime + 19, name: 'Staff Member', role: 'Staff', phone: '+1 555-0218', email: 'staff9@hospital.com', parentId: baseTime + 8, photo: null },
+                { id: baseTime + 20, name: 'Staff Member', role: 'Staff', phone: '+1 555-0219', email: 'staff10@hospital.com', parentId: baseTime + 9, photo: null },
+                { id: baseTime + 21, name: 'Staff Member', role: 'Staff', phone: '+1 555-0220', email: 'staff11@hospital.com', parentId: baseTime + 9, photo: null },
+                { id: baseTime + 22, name: 'Staff Member', role: 'Staff', phone: '+1 555-0221', email: 'staff12@hospital.com', parentId: baseTime + 9, photo: null },
+                { id: baseTime + 23, name: 'Staff Member', role: 'Staff', phone: '+1 555-0222', email: 'staff13@hospital.com', parentId: baseTime + 10, photo: null },
+                { id: baseTime + 24, name: 'Staff Member', role: 'Staff', phone: '+1 555-0223', email: 'staff14@hospital.com', parentId: baseTime + 10, photo: null },
+                { id: baseTime + 25, name: 'Staff Member', role: 'Staff', phone: '+1 555-0224', email: 'staff15@hospital.com', parentId: baseTime + 10, photo: null },
             ],
             positions: {
-                [baseTime + 1]: { x: 450, y: 50 },
-                [baseTime + 2]: { x: 150, y: 200 },
-                [baseTime + 3]: { x: 450, y: 200 },
-                [baseTime + 4]: { x: 750, y: 200 },
-                [baseTime + 5]: { x: 150, y: 380 },
-                [baseTime + 6]: { x: 450, y: 380 },
-                [baseTime + 7]: { x: 750, y: 380 },
+                // Level 1 - Board Members
+                [baseTime + 1]: { x: 250, y: 20 },
+                [baseTime + 2]: { x: 450, y: 20 },
+                [baseTime + 3]: { x: 650, y: 20 },
+                // Level 2 - CEO
+                [baseTime + 4]: { x: 450, y: 100 },
+                // Level 3 - COO
+                [baseTime + 5]: { x: 450, y: 180 },
+                // Level 4 - Vice Presidents
+                [baseTime + 6]: { x: 100, y: 270 },
+                [baseTime + 7]: { x: 280, y: 270 },
+                [baseTime + 8]: { x: 460, y: 270 },
+                [baseTime + 9]: { x: 640, y: 270 },
+                [baseTime + 10]: { x: 820, y: 270 },
+                // Level 5 - Staff (3 under each VP)
+                [baseTime + 11]: { x: 40, y: 380 },
+                [baseTime + 12]: { x: 100, y: 380 },
+                [baseTime + 13]: { x: 160, y: 380 },
+                [baseTime + 14]: { x: 220, y: 380 },
+                [baseTime + 15]: { x: 280, y: 380 },
+                [baseTime + 16]: { x: 340, y: 380 },
+                [baseTime + 17]: { x: 400, y: 380 },
+                [baseTime + 18]: { x: 460, y: 380 },
+                [baseTime + 19]: { x: 520, y: 380 },
+                [baseTime + 20]: { x: 580, y: 380 },
+                [baseTime + 21]: { x: 640, y: 380 },
+                [baseTime + 22]: { x: 700, y: 380 },
+                [baseTime + 23]: { x: 760, y: 380 },
+                [baseTime + 24]: { x: 820, y: 380 },
+                [baseTime + 25]: { x: 880, y: 380 },
             }
         },
-        // School Org Chart
+        // School Org Chart (Horizontal Layout)
         school: {
             members: [
+                // Level 1 - Principal (left)
                 { id: baseTime + 1, name: 'Dr. Elizabeth Moore', role: 'Principal', phone: '+1 555-0300', email: 'principal@school.edu', parentId: null, photo: null },
-                { id: baseTime + 2, name: 'Mark Stevens', role: 'Vice Principal', phone: '+1 555-0301', email: 'vp@school.edu', parentId: baseTime + 1, photo: null },
-                { id: baseTime + 3, name: 'Jennifer White', role: 'Academic Director', phone: '+1 555-0302', email: 'academic@school.edu', parentId: baseTime + 1, photo: null },
-                { id: baseTime + 4, name: 'Thomas Brown', role: 'Math Department', phone: '+1 555-0303', email: 'math@school.edu', parentId: baseTime + 3, photo: null },
-                { id: baseTime + 5, name: 'Susan Clark', role: 'Science Department', phone: '+1 555-0304', email: 'science@school.edu', parentId: baseTime + 3, photo: null },
-                { id: baseTime + 6, name: 'Patricia Taylor', role: 'Admin Staff', phone: '+1 555-0305', email: 'admin@school.edu', parentId: baseTime + 2, photo: null },
+                // Level 2 - Assistant (below Principal)
+                { id: baseTime + 2, name: 'Mark Stevens', role: 'Assistant', phone: '+1 555-0301', email: 'assistant@school.edu', parentId: baseTime + 1, photo: null },
+                // Level 3 - Vice Principals (3)
+                { id: baseTime + 3, name: 'Jennifer White', role: 'Vice Principal', phone: '+1 555-0302', email: 'vp1@school.edu', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 4, name: 'Thomas Brown', role: 'Vice Principal', phone: '+1 555-0303', email: 'vp2@school.edu', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 5, name: 'Susan Clark', role: 'Vice Principal', phone: '+1 555-0304', email: 'vp3@school.edu', parentId: baseTime + 2, photo: null },
+                // Level 4 - Grade Chairs (2 under each VP)
+                { id: baseTime + 6, name: 'Patricia Taylor', role: 'Dept Chair', phone: '+1 555-0305', email: 'chair1@school.edu', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 7, name: 'Robert Wilson', role: 'Dept Chair', phone: '+1 555-0306', email: 'chair2@school.edu', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 8, name: 'Linda Martinez', role: 'Dept Chair', phone: '+1 555-0307', email: 'chair3@school.edu', parentId: baseTime + 4, photo: null },
+                { id: baseTime + 9, name: 'Michael Johnson', role: 'Dept Chair', phone: '+1 555-0308', email: 'chair4@school.edu', parentId: baseTime + 4, photo: null },
+                { id: baseTime + 10, name: 'Karen Davis', role: 'Dept Chair', phone: '+1 555-0309', email: 'chair5@school.edu', parentId: baseTime + 5, photo: null },
+                { id: baseTime + 11, name: 'James Anderson', role: 'Dept Chair', phone: '+1 555-0310', email: 'chair6@school.edu', parentId: baseTime + 5, photo: null },
+                // Level 5 - Teachers (2 under each Dept Chair)
+                { id: baseTime + 12, name: 'Teacher', role: 'Teacher', phone: '+1 555-0311', email: 'teacher1@school.edu', parentId: baseTime + 6, photo: null },
+                { id: baseTime + 13, name: 'Teacher', role: 'Teacher', phone: '+1 555-0312', email: 'teacher2@school.edu', parentId: baseTime + 6, photo: null },
+                { id: baseTime + 14, name: 'Teacher', role: 'Teacher', phone: '+1 555-0313', email: 'teacher3@school.edu', parentId: baseTime + 7, photo: null },
+                { id: baseTime + 15, name: 'Teacher', role: 'Teacher', phone: '+1 555-0314', email: 'teacher4@school.edu', parentId: baseTime + 7, photo: null },
+                { id: baseTime + 16, name: 'Teacher', role: 'Teacher', phone: '+1 555-0315', email: 'teacher5@school.edu', parentId: baseTime + 8, photo: null },
+                { id: baseTime + 17, name: 'Teacher', role: 'Teacher', phone: '+1 555-0316', email: 'teacher6@school.edu', parentId: baseTime + 8, photo: null },
+                { id: baseTime + 18, name: 'Teacher', role: 'Teacher', phone: '+1 555-0317', email: 'teacher7@school.edu', parentId: baseTime + 9, photo: null },
+                { id: baseTime + 19, name: 'Teacher', role: 'Teacher', phone: '+1 555-0318', email: 'teacher8@school.edu', parentId: baseTime + 9, photo: null },
+                { id: baseTime + 20, name: 'Teacher', role: 'Teacher', phone: '+1 555-0319', email: 'teacher9@school.edu', parentId: baseTime + 10, photo: null },
+                { id: baseTime + 21, name: 'Teacher', role: 'Teacher', phone: '+1 555-0320', email: 'teacher10@school.edu', parentId: baseTime + 10, photo: null },
+                { id: baseTime + 22, name: 'Teacher', role: 'Teacher', phone: '+1 555-0321', email: 'teacher11@school.edu', parentId: baseTime + 11, photo: null },
+                { id: baseTime + 23, name: 'Teacher', role: 'Teacher', phone: '+1 555-0322', email: 'teacher12@school.edu', parentId: baseTime + 11, photo: null },
             ],
             positions: {
-                [baseTime + 1]: { x: 400, y: 50 },
-                [baseTime + 2]: { x: 200, y: 200 },
-                [baseTime + 3]: { x: 600, y: 200 },
-                [baseTime + 4]: { x: 450, y: 380 },
-                [baseTime + 5]: { x: 700, y: 380 },
-                [baseTime + 6]: { x: 200, y: 380 },
+                // Level 1 - Principal (left side)
+                [baseTime + 1]: { x: 50, y: 120 },
+                // Level 2 - Assistant (below Principal)
+                [baseTime + 2]: { x: 50, y: 240 },
+                // Level 3 - Vice Principals (stacked vertically, to the right)
+                [baseTime + 3]: { x: 220, y: 60 },
+                [baseTime + 4]: { x: 220, y: 200 },
+                [baseTime + 5]: { x: 220, y: 340 },
+                // Level 4 - Dept Chairs (2 under each VP, to the right)
+                [baseTime + 6]: { x: 400, y: 30 },
+                [baseTime + 7]: { x: 400, y: 90 },
+                [baseTime + 8]: { x: 400, y: 170 },
+                [baseTime + 9]: { x: 400, y: 230 },
+                [baseTime + 10]: { x: 400, y: 310 },
+                [baseTime + 11]: { x: 400, y: 370 },
+                // Level 5 - Teachers (2 under each Chair, rightmost)
+                [baseTime + 12]: { x: 600, y: 10 },
+                [baseTime + 13]: { x: 600, y: 50 },
+                [baseTime + 14]: { x: 600, y: 90 },
+                [baseTime + 15]: { x: 600, y: 130 },
+                [baseTime + 16]: { x: 600, y: 170 },
+                [baseTime + 17]: { x: 600, y: 210 },
+                [baseTime + 18]: { x: 600, y: 250 },
+                [baseTime + 19]: { x: 600, y: 290 },
+                [baseTime + 20]: { x: 600, y: 330 },
+                [baseTime + 21]: { x: 600, y: 370 },
+                [baseTime + 22]: { x: 600, y: 410 },
+                [baseTime + 23]: { x: 600, y: 450 },
             }
         },
         // Non-Profit Org Chart
         nonprofit: {
             members: [
-                { id: baseTime + 1, name: 'Board of Directors', role: 'Governance', phone: '+1 555-0400', email: 'board@nonprofit.org', parentId: null, photo: null },
-                { id: baseTime + 2, name: 'Amanda Foster', role: 'Executive Director', phone: '+1 555-0401', email: 'ed@nonprofit.org', parentId: baseTime + 1, photo: null },
-                { id: baseTime + 3, name: 'Kevin Martinez', role: 'Program Director', phone: '+1 555-0402', email: 'programs@nonprofit.org', parentId: baseTime + 2, photo: null },
-                { id: baseTime + 4, name: 'Rachel Green', role: 'Development Manager', phone: '+1 555-0403', email: 'development@nonprofit.org', parentId: baseTime + 2, photo: null },
-                { id: baseTime + 5, name: 'Chris Turner', role: 'Program Coordinator', phone: '+1 555-0404', email: 'coordinator@nonprofit.org', parentId: baseTime + 3, photo: null },
-                { id: baseTime + 6, name: 'Volunteer Team', role: 'Volunteers', phone: '+1 555-0405', email: 'volunteer@nonprofit.org', parentId: baseTime + 3, photo: null },
+                // Level 1 - Board of Directors (4)
+                { id: baseTime + 1, name: 'John Smith', role: 'Board of Directors', phone: '+1 555-0400', email: 'board1@nonprofit.org', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'Mary Johnson', role: 'Board of Directors', phone: '+1 555-0401', email: 'board2@nonprofit.org', parentId: null, photo: null },
+                { id: baseTime + 3, name: 'Robert Williams', role: 'Board of Directors', phone: '+1 555-0402', email: 'board3@nonprofit.org', parentId: null, photo: null },
+                { id: baseTime + 4, name: 'Patricia Brown', role: 'Board of Directors', phone: '+1 555-0403', email: 'board4@nonprofit.org', parentId: null, photo: null },
+                // Level 2 - Executive Director
+                { id: baseTime + 5, name: 'Amanda Foster', role: 'Executive Director', phone: '+1 555-0404', email: 'ed@nonprofit.org', parentId: baseTime + 2, photo: null },
+                // Level 3 - Executive Assistant
+                { id: baseTime + 6, name: 'Kevin Martinez', role: 'Executive Assistant', phone: '+1 555-0405', email: 'ea@nonprofit.org', parentId: baseTime + 5, photo: null },
+                // Level 4 - Department Heads (5)
+                { id: baseTime + 7, name: 'Rachel Green', role: 'Operations Manager', phone: '+1 555-0406', email: 'ops@nonprofit.org', parentId: baseTime + 6, photo: null },
+                { id: baseTime + 8, name: 'Chris Turner', role: 'Finance Manager', phone: '+1 555-0407', email: 'finance@nonprofit.org', parentId: baseTime + 6, photo: null },
+                { id: baseTime + 9, name: 'Lisa Anderson', role: 'Marketing Manager', phone: '+1 555-0408', email: 'marketing@nonprofit.org', parentId: baseTime + 6, photo: null },
+                { id: baseTime + 10, name: 'David Wilson', role: 'Program Director', phone: '+1 555-0409', email: 'programs@nonprofit.org', parentId: baseTime + 6, photo: null },
+                { id: baseTime + 11, name: 'Sarah Davis', role: 'Volunteer Director', phone: '+1 555-0410', email: 'volunteer@nonprofit.org', parentId: baseTime + 6, photo: null },
+                // Level 5 - Staff under some departments
+                { id: baseTime + 12, name: 'Staff Member', role: 'Staff', phone: '+1 555-0411', email: 'staff1@nonprofit.org', parentId: baseTime + 7, photo: null },
+                { id: baseTime + 13, name: 'Staff Member', role: 'Staff', phone: '+1 555-0412', email: 'staff2@nonprofit.org', parentId: baseTime + 7, photo: null },
+                { id: baseTime + 14, name: 'Staff Member', role: 'Staff', phone: '+1 555-0413', email: 'staff3@nonprofit.org', parentId: baseTime + 9, photo: null },
+                { id: baseTime + 15, name: 'Staff Member', role: 'Staff', phone: '+1 555-0414', email: 'staff4@nonprofit.org', parentId: baseTime + 9, photo: null },
+                { id: baseTime + 16, name: 'Staff Member', role: 'Staff', phone: '+1 555-0415', email: 'staff5@nonprofit.org', parentId: baseTime + 10, photo: null },
+                { id: baseTime + 17, name: 'Staff Member', role: 'Staff', phone: '+1 555-0416', email: 'staff6@nonprofit.org', parentId: baseTime + 10, photo: null },
+                { id: baseTime + 18, name: 'Staff Member', role: 'Staff', phone: '+1 555-0417', email: 'staff7@nonprofit.org', parentId: baseTime + 11, photo: null },
+                { id: baseTime + 19, name: 'Staff Member', role: 'Staff', phone: '+1 555-0418', email: 'staff8@nonprofit.org', parentId: baseTime + 11, photo: null },
             ],
             positions: {
-                [baseTime + 1]: { x: 400, y: 50 },
-                [baseTime + 2]: { x: 400, y: 200 },
-                [baseTime + 3]: { x: 250, y: 350 },
-                [baseTime + 4]: { x: 550, y: 350 },
-                [baseTime + 5]: { x: 150, y: 500 },
-                [baseTime + 6]: { x: 350, y: 500 },
+                // Level 1 - Board of Directors
+                [baseTime + 1]: { x: 150, y: 20 },
+                [baseTime + 2]: { x: 350, y: 20 },
+                [baseTime + 3]: { x: 550, y: 20 },
+                [baseTime + 4]: { x: 750, y: 20 },
+                // Level 2 - Executive Director
+                [baseTime + 5]: { x: 450, y: 100 },
+                // Level 3 - Executive Assistant
+                [baseTime + 6]: { x: 450, y: 180 },
+                // Level 4 - Department Heads
+                [baseTime + 7]: { x: 100, y: 270 },
+                [baseTime + 8]: { x: 280, y: 270 },
+                [baseTime + 9]: { x: 460, y: 270 },
+                [baseTime + 10]: { x: 640, y: 270 },
+                [baseTime + 11]: { x: 820, y: 270 },
+                // Level 5 - Staff
+                [baseTime + 12]: { x: 60, y: 380 },
+                [baseTime + 13]: { x: 140, y: 380 },
+                [baseTime + 14]: { x: 420, y: 380 },
+                [baseTime + 15]: { x: 500, y: 380 },
+                [baseTime + 16]: { x: 600, y: 380 },
+                [baseTime + 17]: { x: 680, y: 380 },
+                [baseTime + 18]: { x: 780, y: 380 },
+                [baseTime + 19]: { x: 860, y: 380 },
             }
         },
         // HR Department Org Chart
         hr: {
             members: [
-                { id: baseTime + 1, name: 'Diana Ross', role: 'HR Director', phone: '+1 555-0500', email: 'hr.director@company.com', parentId: null, photo: null },
-                { id: baseTime + 2, name: 'James Miller', role: 'Recruitment Manager', phone: '+1 555-0501', email: 'recruitment@company.com', parentId: baseTime + 1, photo: null },
-                { id: baseTime + 3, name: 'Angela White', role: 'Training Manager', phone: '+1 555-0502', email: 'training@company.com', parentId: baseTime + 1, photo: null },
-                { id: baseTime + 4, name: 'Steven Hall', role: 'Payroll Manager', phone: '+1 555-0503', email: 'payroll@company.com', parentId: baseTime + 1, photo: null },
-                { id: baseTime + 5, name: 'Michelle Lee', role: 'Recruiter', phone: '+1 555-0504', email: 'recruiter@company.com', parentId: baseTime + 2, photo: null },
-                { id: baseTime + 6, name: 'Daniel Kim', role: 'Training Specialist', phone: '+1 555-0505', email: 'trainer@company.com', parentId: baseTime + 3, photo: null },
+                // Level 1 - CEO/Director
+                { id: baseTime + 1, name: 'William Carter', role: 'CEO/Director', phone: '+1 555-0500', email: 'ceo@company.com', parentId: null, photo: null },
+                // Level 2 - HR Director
+                { id: baseTime + 2, name: 'Diana Ross', role: 'HR Director', phone: '+1 555-0501', email: 'hr.director@company.com', parentId: baseTime + 1, photo: null },
+                // Level 3 - HR Managers (5)
+                { id: baseTime + 3, name: 'James Miller', role: 'Recruitment Manager', phone: '+1 555-0502', email: 'recruitment@company.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 4, name: 'Angela White', role: 'Training & Development Manager', phone: '+1 555-0503', email: 'training@company.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 5, name: 'Steven Hall', role: 'Compensation & Benefits Manager', phone: '+1 555-0504', email: 'compensation@company.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 6, name: 'Michelle Lee', role: 'Employee Relations Manager', phone: '+1 555-0505', email: 'relations@company.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 7, name: 'Daniel Kim', role: 'Safety & Compliance Manager', phone: '+1 555-0506', email: 'safety@company.com', parentId: baseTime + 2, photo: null },
+                // Level 4 - Staff under some managers
+                { id: baseTime + 8, name: 'Staff Member', role: 'Recruitment Specialist', phone: '+1 555-0507', email: 'recruit1@company.com', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 9, name: 'Staff Member', role: 'Talent Acquisition', phone: '+1 555-0508', email: 'talent@company.com', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 10, name: 'Staff Member', role: 'Training Coordinator', phone: '+1 555-0509', email: 'trainer1@company.com', parentId: baseTime + 4, photo: null },
+                { id: baseTime + 11, name: 'Staff Member', role: 'Learning Specialist', phone: '+1 555-0510', email: 'learning@company.com', parentId: baseTime + 4, photo: null },
+                { id: baseTime + 12, name: 'Staff Member', role: 'Benefits Analyst', phone: '+1 555-0511', email: 'benefits@company.com', parentId: baseTime + 5, photo: null },
+                { id: baseTime + 13, name: 'Staff Member', role: 'Payroll Specialist', phone: '+1 555-0512', email: 'payroll@company.com', parentId: baseTime + 5, photo: null },
+                { id: baseTime + 14, name: 'Staff Member', role: 'HR Coordinator', phone: '+1 555-0513', email: 'hrcoord@company.com', parentId: baseTime + 6, photo: null },
+                { id: baseTime + 15, name: 'Staff Member', role: 'Compliance Officer', phone: '+1 555-0514', email: 'compliance@company.com', parentId: baseTime + 7, photo: null },
             ],
             positions: {
-                [baseTime + 1]: { x: 400, y: 50 },
-                [baseTime + 2]: { x: 150, y: 200 },
-                [baseTime + 3]: { x: 400, y: 200 },
-                [baseTime + 4]: { x: 650, y: 200 },
-                [baseTime + 5]: { x: 150, y: 380 },
-                [baseTime + 6]: { x: 400, y: 380 },
+                // Level 1 - CEO
+                [baseTime + 1]: { x: 450, y: 20 },
+                // Level 2 - HR Director
+                [baseTime + 2]: { x: 450, y: 100 },
+                // Level 3 - HR Managers
+                [baseTime + 3]: { x: 100, y: 200 },
+                [baseTime + 4]: { x: 280, y: 200 },
+                [baseTime + 5]: { x: 460, y: 200 },
+                [baseTime + 6]: { x: 640, y: 200 },
+                [baseTime + 7]: { x: 820, y: 200 },
+                // Level 4 - Staff
+                [baseTime + 8]: { x: 60, y: 320 },
+                [baseTime + 9]: { x: 140, y: 320 },
+                [baseTime + 10]: { x: 240, y: 320 },
+                [baseTime + 11]: { x: 320, y: 320 },
+                [baseTime + 12]: { x: 420, y: 320 },
+                [baseTime + 13]: { x: 500, y: 320 },
+                [baseTime + 14]: { x: 640, y: 320 },
+                [baseTime + 15]: { x: 820, y: 320 },
             }
         },
         // Corporate Org Chart
         corporate: {
             members: [
-                { id: baseTime + 1, name: 'Board of Directors', role: 'Board', phone: '', email: 'board@corp.com', parentId: null, photo: null },
-                { id: baseTime + 2, name: 'William Gates', role: 'CEO', phone: '+1 555-0600', email: 'ceo@corp.com', parentId: baseTime + 1, photo: null },
-                { id: baseTime + 3, name: 'Patricia Johnson', role: 'EVP Operations', phone: '+1 555-0601', email: 'evp.ops@corp.com', parentId: baseTime + 2, photo: null },
-                { id: baseTime + 4, name: 'Richard Thompson', role: 'EVP Finance', phone: '+1 555-0602', email: 'evp.finance@corp.com', parentId: baseTime + 2, photo: null },
-                { id: baseTime + 5, name: 'Barbara Williams', role: 'VP Marketing', phone: '+1 555-0603', email: 'vp.marketing@corp.com', parentId: baseTime + 3, photo: null },
-                { id: baseTime + 6, name: 'Charles Davis', role: 'VP Sales', phone: '+1 555-0604', email: 'vp.sales@corp.com', parentId: baseTime + 3, photo: null },
-                { id: baseTime + 7, name: 'Margaret Brown', role: 'Controller', phone: '+1 555-0605', email: 'controller@corp.com', parentId: baseTime + 4, photo: null },
+                // Level 1 - President/CEO
+                { id: baseTime + 1, name: 'William Gates', role: 'President/CEO', phone: '+1 555-0600', email: 'ceo@corp.com', parentId: null, photo: null },
+                // Level 2 - Chief Officers (3)
+                { id: baseTime + 2, name: 'Patricia Johnson', role: 'Chief of Staff', phone: '+1 555-0601', email: 'cos@corp.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Richard Thompson', role: 'General Manager', phone: '+1 555-0602', email: 'gm@corp.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 4, name: 'Barbara Williams', role: 'Chief Strategy', phone: '+1 555-0603', email: 'strategy@corp.com', parentId: baseTime + 1, photo: null },
+                // Level 3 - Department Heads under Chief of Staff
+                { id: baseTime + 5, name: 'Charles Davis', role: 'Project Lead', phone: '+1 555-0604', email: 'project@corp.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 6, name: 'Margaret Brown', role: 'Digital Media', phone: '+1 555-0605', email: 'digital@corp.com', parentId: baseTime + 2, photo: null },
+                // Level 3 - Department Heads under General Manager
+                { id: baseTime + 7, name: 'James Wilson', role: 'Office Manager', phone: '+1 555-0606', email: 'office@corp.com', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 8, name: 'Susan Clark', role: 'Finance Director', phone: '+1 555-0607', email: 'finance@corp.com', parentId: baseTime + 3, photo: null },
+                // Level 3 - Department Heads under Chief Strategy
+                { id: baseTime + 9, name: 'Robert Lee', role: 'Research Director', phone: '+1 555-0608', email: 'research@corp.com', parentId: baseTime + 4, photo: null },
+                { id: baseTime + 10, name: 'Jennifer Adams', role: 'Product Director', phone: '+1 555-0609', email: 'product@corp.com', parentId: baseTime + 4, photo: null },
+                // Level 4 - Staff under Department Heads
+                { id: baseTime + 11, name: 'Staff Member', role: 'Tech Coordinator', phone: '+1 555-0610', email: 'tech@corp.com', parentId: baseTime + 5, photo: null },
+                { id: baseTime + 12, name: 'Staff Member', role: 'UX Developer', phone: '+1 555-0611', email: 'ux@corp.com', parentId: baseTime + 5, photo: null },
+                { id: baseTime + 13, name: 'Staff Member', role: 'Social Media Mgr', phone: '+1 555-0612', email: 'social@corp.com', parentId: baseTime + 6, photo: null },
+                { id: baseTime + 14, name: 'Staff Member', role: 'Admin Coordinator', phone: '+1 555-0613', email: 'admin@corp.com', parentId: baseTime + 7, photo: null },
+                { id: baseTime + 15, name: 'Staff Member', role: 'Accountant', phone: '+1 555-0614', email: 'account@corp.com', parentId: baseTime + 8, photo: null },
+                { id: baseTime + 16, name: 'Staff Member', role: 'Data Analyst', phone: '+1 555-0615', email: 'data@corp.com', parentId: baseTime + 9, photo: null },
+                { id: baseTime + 17, name: 'Staff Member', role: 'Product Manager', phone: '+1 555-0616', email: 'pm@corp.com', parentId: baseTime + 10, photo: null },
             ],
             positions: {
-                [baseTime + 1]: { x: 450, y: 30 },
-                [baseTime + 2]: { x: 450, y: 150 },
-                [baseTime + 3]: { x: 250, y: 280 },
-                [baseTime + 4]: { x: 650, y: 280 },
-                [baseTime + 5]: { x: 100, y: 420 },
-                [baseTime + 6]: { x: 350, y: 420 },
-                [baseTime + 7]: { x: 650, y: 420 },
+                // Level 1 - President
+                [baseTime + 1]: { x: 450, y: 20 },
+                // Level 2 - Chief Officers
+                [baseTime + 2]: { x: 150, y: 110 },
+                [baseTime + 3]: { x: 450, y: 110 },
+                [baseTime + 4]: { x: 750, y: 110 },
+                // Level 3 - Department Heads
+                [baseTime + 5]: { x: 80, y: 210 },
+                [baseTime + 6]: { x: 220, y: 210 },
+                [baseTime + 7]: { x: 380, y: 210 },
+                [baseTime + 8]: { x: 520, y: 210 },
+                [baseTime + 9]: { x: 680, y: 210 },
+                [baseTime + 10]: { x: 820, y: 210 },
+                // Level 4 - Staff
+                [baseTime + 11]: { x: 40, y: 320 },
+                [baseTime + 12]: { x: 120, y: 320 },
+                [baseTime + 13]: { x: 220, y: 320 },
+                [baseTime + 14]: { x: 380, y: 320 },
+                [baseTime + 15]: { x: 520, y: 320 },
+                [baseTime + 16]: { x: 680, y: 320 },
+                [baseTime + 17]: { x: 820, y: 320 },
             }
         },
         // 2-Level Org Chart (Simple)
@@ -153,40 +366,46 @@ const getSampleOrgChartData = (templateType: string) => {
                 { id: baseTime + 1, name: 'Executive', role: 'CEO', phone: '+1 555-0100', email: 'ceo@company.com', parentId: null, photo: null },
                 { id: baseTime + 2, name: 'Manager A', role: 'Manager', phone: '+1 555-0101', email: 'manager1@company.com', parentId: baseTime + 1, photo: null },
                 { id: baseTime + 3, name: 'Manager B', role: 'Manager', phone: '+1 555-0102', email: 'manager2@company.com', parentId: baseTime + 1, photo: null },
-                { id: baseTime + 4, name: 'Staff 1', role: 'Staff', phone: '+1 555-0103', email: 'staff1@company.com', parentId: baseTime + 2, photo: null },
-                { id: baseTime + 5, name: 'Staff 2', role: 'Staff', phone: '+1 555-0104', email: 'staff2@company.com', parentId: baseTime + 2, photo: null },
-                { id: baseTime + 6, name: 'Staff 3', role: 'Staff', phone: '+1 555-0105', email: 'staff3@company.com', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 4, name: 'Manager C', role: 'Manager', phone: '+1 555-0103', email: 'manager3@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 5, name: 'Staff 1', role: 'Staff', phone: '+1 555-0104', email: 'staff1@company.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 6, name: 'Staff 2', role: 'Staff', phone: '+1 555-0105', email: 'staff2@company.com', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 7, name: 'Staff 3', role: 'Staff', phone: '+1 555-0106', email: 'staff3@company.com', parentId: baseTime + 4, photo: null },
             ],
             positions: {
                 [baseTime + 1]: { x: 400, y: 50 },
-                [baseTime + 2]: { x: 200, y: 200 },
-                [baseTime + 3]: { x: 600, y: 200 },
-                [baseTime + 4]: { x: 100, y: 380 },
-                [baseTime + 5]: { x: 300, y: 380 },
-                [baseTime + 6]: { x: 600, y: 380 },
+                [baseTime + 2]: { x: 150, y: 200 },
+                [baseTime + 3]: { x: 400, y: 200 },
+                [baseTime + 4]: { x: 650, y: 200 },
+                [baseTime + 5]: { x: 150, y: 380 },
+                [baseTime + 6]: { x: 400, y: 380 },
+                [baseTime + 7]: { x: 650, y: 380 },
             }
         },
         // 4-Level Org Chart
         fourlevel: {
             members: [
                 { id: baseTime + 1, name: 'Executive', role: 'CEO', phone: '+1 555-0100', email: 'ceo@company.com', parentId: null, photo: null },
-                { id: baseTime + 2, name: 'Senior Mgr', role: 'Senior Manager', phone: '+1 555-0101', email: 'srmgr@company.com', parentId: baseTime + 1, photo: null },
-                { id: baseTime + 3, name: 'Senior Mgr', role: 'Senior Manager', phone: '+1 555-0102', email: 'srmgr2@company.com', parentId: baseTime + 1, photo: null },
-                { id: baseTime + 4, name: 'Manager', role: 'Manager', phone: '+1 555-0103', email: 'mgr1@company.com', parentId: baseTime + 2, photo: null },
-                { id: baseTime + 5, name: 'Manager', role: 'Manager', phone: '+1 555-0104', email: 'mgr2@company.com', parentId: baseTime + 3, photo: null },
-                { id: baseTime + 6, name: 'Employee 1', role: 'Employee', phone: '+1 555-0105', email: 'emp1@company.com', parentId: baseTime + 4, photo: null },
-                { id: baseTime + 7, name: 'Employee 2', role: 'Employee', phone: '+1 555-0106', email: 'emp2@company.com', parentId: baseTime + 4, photo: null },
-                { id: baseTime + 8, name: 'Employee 3', role: 'Employee', phone: '+1 555-0107', email: 'emp3@company.com', parentId: baseTime + 5, photo: null },
+                { id: baseTime + 2, name: 'Senior Mgr A', role: 'Senior Manager', phone: '+1 555-0101', email: 'srmgr@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Senior Mgr B', role: 'Senior Manager', phone: '+1 555-0102', email: 'srmgr2@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 4, name: 'Senior Mgr C', role: 'Senior Manager', phone: '+1 555-0103', email: 'srmgr3@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 5, name: 'Manager 1', role: 'Manager', phone: '+1 555-0104', email: 'mgr1@company.com', parentId: baseTime + 2, photo: null },
+                { id: baseTime + 6, name: 'Manager 2', role: 'Manager', phone: '+1 555-0105', email: 'mgr2@company.com', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 7, name: 'Manager 3', role: 'Manager', phone: '+1 555-0106', email: 'mgr3@company.com', parentId: baseTime + 4, photo: null },
+                { id: baseTime + 8, name: 'Employee 1', role: 'Employee', phone: '+1 555-0107', email: 'emp1@company.com', parentId: baseTime + 5, photo: null },
+                { id: baseTime + 9, name: 'Employee 2', role: 'Employee', phone: '+1 555-0108', email: 'emp2@company.com', parentId: baseTime + 6, photo: null },
+                { id: baseTime + 10, name: 'Employee 3', role: 'Employee', phone: '+1 555-0109', email: 'emp3@company.com', parentId: baseTime + 7, photo: null },
             ],
             positions: {
                 [baseTime + 1]: { x: 400, y: 30 },
-                [baseTime + 2]: { x: 200, y: 150 },
-                [baseTime + 3]: { x: 600, y: 150 },
-                [baseTime + 4]: { x: 200, y: 290 },
-                [baseTime + 5]: { x: 600, y: 290 },
-                [baseTime + 6]: { x: 80, y: 440 },
-                [baseTime + 7]: { x: 280, y: 440 },
-                [baseTime + 8]: { x: 600, y: 440 },
+                [baseTime + 2]: { x: 150, y: 140 },
+                [baseTime + 3]: { x: 400, y: 140 },
+                [baseTime + 4]: { x: 650, y: 140 },
+                [baseTime + 5]: { x: 150, y: 270 },
+                [baseTime + 6]: { x: 400, y: 270 },
+                [baseTime + 7]: { x: 650, y: 270 },
+                [baseTime + 8]: { x: 150, y: 400 },
+                [baseTime + 9]: { x: 400, y: 400 },
+                [baseTime + 10]: { x: 650, y: 400 },
             }
         },
         // Photo Org Chart
@@ -195,15 +414,28 @@ const getSampleOrgChartData = (templateType: string) => {
                 { id: baseTime + 1, name: 'Alice Johnson', role: 'CEO', phone: '+1 555-0100', email: 'alice@company.com', parentId: null, photo: null },
                 { id: baseTime + 2, name: 'Bob Smith', role: 'VP Sales', phone: '+1 555-0101', email: 'bob@company.com', parentId: baseTime + 1, photo: null },
                 { id: baseTime + 3, name: 'Carol White', role: 'VP Engineering', phone: '+1 555-0102', email: 'carol@company.com', parentId: baseTime + 1, photo: null },
-                { id: baseTime + 4, name: 'David Lee', role: 'Sales Rep', phone: '+1 555-0103', email: 'david@company.com', parentId: baseTime + 2, photo: null },
-                { id: baseTime + 5, name: 'Eva Brown', role: 'Developer', phone: '+1 555-0104', email: 'eva@company.com', parentId: baseTime + 3, photo: null },
+                { id: baseTime + 4, name: 'David Lee', role: 'VP Marketing', phone: '+1 555-0103', email: 'david@company.com', parentId: baseTime + 1, photo: null },
             ],
             positions: {
                 [baseTime + 1]: { x: 400, y: 50 },
-                [baseTime + 2]: { x: 200, y: 230 },
-                [baseTime + 3]: { x: 600, y: 230 },
-                [baseTime + 4]: { x: 200, y: 420 },
-                [baseTime + 5]: { x: 600, y: 420 },
+                [baseTime + 2]: { x: 150, y: 250 },
+                [baseTime + 3]: { x: 400, y: 250 },
+                [baseTime + 4]: { x: 650, y: 250 },
+            }
+        },
+        // Horizontal Org Chart
+        horizontal: {
+            members: [
+                { id: baseTime + 1, name: 'Director', role: 'Director', phone: '+1 555-0100', email: 'director@company.com', parentId: null, photo: null },
+                { id: baseTime + 2, name: 'Manager A', role: 'Manager', phone: '+1 555-0101', email: 'mgr1@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 3, name: 'Manager B', role: 'Manager', phone: '+1 555-0102', email: 'mgr2@company.com', parentId: baseTime + 1, photo: null },
+                { id: baseTime + 4, name: 'Manager C', role: 'Manager', phone: '+1 555-0103', email: 'mgr3@company.com', parentId: baseTime + 1, photo: null },
+            ],
+            positions: {
+                [baseTime + 1]: { x: 100, y: 200 },
+                [baseTime + 2]: { x: 450, y: 80 },
+                [baseTime + 3]: { x: 450, y: 200 },
+                [baseTime + 4]: { x: 450, y: 320 },
             }
         },
         // Inverted Org Chart (Bottom-up)
@@ -363,6 +595,7 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
             threelevel: 'threelevel',
             fourlevel: 'fourlevel',
             photo: 'photo',
+            horizontal: 'horizontal',
             inverted: 'inverted',
             wiring: 'wiring',
             pid: 'pid',
@@ -4016,7 +4249,7 @@ const OrganizationChart: React.FC<OrganizationChartProps> = () => {
 
                         {/* Horizontal Org Chart */}
                         <div 
-                            onClick={() => { startBlankChart('horizontal'); }}
+                            onClick={() => { loadSampleTemplate('horizontal'); setChartStyle('horizontal'); }}
                             className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 hover:shadow-xl border border-gray-200"
                         >
                             <div className="h-48 bg-gradient-to-br from-amber-50 to-white flex items-center justify-center p-4">
