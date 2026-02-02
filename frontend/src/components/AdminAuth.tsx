@@ -1,10 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Shield, Eye, EyeOff, Lock, AlertCircle } from 'lucide-react';
 
-interface AdminAuthProps {
-  children: React.ReactNode;
-}
-
 // Simple hash function for password storage
 const hashPassword = (password: string): string => {
   let hash = 0;
@@ -16,7 +12,7 @@ const hashPassword = (password: string): string => {
   return hash.toString(36);
 };
 
-export function AdminAuth({ children }: AdminAuthProps) {
+export function AdminAuth({ children }: any) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

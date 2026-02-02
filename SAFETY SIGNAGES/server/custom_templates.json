@@ -1,0 +1,38 @@
+[
+  {
+    "type": "danger",
+    "category": "My Saved Designs",
+    "text": "KEEP OUT",
+    "subText": "HAZARDOUS AREA",
+    "icon": "AlertOctagon",
+    "layout": "standard",
+    "id": "custom-1769965026839"
+  },
+  {
+    "type": "danger",
+    "category": "My Saved Designs",
+    "text": "KEEP OUT",
+    "subText": "HAZARDOUS AREA",
+    "icon": "AlertOctagon",
+    "layout": "standard",
+    "id": "custom-1769970935602"
+  },
+  {
+    "type": "danger",
+    "category": "My Saved Designs",
+    "text": "DO NOT ENTER",
+    "subText": "AUTHORIZED PERSONNEL ONLY",
+    "icon": "Ban",
+    "layout": "left-icon",
+    "id": "custom-1769971500905"
+  },
+  {
+    "type": "warning",
+    "category": "My Saved Designs",
+    "text": "DO NOT ENTER",
+    "subText": "AUTHORIZED PERSONNEL ONLY",
+    "icon": "Ban",
+    "layout": "left-icon",
+    "id": "custom-1769971630462"
+  }
+]

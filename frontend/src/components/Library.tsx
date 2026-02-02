@@ -21,7 +21,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
 interface LibraryProps {
-  onNavigate: (tab: string, data?: any) => void;
+  onNavigate: (tab: any, data?: any) => void;
 }
 
 export function Library({ onNavigate }: LibraryProps) {

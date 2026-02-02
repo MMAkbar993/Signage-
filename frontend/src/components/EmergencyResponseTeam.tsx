@@ -2,7 +2,7 @@ import React from 'react'
 import { useState, useRef, useEffect } from 'react'
 
 
-export const EmergencyResponseTeam = ({ activeNav, setActiveNav, sidebarOpen, setSidebarOpen }) => {
+export const EmergencyResponseTeam = ({ activeNav = null, setActiveNav = () => {}, sidebarOpen = false, setSidebarOpen = () => {} }: any = {}) => {
   const [safetyCommittee, setSafetyCommittee] = useState([])
   const [clientLogo, setClientLogo] = useState(null)
   const [contractorLogo, setContractorLogo] = useState(null)

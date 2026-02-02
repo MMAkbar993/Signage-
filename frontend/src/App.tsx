@@ -171,9 +171,7 @@ function App() {
           {activeTab === 'library' && <Library onNavigate={handleNavigate} />}
           {activeTab === 'blog' && <BlogTutorials />}
           {activeTab === 'admin' && (
-            <AdminAuth>
-              <ComprehensiveAdminPanel />
-            </AdminAuth>
+            <AdminAuth children={<ComprehensiveAdminPanel />} />
           )}
         </main>
       </div>
