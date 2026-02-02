@@ -8,7 +8,6 @@ import {
   Users, 
   AlertTriangle, 
   BookOpen,
-  Settings,
   Network,
   Library as LibraryIcon
 } from 'lucide-react';
@@ -237,24 +236,6 @@ export function Sidebar({ activeTab, onNavigate, menuOpen }: SidebarProps) {
             <div className="font-medium">Blog & Tutorials</div>
             <div className={`text-xs ${activeTab === 'blog' ? 'text-blue-100' : 'text-slate-500'}`}>
               Learn safety tips
-            </div>
-          </div>
-        </button>
-
-        {/* Admin Panel */}
-        <button
-          onClick={() => onNavigate('admin')}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-            activeTab === 'admin'
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'text-slate-700 hover:bg-slate-100'
-          }`}
-        >
-          <Settings className="w-5 h-5" />
-          <div className="text-left">
-            <div className="font-medium">Admin Panel</div>
-            <div className={`text-xs ${activeTab === 'admin' ? 'text-blue-100' : 'text-slate-500'}`}>
-              System settings
             </div>
           </div>
         </button>

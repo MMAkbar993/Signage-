@@ -512,10 +512,14 @@ const SafetySign = ({
         return (
           <div className={`w-full flex items-center justify-center relative overflow-hidden shrink-0`}
                style={{ ...hStyle, backgroundColor: headerBgColor || '#000000', borderBottomWidth: `${borderWidth * 0.6}px`, borderBottomColor: 'black' }}>
-            <div className="w-[95%] h-[85%] rounded-[100%] absolute flex items-center justify-center border-[3px]"
+            <div className="w-[900px] h-[85%] absolute flex items-center justify-center"
                  style={{ 
                    backgroundColor: headerOvalColor || '#DC2626',
-                   borderColor: headerBorderColor || '#FFFFFF' 
+                   borderColor: headerBorderColor || '#FFFFFF',
+                   borderWidth: '3px',
+                   borderStyle: 'solid',
+                   borderRadius: '100%',
+                   width :"900px"
                  }}>
                <h1 className="font-black tracking-wider uppercase z-10 relative mt-2"
                    style={{ color: headerTextColor || '#FFFFFF', fontFamily, fontSize: fSize }}>
@@ -1926,11 +1930,12 @@ const CustomSignageEditor = ({ initialData, onDataLoaded }: CustomSignageEditorP
                 <SafetySign {...signData} />
               </div>
 
-              {/* Grid Overlay */}
+              {/* Grid Overlay - Only on content area, not header */}
               {showGrid && (
                 <div 
-                  className="absolute inset-0 pointer-events-none z-50 opacity-20" 
+                  className="absolute left-0 right-0 bottom-0 pointer-events-none z-50 opacity-20" 
                   style={{ 
+                    top: `${signData.headerHeight || 25}%`,
                     backgroundImage: 'linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)',
                     backgroundSize: '20px 20px'
                   }} 

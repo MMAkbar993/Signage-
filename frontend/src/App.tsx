@@ -1,5 +1,5 @@
 import React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SignageGenerator } from './components/SignageGenerator';
 import { AuthorizedPersonsManager } from './components/AuthorizedPersonsManager';
 import { EmergencyResponseTeam } from './components/EmergencyResponseTeam';
@@ -31,6 +31,33 @@ function App() {
   const [templateData, setTemplateData] = useState<Partial<SignageData> | null>(null);
   const [loadedSignageData, setLoadedSignageData] = useState<Partial<SignageData> | null>(null);
   const [loadedCustomEditorData, setLoadedCustomEditorData] = useState<any>(null);
+
+  // Handle URL hash-based navigation for admin panel
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1); // Remove the '#'
+      if (hash === 'admin') {
+        setActiveTab('admin');
+      }
+    };
+
+    // Check hash on initial load
+    handleHashChange();
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Update URL hash when navigating to/from admin
+  useEffect(() => {
+    if (activeTab === 'admin') {
+      window.location.hash = 'admin';
+    } else if (window.location.hash === '#admin') {
+      // Clear the hash when leaving admin
+      history.replaceState(null, '', window.location.pathname);
+    }
+  }, [activeTab]);
 
   const handleNavigate = (tab: TabType, data?: any) => {
     setActiveTab(tab);
