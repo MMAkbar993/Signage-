@@ -52,6 +52,12 @@ import { getCurrentUser, logActivity } from '../utils/userTracking';
 
 // =============== INTERFACES ===============
 
+interface PostMedia {
+  type: 'image' | 'video';
+  url: string;
+  name?: string;
+}
+
 interface BlogPost {
   id: string;
   title: string;
@@ -66,6 +72,7 @@ interface BlogPost {
   views: number;
   comments: Comment[];
   documents: Document[];
+  media?: PostMedia[];
   featured?: boolean;
 }
 
@@ -143,6 +150,7 @@ interface JobApplicant {
   status: 'pending' | 'reviewed' | 'accepted' | 'rejected';
   message: string;
   resumeUrl?: string;
+  resumeName?: string;
 }
 
 // Chat Interfaces
@@ -262,6 +270,8 @@ export function BlogTutorials() {
     category: 'general' as BlogPost['category'],
     tags: '',
   });
+  const [newPostMedia, setNewPostMedia] = useState<{ file: File; previewUrl: string }[]>([]);
+  const newPostMediaInputRef = useRef<HTMLInputElement>(null);
 
   // New Comment
   const [newComment, setNewComment] = useState('');
@@ -296,11 +306,17 @@ export function BlogTutorials() {
   const [documentResponseData, setDocumentResponseData] = useState({
     message: '',
     mentionedUsers: [] as string[],
+    selectedFile: null as File | null,
   });
   const [showDocumentResponse, setShowDocumentResponse] = useState<string | null>(null);
+  const documentFileInputRef = useRef<HTMLInputElement>(null);
 
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Job application resume
+  const [jobApplicationResume, setJobApplicationResume] = useState<File | null>(null);
+  const jobApplicationResumeInputRef = useRef<HTMLInputElement>(null);
 
   // =============== EFFECTS ===============
 
@@ -581,13 +597,35 @@ All employees should receive fire safety training annually.`,
 
   // =============== POST HANDLERS ===============
 
-  const handleCreatePost = () => {
+  const handleCreatePost = async () => {
     if (!newPost.title || !newPost.content) {
       showMessage('error', 'Please fill in title and content!');
       return;
     }
 
     const currentUser = getCurrentUser();
+    const media: PostMedia[] = [];
+    const maxDataUrlSize = 2 * 1024 * 1024; // 2MB for localStorage-friendly data URLs
+
+    for (const { file, previewUrl } of newPostMedia) {
+      const type = file.type.startsWith('image/') ? 'image' as const : 'video' as const;
+      if (file.size <= maxDataUrlSize) {
+        try {
+          const url = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          media.push({ type, url, name: file.name });
+        } catch {
+          media.push({ type, url: previewUrl, name: file.name });
+        }
+      } else {
+        media.push({ type, url: previewUrl, name: file.name });
+      }
+    }
+
     const post: BlogPost = {
       id: 'post_' + Date.now(),
       title: newPost.title,
@@ -602,6 +640,7 @@ All employees should receive fire safety training annually.`,
       views: 0,
       comments: [],
       documents: [],
+      media: media.length > 0 ? media : undefined,
     };
 
     const updatedPosts = [post, ...posts];
@@ -609,8 +648,13 @@ All employees should receive fire safety training annually.`,
     localStorage.setItem('blogPosts', JSON.stringify(updatedPosts));
 
     logActivity('Blog Post Created', `Created post: ${post.title}`, 'user');
-    
+
+    newPostMedia.forEach(({ previewUrl }) => {
+      if (previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
+    });
     setNewPost({ title: '', content: '', category: 'general', tags: '' });
+    setNewPostMedia([]);
+    if (newPostMediaInputRef.current) newPostMediaInputRef.current.value = '';
     setShowCreatePost(false);
     showMessage('success', 'Post created successfully!');
   };
@@ -690,16 +734,21 @@ All employees should receive fire safety training annually.`,
       showMessage('error', 'Please add a message!');
       return;
     }
+    if (!documentResponseData.selectedFile) {
+      showMessage('error', 'Please select a document to upload.');
+      return;
+    }
 
     const currentUser = getCurrentUser();
+    const file = documentResponseData.selectedFile;
     const response: DocumentResponse = {
       id: 'res_' + Date.now(),
       requestId,
       respondent: currentUser.name,
       respondentId: currentUser.id,
       message: documentResponseData.message,
-      documentName: 'Uploaded_Document.pdf', // In real app, this would be from file upload
-      documentUrl: '#',
+      documentName: file.name,
+      documentUrl: URL.createObjectURL(file),
       createdAt: new Date().toISOString(),
       mentionedUsers: documentResponseData.mentionedUsers,
     };
@@ -742,9 +791,17 @@ All employees should receive fire safety training annually.`,
     });
 
     setDocumentRequests(updatedRequests);
-    localStorage.setItem('documentRequests', JSON.stringify(updatedRequests));
+    // Persist with # for document URLs (blob URLs don't survive page reload)
+    const toStore = updatedRequests.map(req => ({
+      ...req,
+      responses: req.responses.map(r => ({
+        ...r,
+        documentUrl: r.documentUrl.startsWith('blob:') ? '#' : r.documentUrl,
+      })),
+    }));
+    localStorage.setItem('documentRequests', JSON.stringify(toStore));
     
-    setDocumentResponseData({ message: '', mentionedUsers: [] });
+    setDocumentResponseData({ message: '', mentionedUsers: [], selectedFile: null });
     setShowDocumentResponse(null);
     showMessage('success', 'Document shared successfully!');
   };
@@ -824,10 +881,32 @@ All employees should receive fire safety training annually.`,
     showMessage('success', `Job marked as ${newStatus}!`);
   };
 
-  const handleApplyForJob = (jobId: string, message: string) => {
+  const handleApplyForJob = async (jobId: string, message: string) => {
     const currentUser = getCurrentUser();
     const job = jobs.find(j => j.id === jobId);
     if (!job) return;
+
+    let resumeUrl: string | undefined;
+    let resumeName: string | undefined;
+    const maxDataUrlSize = 2 * 1024 * 1024; // 2MB for localStorage
+
+    if (jobApplicationResume) {
+      resumeName = jobApplicationResume.name;
+      if (jobApplicationResume.size <= maxDataUrlSize) {
+        try {
+          resumeUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(jobApplicationResume!);
+          });
+        } catch {
+          resumeUrl = URL.createObjectURL(jobApplicationResume);
+        }
+      } else {
+        resumeUrl = URL.createObjectURL(jobApplicationResume);
+      }
+    }
 
     const applicant: JobApplicant = {
       id: 'app_' + Date.now(),
@@ -836,6 +915,8 @@ All employees should receive fire safety training annually.`,
       appliedAt: new Date().toISOString(),
       status: 'pending',
       message,
+      resumeUrl,
+      resumeName,
     };
 
     const updatedJobs = jobs.map(j => {
@@ -846,9 +927,19 @@ All employees should receive fire safety training annually.`,
     });
 
     setJobs(updatedJobs);
-    localStorage.setItem('jobPosts', JSON.stringify(updatedJobs));
+    const toStore = updatedJobs.map(j => ({
+      ...j,
+      applicants: j.applicants.map(a => ({
+        ...a,
+        resumeUrl: a.resumeUrl?.startsWith('blob:') ? '#' : a.resumeUrl,
+      })),
+    }));
+    localStorage.setItem('jobPosts', JSON.stringify(toStore));
 
-    // Notify job poster
+    setJobApplicationResume(null);
+    if (jobApplicationResumeInputRef.current) jobApplicationResumeInputRef.current.value = '';
+    setSelectedJob(null);
+
     createNotification({
       userId: job.authorId,
       type: 'job_application',
@@ -1527,6 +1618,27 @@ All employees should receive fire safety training annually.`,
 
                 <p className="text-slate-700 mb-4 whitespace-pre-wrap line-clamp-3">{post.content}</p>
 
+                {post.media && post.media.length > 0 && (
+                  <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                    {post.media.slice(0, 3).map((m, i) => (
+                      <div key={i} className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-slate-200">
+                        {m.type === 'image' ? (
+                          <img src={m.url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-slate-300">
+                            <Video className="w-6 h-6 text-slate-500" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {post.media.length > 3 && (
+                      <div className="flex-shrink-0 w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center text-sm text-slate-600">
+                        +{post.media.length - 3}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between pt-4 border-t border-slate-200">
                   <div className="flex items-center gap-4">
                     <button
@@ -1636,11 +1748,40 @@ All employees should receive fire safety training annually.`,
                         />
                       </div>
                       <div className="flex items-center gap-3">
-                        <label className="flex-1 px-4 py-3 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors text-center">
-                          <input type="file" className="hidden" />
+                        <input
+                          ref={documentFileInputRef}
+                          type="file"
+                          className="hidden"
+                          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setDocumentResponseData(prev => ({ ...prev, selectedFile: file }));
+                          }}
+                        />
+                        <label
+                          onClick={() => documentFileInputRef.current?.click()}
+                          className="flex-1 px-4 py-3 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors text-center"
+                        >
                           <Upload className="w-5 h-5 mx-auto mb-1 text-slate-400" />
-                          <span className="text-sm text-slate-600">Upload Document</span>
+                          <span className="text-sm text-slate-600">
+                            {documentResponseData.selectedFile
+                              ? documentResponseData.selectedFile.name
+                              : 'Upload Document'}
+                          </span>
                         </label>
+                        {documentResponseData.selectedFile && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDocumentResponseData(prev => ({ ...prev, selectedFile: null }));
+                              if (documentFileInputRef.current) documentFileInputRef.current.value = '';
+                            }}
+                            className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded"
+                            title="Remove file"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        )}
                       </div>
                       <div className="flex gap-2">
                         <button
@@ -1650,7 +1791,11 @@ All employees should receive fire safety training annually.`,
                           Share Document
                         </button>
                         <button
-                          onClick={() => setShowDocumentResponse(null)}
+                          onClick={() => {
+                            setShowDocumentResponse(null);
+                            setDocumentResponseData(prev => ({ ...prev, selectedFile: null }));
+                            if (documentFileInputRef.current) documentFileInputRef.current.value = '';
+                          }}
                           className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg"
                         >
                           Cancel
@@ -1672,10 +1817,16 @@ All employees should receive fire safety training annually.`,
                           </div>
                         </div>
                         <p className="text-sm text-slate-700 mb-2">{response.message}</p>
-                        <div className="flex items-center gap-2 text-sm text-blue-600">
+                        <a
+                          href={response.documentUrl}
+                          download={response.documentName}
+                          target={response.documentUrl.startsWith('blob:') ? undefined : '_blank'}
+                          rel={response.documentUrl.startsWith('blob:') ? undefined : 'noopener noreferrer'}
+                          className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                        >
                           <Download className="w-4 h-4" />
                           <span>{response.documentName}</span>
-                        </div>
+                        </a>
                       </div>
                     ))}
                   </div>
@@ -2151,7 +2302,14 @@ All employees should receive fire safety training annually.`,
             <div className="p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white">
               <h3 className="text-xl text-slate-900">Create New Post</h3>
               <button
-                onClick={() => setShowCreatePost(false)}
+                onClick={() => {
+                  setShowCreatePost(false);
+                  newPostMedia.forEach(({ previewUrl }) => {
+                    if (previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
+                  });
+                  setNewPostMedia([]);
+                  if (newPostMediaInputRef.current) newPostMediaInputRef.current.value = '';
+                }}
                 className="p-2 hover:bg-slate-100 rounded-lg"
               >
                 <X className="w-5 h-5" />
@@ -2207,6 +2365,76 @@ All employees should receive fire safety training annually.`,
                   className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="safety, ppe, training..."
                 />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 mb-2">Pictures or videos</label>
+                <input
+                  ref={newPostMediaInputRef}
+                  type="file"
+                  className="hidden"
+                  accept="image/*,video/*"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []) as File[];
+                    const valid = files.filter((f: File) =>
+                      f.type.startsWith('image/') || f.type.startsWith('video/')
+                    );
+                    setNewPostMedia(prev => [
+                      ...prev,
+                      ...valid.map((file: File) => ({
+                        file,
+                        previewUrl: URL.createObjectURL(file),
+                      })),
+                    ]);
+                    e.target.value = '';
+                  }}
+                />
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => newPostMediaInputRef.current?.click()}
+                    className="flex flex-col items-center justify-center gap-2 w-28 h-28 border-2 border-dashed border-slate-300 rounded-lg hover:border-blue-500 hover:bg-blue-50/50 transition-colors text-slate-500"
+                  >
+                    <Upload className="w-8 h-8" />
+                    <span className="text-xs">Add media</span>
+                  </button>
+                  {newPostMedia.map((item, index) => (
+                    <div key={index} className="relative group w-28 h-28 rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
+                      {item.file.type.startsWith('image/') ? (
+                        <img
+                          src={item.previewUrl}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <video
+                          src={item.previewUrl}
+                          className="w-full h-full object-cover"
+                          muted
+                          playsInline
+                        />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (item.previewUrl.startsWith('blob:')) URL.revokeObjectURL(item.previewUrl);
+                          setNewPostMedia(prev => prev.filter((_, i) => i !== index));
+                        }}
+                        className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-600 rounded text-white"
+                        title="Remove"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs px-1 py-0.5 truncate">
+                        {item.file.type.startsWith('video/') ? 'Video' : 'Image'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Add images or videos. Files under 2MB are saved for later; larger files show until you refresh.
+                </p>
               </div>
 
               <button
@@ -2387,7 +2615,11 @@ All employees should receive fire safety training annually.`,
                 <p className="text-slate-600">{selectedJob.company} • {selectedJob.location}</p>
               </div>
               <button
-                onClick={() => setSelectedJob(null)}
+                onClick={() => {
+                  setSelectedJob(null);
+                  setJobApplicationResume(null);
+                  if (jobApplicationResumeInputRef.current) jobApplicationResumeInputRef.current.value = '';
+                }}
                 className="p-2 hover:bg-slate-100 rounded-lg"
               >
                 <X className="w-5 h-5" />
@@ -2454,11 +2686,48 @@ All employees should receive fire safety training annually.`,
                     rows={4}
                     id="job-application-message"
                   />
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Resume / Profile (optional)</label>
+                    <input
+                      ref={jobApplicationResumeInputRef}
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setJobApplicationResume(file);
+                        e.target.value = '';
+                      }}
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => jobApplicationResumeInputRef.current?.click()}
+                        className="flex items-center gap-2 px-4 py-2.5 border border-slate-300 rounded-lg bg-white hover:bg-slate-50 transition-colors text-slate-700"
+                      >
+                        <Upload className="w-4 h-4" />
+                        {jobApplicationResume ? jobApplicationResume.name : 'Upload resume or profile'}
+                      </button>
+                      {jobApplicationResume && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setJobApplicationResume(null);
+                            if (jobApplicationResumeInputRef.current) jobApplicationResumeInputRef.current.value = '';
+                          }}
+                          className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded"
+                          title="Remove file"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">PDF, Word, or image. Max 2MB for saving across sessions.</p>
+                  </div>
                   <button
                     onClick={() => {
                       const message = (document.getElementById('job-application-message') as HTMLTextAreaElement)?.value || '';
                       handleApplyForJob(selectedJob.id, message);
-                      setSelectedJob(null);
                     }}
                     className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
                   >
@@ -2500,6 +2769,25 @@ All employees should receive fire safety training annually.`,
                         {applicant.message && (
                           <p className="text-slate-700 text-sm mt-2">{applicant.message}</p>
                         )}
+                        {(applicant.resumeUrl || applicant.resumeName) && (
+                          applicant.resumeUrl && applicant.resumeUrl !== '#' ? (
+                            <a
+                              href={applicant.resumeUrl}
+                              download={applicant.resumeName}
+                              target={applicant.resumeUrl.startsWith('blob:') ? undefined : '_blank'}
+                              rel={applicant.resumeUrl.startsWith('blob:') ? undefined : 'noopener noreferrer'}
+                              className="inline-flex items-center gap-2 mt-2 text-sm text-blue-600 hover:underline"
+                            >
+                              <FileText className="w-4 h-4" />
+                              {applicant.resumeName || 'Resume / Profile'}
+                            </a>
+                          ) : (
+                            <span className="inline-flex items-center gap-2 mt-2 text-sm text-slate-500">
+                              <FileText className="w-4 h-4" />
+                              {applicant.resumeName || 'Resume attached'}
+                            </span>
+                          )
+                        )}
                       </div>
                     ))}
                   </div>
@@ -2539,6 +2827,40 @@ All employees should receive fire safety training annually.`,
               <div className="prose max-w-none mb-6">
                 <p className="text-slate-700 whitespace-pre-wrap">{selectedPost.content}</p>
               </div>
+
+              {selectedPost.media && selectedPost.media.length > 0 && (
+                <div className="mb-6 space-y-4">
+                  <h4 className="text-slate-900 font-medium flex items-center gap-2">
+                    <Image className="w-5 h-5" />
+                    Media ({selectedPost.media.length})
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {selectedPost.media.map((m, i) => (
+                      <div key={i} className="rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
+                        {m.type === 'image' ? (
+                          <img
+                            src={m.url}
+                            alt={m.name || 'Post image'}
+                            className="w-full max-h-80 object-contain"
+                          />
+                        ) : (
+                          <video
+                            src={m.url}
+                            controls
+                            className="w-full max-h-80"
+                            playsInline
+                          >
+                            Your browser does not support the video tag.
+                          </video>
+                        )}
+                        {m.name && (
+                          <p className="text-xs text-slate-500 p-2 truncate">{m.name}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {selectedPost.documents.length > 0 && (
                 <div className="mb-6 p-4 bg-slate-50 rounded-lg">

@@ -493,6 +493,7 @@ interface SafetySignProps {
   headerHeight: number;
   headerTextSize: number;
   iconColor: string;
+  iconSize?: number;
 }
 
 const SafetySign = ({ 
@@ -501,8 +502,9 @@ const SafetySign = ({
   mainTextSize, subTextSize, borderWidth, showShadow, fontFamily,
   mainTextBold, mainTextItalic, mainTextUnderline,
   subTextBold, subTextItalic, subTextUnderline, headerHeight,
-  headerTextSize, iconColor
+  headerTextSize, iconColor, iconSize: iconSizeProp
 }) => {
+  const iconSize = iconSizeProp ?? 100;
   const renderHeader = () => {
     const hStyle = { height: `${headerHeight || 25}%` };
     const fSize = headerTextSize ? `${headerTextSize}px` : 'clamp(2rem, 8cqw, 6rem)';
@@ -512,17 +514,25 @@ const SafetySign = ({
         return (
           <div className={`w-full flex items-center justify-center relative overflow-hidden shrink-0`}
                style={{ ...hStyle, backgroundColor: headerBgColor || '#000000', borderBottomWidth: `${borderWidth * 0.6}px`, borderBottomColor: 'black' }}>
-            <div className="w-[900px] h-[85%] absolute flex items-center justify-center"
-                 style={{ 
-                   backgroundColor: headerOvalColor || '#DC2626',
-                   borderColor: headerBorderColor || '#FFFFFF',
-                   borderWidth: '3px',
-                   borderStyle: 'solid',
-                   borderRadius: '100%',
-                   width :"900px"
-                 }}>
-               <h1 className="font-black tracking-wider uppercase z-10 relative mt-2"
-                   style={{ color: headerTextColor || '#FFFFFF', fontFamily, fontSize: fSize }}>
+            <div
+              className="absolute flex items-center justify-center"
+              style={{
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '90%',
+                height: '85%',
+                maxWidth: '100%',
+                maxHeight: '100%',
+                backgroundColor: headerOvalColor || '#DC2626',
+                borderColor: headerBorderColor || '#FFFFFF',
+                borderWidth: '3px',
+                borderStyle: 'solid',
+                borderRadius: '100%'
+              }}
+            >
+              <h1 className="font-black tracking-wider uppercase z-10 relative mt-2"
+                  style={{ color: headerTextColor || '#FFFFFF', fontFamily, fontSize: fSize }}>
                 {headerText || 'DANGER'}
               </h1>
             </div>
@@ -541,7 +551,7 @@ const SafetySign = ({
       case 'caution':
         return (
           <div className={`bg-yellow-400 w-full flex items-center justify-center gap-4 shrink-0`}
-               style={{ ...hStyle, borderBottomWidth: `${borderWidth * 0.6}px`, borderBottomColor: 'black' }}>
+               style={{ ...hStyle, backgroundColor: '#FACC15', borderBottomWidth: `${borderWidth * 0.6}px`, borderBottomColor: 'black' }}>
              <AlertTriangle className="h-2/3 w-auto text-black fill-black stroke-yellow-400" />
             <h1 className="font-black tracking-wider text-black uppercase" style={{ fontFamily, fontSize: fSize }}>
               {headerText || 'CAUTION'}
@@ -595,7 +605,7 @@ const SafetySign = ({
           <div className="w-full flex flex-col items-center justify-center text-center">
              {icon && icon !== 'None' && (
                <div className="mb-4">
-                  <IconComponent size={80} color={iColor} />
+                  <IconComponent size={iconSize} color={iColor} />
                </div>
              )}
             <h2 className="mb-2 uppercase leading-none break-words w-full" 
@@ -626,7 +636,7 @@ const SafetySign = ({
         {layout === 'left-icon' && (
           <div className="w-full flex items-center gap-6">
             <div className="w-1/3 flex items-center justify-center h-full border-r-0 border-black p-2">
-               <IconComponent size={140} color={iColor} strokeWidth={1.5} />
+               <IconComponent size={Math.round(iconSize * 1.4)} color={iColor} strokeWidth={1.5} />
             </div>
             <div className="w-2/3 flex flex-col justify-center text-left pl-4">
               <h2 className="mb-2 uppercase leading-tight" 
@@ -658,7 +668,7 @@ const SafetySign = ({
         {layout === 'visual' && (
           <div className="w-full flex flex-col items-center justify-center text-center">
             <div className="flex-1 flex items-center justify-center">
-               <IconComponent size={160} color={iColor} strokeWidth={1.5} />
+               <IconComponent size={Math.round(iconSize * 1.6)} color={iColor} strokeWidth={1.5} />
             </div>
             <div className="pb-4">
               <h2 className="uppercase leading-none" 
@@ -689,7 +699,7 @@ const SafetySign = ({
         )}
         {layout === 'top-icon' && (
           <div className="w-full flex flex-col items-center justify-center text-center gap-4">
-             <IconComponent size={100} color={iColor} />
+             <IconComponent size={iconSize} color={iColor} />
             <div>
               <h2 className="uppercase leading-none" 
                   style={{ 
@@ -756,6 +766,7 @@ const CustomSignageEditor = ({ initialData, onDataLoaded }: CustomSignageEditorP
     subTextUnderline: false,
     headerHeight: 25,
     iconColor: '#000000',
+    iconSize: 100,
     headerTextSize: 0
   });
   
@@ -1120,7 +1131,8 @@ const CustomSignageEditor = ({ initialData, onDataLoaded }: CustomSignageEditorP
       y: 100,
       width: 100,
       height: 100,
-      color: '#000000'
+      color: '#000000',
+      backgroundColor: 'transparent'
     };
     setExtraElements([...extraElements, newElement]);
     setSelectedElementId(newElement.id);
@@ -1962,7 +1974,13 @@ const CustomSignageEditor = ({ initialData, onDataLoaded }: CustomSignageEditorP
                     )}
                     {el.type === 'icon' && IconComp && (
                       <div className="w-full h-full relative" style={{ opacity: el.opacity !== undefined ? el.opacity : 1 }}>
-                        <IconComp className="w-full h-full pointer-events-none" style={{ color: el.color }} />
+                        <IconComp 
+                          className="w-full h-full pointer-events-none" 
+                          style={{ 
+                            stroke: el.color || '#000000', 
+                            fill: el.backgroundColor && el.backgroundColor !== 'transparent' ? el.backgroundColor : 'none' 
+                          }} 
+                        />
                       </div>
                     )}
                     {el.type === 'shape' && (
@@ -2060,18 +2078,38 @@ const CustomSignageEditor = ({ initialData, onDataLoaded }: CustomSignageEditorP
                       </div>
                     )}
                     
-                    {/* Icon Color (If Icon) */}
+                    {/* Icon Outline & Fill Colors (If Icon) */}
                     {selectedEl.type === 'icon' && (
-                      <div>
-                        <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Icon Color</label>
-                        <div className="flex gap-2">
-                          <input 
-                            type="color" 
-                            value={selectedEl.color || '#000000'}
-                            onChange={(e) => handleElementChange(selectedElementId, { color: e.target.value })}
-                            className="w-8 h-8 rounded cursor-pointer border-none"
-                          />
-                          <span className="text-xs text-slate-400 self-center">{selectedEl.color || '#000000'}</span>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Outline Color</label>
+                          <div className="flex gap-2">
+                            <input 
+                              type="color" 
+                              value={selectedEl.color || '#000000'}
+                              onChange={(e) => handleElementChange(selectedElementId, { color: e.target.value })}
+                              className="w-8 h-8 rounded cursor-pointer border-none"
+                            />
+                            <span className="text-xs text-slate-400 self-center">{selectedEl.color || '#000000'}</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Fill Color</label>
+                          <div className="flex gap-2 items-center flex-wrap">
+                            <input 
+                              type="color" 
+                              value={selectedEl.backgroundColor && selectedEl.backgroundColor !== 'transparent' ? selectedEl.backgroundColor : '#000000'}
+                              onChange={(e) => handleElementChange(selectedElementId, { backgroundColor: e.target.value })}
+                              className="w-8 h-8 rounded cursor-pointer border-none"
+                            />
+                            <input
+                              type="text"
+                              value={selectedEl.backgroundColor || 'transparent'}
+                              onChange={(e) => handleElementChange(selectedElementId, { backgroundColor: e.target.value || 'transparent' })}
+                              className="flex-1 min-w-0 p-2 bg-slate-800 border border-slate-700 rounded text-xs text-white outline-none focus:border-blue-500"
+                              placeholder="transparent or hex"
+                            />
+                          </div>
                         </div>
                       </div>
                     )}
@@ -2272,6 +2310,25 @@ const CustomSignageEditor = ({ initialData, onDataLoaded }: CustomSignageEditorP
                     className="w-full bg-slate-800 text-white pl-7 pr-2 py-1.5 rounded text-xs border border-slate-700 outline-none focus:border-blue-500"
                   />
                 </div>
+
+                {/* Icon Size */}
+                {signData.icon && signData.icon !== 'None' && (
+                  <div className="mb-3">
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-xs font-bold text-slate-500 uppercase">Icon Size</label>
+                      <span className="text-xs text-slate-400">{signData.iconSize ?? 100}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="24"
+                      max="240"
+                      step="4"
+                      value={signData.iconSize ?? 100}
+                      onChange={(e) => setSignData({ ...signData, iconSize: parseInt(e.target.value, 10) })}
+                      className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    />
+                  </div>
+                )}
 
                 {/* Icon Grid */}
                 <div className="grid grid-cols-5 gap-1.5 max-h-48 overflow-y-auto custom-scrollbar p-1 bg-slate-800/30 rounded border border-slate-800">
@@ -2637,7 +2694,14 @@ const CustomSignageEditor = ({ initialData, onDataLoaded }: CustomSignageEditorP
                     <img src={el.src} alt="print-element" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                   )}
                   {el.type === 'icon' && IconComp && (
-                    <IconComp style={{ width: '100%', height: '100%', color: el.color }} />
+                    <IconComp 
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        stroke: el.color || '#000000', 
+                        fill: el.backgroundColor && el.backgroundColor !== 'transparent' ? el.backgroundColor : 'none' 
+                      }} 
+                    />
                   )}
                   {el.type === 'shape' && (
                     <div style={{
