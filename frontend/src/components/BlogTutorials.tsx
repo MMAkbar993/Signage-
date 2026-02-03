@@ -25,6 +25,7 @@ import {
   Users,
   Briefcase,
   Bell,
+  BellOff,
   Phone,
   PhoneOff,
   Video,
@@ -123,6 +124,15 @@ interface DocumentResponse {
 }
 
 // Jobs Interfaces
+interface JobComment {
+  id: string;
+  jobId: string;
+  author: string;
+  authorId: string;
+  content: string;
+  createdAt: string;
+}
+
 interface JobPost {
   id: string;
   title: string;
@@ -138,6 +148,7 @@ interface JobPost {
   updatedAt: string;
   status: 'open' | 'filled' | 'closed';
   applicants: JobApplicant[];
+  comments: JobComment[];
   views: number;
   category: string;
 }
@@ -208,11 +219,22 @@ interface VoiceCall {
   endedAt?: string;
 }
 
+// Friend Request Interface
+interface FriendRequest {
+  id: string;
+  fromUserId: string;
+  fromUserName: string;
+  toUserId: string;
+  toUserName: string;
+  status: 'pending' | 'accepted' | 'declined';
+  createdAt: string;
+}
+
 // Notification Interface
 interface Notification {
   id: string;
   userId: string;
-  type: 'job_status' | 'mention' | 'message' | 'document_response' | 'job_application' | 'voice_call' | 'group_invite';
+  type: 'job_status' | 'mention' | 'message' | 'document_response' | 'job_application' | 'voice_call' | 'group_invite' | 'friend_request';
   title: string;
   message: string;
   data: any;
@@ -241,6 +263,7 @@ export function BlogTutorials() {
   const [showCreateJob, setShowCreateJob] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobPost | null>(null);
   const [jobFilter, setJobFilter] = useState<'all' | 'open' | 'filled' | 'closed' | 'my-jobs'>('all');
+  const [newJobComment, setNewJobComment] = useState('');
 
   // Chat state
   const [chats, setChats] = useState<Chat[]>([]);
@@ -253,10 +276,29 @@ export function BlogTutorials() {
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const [chatUsers, setChatUsers] = useState<ChatUser[]>([]);
   
+  // Chat menu (3-dots) and mute
+  const [showChatMenuDropdown, setShowChatMenuDropdown] = useState(false);
+  const [mutedChatIds, setMutedChatIds] = useState<string[]>(() => {
+    try {
+      const s = localStorage.getItem('mutedChatIds');
+      return s ? JSON.parse(s) : [];
+    } catch { return []; }
+  });
+  const chatMenuRef = useRef<HTMLDivElement>(null);
+
   // Voice call state
   const [activeCall, setActiveCall] = useState<VoiceCall | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(false);
+
+  // Friends & requests
+  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>(() => {
+    try {
+      const s = localStorage.getItem('friendRequests');
+      return s ? JSON.parse(s) : [];
+    } catch { return []; }
+  });
+  const [showFriendsModal, setShowFriendsModal] = useState(false);
 
   // Notifications state
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -337,6 +379,26 @@ export function BlogTutorials() {
   useEffect(() => {
     scrollToBottom();
   }, [chatMessages, selectedChat]);
+
+  useEffect(() => {
+    localStorage.setItem('mutedChatIds', JSON.stringify(mutedChatIds));
+  }, [mutedChatIds]);
+
+  useEffect(() => {
+    localStorage.setItem('friendRequests', JSON.stringify(friendRequests));
+  }, [friendRequests]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (chatMenuRef.current && !chatMenuRef.current.contains(e.target as Node)) {
+        setShowChatMenuDropdown(false);
+      }
+    };
+    if (showChatMenuDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showChatMenuDropdown]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -473,7 +535,8 @@ All employees should receive fire safety training annually.`,
   const loadJobs = () => {
     const stored = localStorage.getItem('jobPosts');
     if (stored) {
-      setJobs(JSON.parse(stored));
+      const parsed = JSON.parse(stored) as JobPost[];
+      setJobs(parsed.map(j => ({ ...j, comments: j.comments ?? [] })));
     } else {
       const sampleJobs: JobPost[] = [
         {
@@ -491,6 +554,7 @@ All employees should receive fire safety training annually.`,
           updatedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
           status: 'open',
           applicants: [],
+          comments: [],
           views: 156,
           category: 'management',
         },
@@ -509,6 +573,7 @@ All employees should receive fire safety training annually.`,
           updatedAt: new Date(Date.now() - 86400000 * 7).toISOString(),
           status: 'open',
           applicants: [],
+          comments: [],
           views: 234,
           category: 'coordinator',
         }
@@ -830,6 +895,7 @@ All employees should receive fire safety training annually.`,
       updatedAt: new Date().toISOString(),
       status: 'open',
       applicants: [],
+      comments: [],
       views: 0,
       category: newJob.category,
     };
@@ -852,6 +918,34 @@ All employees should receive fire safety training annually.`,
     });
     setShowCreateJob(false);
     showMessage('success', 'Job posted successfully!');
+  };
+
+  const handleAddJobComment = (jobId: string) => {
+    const content = newJobComment.trim();
+    if (!content) return;
+
+    const currentUser = getCurrentUser();
+    const comment: JobComment = {
+      id: 'jobcomment_' + Date.now(),
+      jobId,
+      author: currentUser.name,
+      authorId: currentUser.id,
+      content,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updatedJobs = jobs.map(j =>
+      j.id === jobId
+        ? { ...j, comments: [...(j.comments ?? []), comment] }
+        : j
+    );
+    setJobs(updatedJobs);
+    localStorage.setItem('jobPosts', JSON.stringify(updatedJobs));
+    setNewJobComment('');
+    if (selectedJob?.id === jobId) {
+      setSelectedJob(prev => prev ? { ...prev, comments: [...(prev.comments ?? []), comment] } : null);
+    }
+    showMessage('success', 'Comment added');
   };
 
   const handleUpdateJobStatus = (jobId: string, newStatus: JobPost['status']) => {
@@ -991,6 +1085,107 @@ All employees should receive fire safety training annually.`,
     
     setSelectedChat(chat);
     setShowNewChat(false);
+  };
+
+  const handleDeleteChat = (chatId: string) => {
+    if (!confirm('Delete this conversation? Messages will be removed.')) return;
+    const newChats = chats.filter(c => c.id !== chatId);
+    const updatedMessages = { ...chatMessages };
+    delete updatedMessages[chatId];
+    setChats(newChats);
+    setChatMessages(updatedMessages);
+    setMutedChatIds(prev => prev.filter(id => id !== chatId));
+    if (selectedChat?.id === chatId) setSelectedChat(null);
+    localStorage.setItem('chats', JSON.stringify(newChats));
+    localStorage.setItem('chatMessages', JSON.stringify(updatedMessages));
+    setShowChatMenuDropdown(false);
+    showMessage('success', 'Chat deleted');
+  };
+
+  const handleMuteChat = (chatId: string) => {
+    setMutedChatIds(prev =>
+      prev.includes(chatId) ? prev.filter(id => id !== chatId) : [...prev, chatId]
+    );
+    setShowChatMenuDropdown(false);
+    showMessage('info', mutedChatIds.includes(chatId) ? 'Chat unmuted' : 'Chat muted');
+  };
+
+  // Friends: list of user ids who are friends with current user (accepted request in both directions)
+  const getFriends = (): string[] => {
+    const currentId = getCurrentUser().id;
+    const accepted = friendRequests.filter(r => r.status === 'accepted');
+    const friendIds = new Set<string>();
+    accepted.forEach(r => {
+      if (r.fromUserId === currentId) friendIds.add(r.toUserId);
+      if (r.toUserId === currentId) friendIds.add(r.fromUserId);
+    });
+    return Array.from(friendIds);
+  };
+
+  const handleSendFriendRequest = (toUserId: string) => {
+    const currentUser = getCurrentUser();
+    const toUser = chatUsers.find(u => u.id === toUserId);
+    if (!toUser) return;
+    const isAlreadyFriends = friendRequests.some(r =>
+      r.status === 'accepted' &&
+      ((r.fromUserId === currentUser.id && r.toUserId === toUserId) || (r.fromUserId === toUserId && r.toUserId === currentUser.id))
+    );
+    if (isAlreadyFriends) {
+      showMessage('info', 'You are already friends');
+      return;
+    }
+    if (friendRequests.some(r => r.fromUserId === currentUser.id && r.toUserId === toUserId && r.status === 'pending')) {
+      showMessage('info', 'Request already sent');
+      return;
+    }
+    if (friendRequests.some(r => r.fromUserId === toUserId && r.toUserId === currentUser.id && r.status === 'pending')) {
+      showMessage('info', 'They sent you a request - check Pending to accept');
+      return;
+    }
+    const request: FriendRequest = {
+      id: 'fr_' + Date.now(),
+      fromUserId: currentUser.id,
+      fromUserName: currentUser.name,
+      toUserId,
+      toUserName: toUser.name,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    setFriendRequests(prev => [request, ...prev]);
+    createNotification({
+      userId: toUserId,
+      type: 'friend_request',
+      title: 'Friend Request',
+      message: `${currentUser.name} sent you a friend request`,
+      data: { requestId: request.id, fromUserId: currentUser.id },
+      read: false,
+    });
+    showMessage('success', 'Friend request sent');
+  };
+
+  const handleAcceptFriendRequest = (requestId: string) => {
+    const request = friendRequests.find(r => r.id === requestId);
+    if (!request || request.status !== 'pending') return;
+    setFriendRequests(prev =>
+      prev.map(r => r.id === requestId ? { ...r, status: 'accepted' as const } : r)
+    );
+    createNotification({
+      userId: request.fromUserId,
+      type: 'friend_request',
+      title: 'Friend Request Accepted',
+      message: `${getCurrentUser().name} accepted your friend request`,
+      data: { requestId, acceptedBy: getCurrentUser().id },
+      read: false,
+    });
+    setShowFriendsModal(false);
+    showMessage('success', `You are now friends with ${request.fromUserName}`);
+  };
+
+  const handleDeclineFriendRequest = (requestId: string) => {
+    setFriendRequests(prev =>
+      prev.map(r => r.id === requestId ? { ...r, status: 'declined' as const } : r)
+    );
+    showMessage('info', 'Friend request declined');
   };
 
   const handleCreateGroup = () => {
@@ -1413,6 +1608,7 @@ All employees should receive fire safety training annually.`,
                                 notif.type === 'message' ? 'bg-blue-100 text-blue-600' :
                                 notif.type === 'job_status' ? 'bg-green-100 text-green-600' :
                                 notif.type === 'document_response' ? 'bg-orange-100 text-orange-600' :
+                                notif.type === 'friend_request' ? 'bg-indigo-100 text-indigo-600' :
                                 'bg-slate-100 text-slate-600'
                               }`}>
                                 {notif.type === 'mention' && <AtSign className="w-5 h-5" />}
@@ -1422,6 +1618,7 @@ All employees should receive fire safety training annually.`,
                                 {notif.type === 'voice_call' && <Phone className="w-5 h-5" />}
                                 {notif.type === 'group_invite' && <Users className="w-5 h-5" />}
                                 {notif.type === 'job_application' && <User className="w-5 h-5" />}
+                                {notif.type === 'friend_request' && <UserPlus className="w-5 h-5" />}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="font-medium text-slate-900 text-sm">{notif.title}</p>
@@ -1993,6 +2190,13 @@ All employees should receive fire safety training annually.`,
                     <h3 className="font-semibold text-slate-900">Messages</h3>
                     <div className="flex gap-2">
                       <button
+                        onClick={() => setShowFriendsModal(true)}
+                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+                        title="Friends & requests"
+                      >
+                        <User className="w-5 h-5" />
+                      </button>
+                      <button
                         onClick={() => setShowNewChat(true)}
                         className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
                         title="New Chat"
@@ -2072,12 +2276,15 @@ All employees should receive fire safety training annually.`,
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center justify-between">
-                                <p className="text-sm text-slate-500 truncate">
+                              <div className="flex items-center justify-between gap-1">
+                                <p className="text-sm text-slate-500 truncate flex-1 min-w-0">
                                   {chat.lastMessage?.content || 'No messages yet'}
                                 </p>
+                                {mutedChatIds.includes(chat.id) && (
+                                  <BellOff className="w-4 h-4 text-slate-400 flex-shrink-0" title="Muted" />
+                                )}
                                 {unread > 0 && (
-                                  <span className="ml-2 px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full">
+                                  <span className="ml-1 px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full flex-shrink-0">
                                     {unread}
                                   </span>
                                 )}
@@ -2133,9 +2340,42 @@ All employees should receive fire safety training annually.`,
                         <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-600" title="Video Call">
                           <Video className="w-5 h-5" />
                         </button>
-                        <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-600">
-                          <MoreVertical className="w-5 h-5" />
-                        </button>
+                        <div className="relative" ref={chatMenuRef}>
+                          <button
+                            onClick={() => setShowChatMenuDropdown(prev => !prev)}
+                            className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+                            title="Chat options"
+                          >
+                            <MoreVertical className="w-5 h-5" />
+                          </button>
+                          {showChatMenuDropdown && (
+                            <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+                              <button
+                                onClick={() => selectedChat && handleMuteChat(selectedChat.id)}
+                                className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                              >
+                                {selectedChat && mutedChatIds.includes(selectedChat.id) ? (
+                                  <>
+                                    <Bell className="w-4 h-4" />
+                                    Unmute chat
+                                  </>
+                                ) : (
+                                  <>
+                                    <BellOff className="w-4 h-4" />
+                                    Mute chat
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => selectedChat && handleDeleteChat(selectedChat.id)}
+                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Delete chat
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -2618,6 +2858,7 @@ All employees should receive fire safety training annually.`,
                 onClick={() => {
                   setSelectedJob(null);
                   setJobApplicationResume(null);
+                  setNewJobComment('');
                   if (jobApplicationResumeInputRef.current) jobApplicationResumeInputRef.current.value = '';
                 }}
                 className="p-2 hover:bg-slate-100 rounded-lg"
@@ -2793,6 +3034,53 @@ All employees should receive fire safety training annually.`,
                   </div>
                 </div>
               )}
+
+              {/* Comments */}
+              <div className="mt-6 border-t border-slate-200 pt-6">
+                <h4 className="text-slate-900 font-medium mb-4 flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5" />
+                  Comments ({(selectedJob.comments ?? []).length})
+                </h4>
+                <div className="space-y-4 mb-4">
+                  {(selectedJob.comments ?? []).length === 0 ? (
+                    <p className="text-slate-500 text-sm">No comments yet. Be the first to ask a question or share feedback.</p>
+                  ) : (
+                    (selectedJob.comments ?? []).map(comment => (
+                      <div key={comment.id} className="p-4 bg-slate-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-slate-900">{comment.author}</span>
+                          <span className="text-xs text-slate-500">
+                            {new Date(comment.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-slate-700 text-sm">{comment.content}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={newJobComment}
+                    onChange={(e) => setNewJobComment(e.target.value)}
+                    placeholder="Add a comment or question..."
+                    className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddJobComment(selectedJob.id);
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => handleAddJobComment(selectedJob.id)}
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2"
+                  >
+                    <Send className="w-4 h-4" />
+                    Post
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -2946,36 +3234,207 @@ All employees should receive fire safety training annually.`,
               </button>
             </div>
             <div className="p-4 max-h-96 overflow-y-auto">
-              <p className="text-sm text-slate-600 mb-4">Select a user to start chatting</p>
-              <div className="space-y-2">
-                {chatUsers.filter(u => u.id !== getCurrentUser().id).map(user => (
-                  <div
-                    key={user.id}
-                    onClick={() => handleStartPrivateChat(user.id)}
-                    className="p-3 hover:bg-slate-50 rounded-lg cursor-pointer flex items-center gap-3"
-                  >
-                    <div className="relative">
-                      <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
-                        <User className="w-5 h-5" />
+              <p className="text-sm text-slate-600 mb-2">Chat with friends</p>
+              <p className="text-xs text-slate-500 mb-3">Or add new people as friends to chat with them</p>
+              {(() => {
+                const currentId = getCurrentUser().id;
+                const friends = getFriends();
+                const friendsList = chatUsers.filter(u => u.id !== currentId && friends.includes(u.id));
+                const nonFriends = chatUsers.filter(u => u.id !== currentId && !friends.includes(u.id));
+                const sentPending = (id: string) => friendRequests.some(r =>
+                  r.fromUserId === currentId && r.toUserId === id && r.status === 'pending'
+                );
+                return (
+                  <div className="space-y-4">
+                    {friendsList.length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">Friends</h4>
+                        <div className="space-y-2">
+                          {friendsList.map(user => (
+                            <div
+                              key={user.id}
+                              onClick={() => handleStartPrivateChat(user.id)}
+                              className="p-3 hover:bg-slate-50 rounded-lg cursor-pointer flex items-center gap-3"
+                            >
+                              <div className="relative">
+                                <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                                  <User className="w-5 h-5" />
+                                </div>
+                                <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
+                                  user.status === 'online' ? 'bg-green-500' :
+                                  user.status === 'away' ? 'bg-yellow-500' : 'bg-slate-400'
+                                }`} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-slate-900">{user.name}</p>
+                                <p className="text-sm text-slate-500">{user.status}</p>
+                              </div>
+                              <span className="text-sm text-blue-600">Chat</span>
+                              <ChevronRight className="w-5 h-5 text-slate-400" />
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
-                        user.status === 'online' ? 'bg-green-500' :
-                        user.status === 'away' ? 'bg-yellow-500' : 'bg-slate-400'
-                      }`} />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-slate-900">{user.name}</p>
-                      <p className={`text-sm ${
-                        user.status === 'online' ? 'text-green-600' :
-                        user.status === 'away' ? 'text-yellow-600' : 'text-slate-400'
-                      }`}>
-                        {user.status}
-                      </p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-slate-400" />
+                    )}
+                    {nonFriends.length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">Discover people</h4>
+                        <div className="space-y-2">
+                          {nonFriends.map(user => (
+                            <div
+                              key={user.id}
+                              className="p-3 hover:bg-slate-50 rounded-lg flex items-center gap-3"
+                            >
+                              <div className="w-10 h-10 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center">
+                                <User className="w-5 h-5" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-slate-900">{user.name}</p>
+                                <p className="text-sm text-slate-500">{user.status}</p>
+                              </div>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleSendFriendRequest(user.id); }}
+                                disabled={sentPending(user.id)}
+                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-sm rounded-lg flex items-center gap-1"
+                              >
+                                <UserPlus className="w-4 h-4" />
+                                {sentPending(user.id) ? 'Pending' : 'Add friend'}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {friendsList.length === 0 && nonFriends.length === 0 && (
+                      <p className="text-slate-500 text-sm">No other users yet. Add people as friends from the Friends panel (person icon).</p>
+                    )}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Friends & Requests Modal */}
+      {showFriendsModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-xl text-slate-900">Friends & requests</h3>
+              <button
+                onClick={() => setShowFriendsModal(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              {(() => {
+                const currentId = getCurrentUser().id;
+                const pendingReceived = friendRequests.filter(r =>
+                  r.toUserId === currentId && r.status === 'pending'
+                );
+                const sent = friendRequests.filter(r =>
+                  r.fromUserId === currentId && r.status === 'pending'
+                );
+                const friends = getFriends();
+                const friendsUsers = chatUsers.filter(u => friends.includes(u.id));
+                return (
+                  <>
+                    {pendingReceived.length > 0 && (
+                      <div>
+                        <h4 className="font-medium text-slate-900 mb-2">Pending requests</h4>
+                        <div className="space-y-2">
+                          {pendingReceived.map(req => (
+                            <div key={req.id} className="p-3 bg-slate-50 rounded-lg flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                                  <User className="w-5 h-5" />
+                                </div>
+                                <div>
+                                  <p className="font-medium text-slate-900">{req.fromUserName}</p>
+                                  <p className="text-xs text-slate-500">Wants to be your friend</p>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleAcceptFriendRequest(req.id)}
+                                  className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
+                                  title="Accept"
+                                >
+                                  <Check className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeclineFriendRequest(req.id)}
+                                  className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                                  title="Decline"
+                                >
+                                  <XCircle className="w-5 h-5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {sent.length > 0 && (
+                      <div>
+                        <h4 className="font-medium text-slate-900 mb-2">Sent requests</h4>
+                        <div className="space-y-2">
+                          {sent.map(req => (
+                            <div key={req.id} className="p-3 bg-slate-50 rounded-lg flex items-center gap-3">
+                              <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
+                                <User className="w-5 h-5 text-slate-600" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-medium text-slate-900">{req.toUserName}</p>
+                                <p className="text-xs text-slate-500">Pending</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-medium text-slate-900 mb-2">Friends ({friendsUsers.length})</h4>
+                      {friendsUsers.length === 0 ? (
+                        <p className="text-slate-500 text-sm">No friends yet. Send friend requests from &quot;Start New Chat&quot; or add people you know.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {friendsUsers.map(user => (
+                            <div
+                              key={user.id}
+                              className="p-3 bg-slate-50 rounded-lg flex items-center justify-between"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="relative">
+                                  <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                                    <User className="w-5 h-5" />
+                                  </div>
+                                  <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
+                                    user.status === 'online' ? 'bg-green-500' : 'bg-slate-400'
+                                  }`} />
+                                </div>
+                                <p className="font-medium text-slate-900">{user.name}</p>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  handleStartPrivateChat(user.id);
+                                  setShowFriendsModal(false);
+                                }}
+                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg"
+                              >
+                                Chat
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
