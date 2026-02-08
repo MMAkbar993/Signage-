@@ -7,6 +7,10 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/auth/:path*",
+      "destination": "/api/auth/:path*"
+    },
+    {
       "source": "/((?!api/|assets/|_next/).*)",
       "destination": "/index.html"
     }

@@ -1,8 +1,10 @@
 /**
  * Auth API - Connects to backend /api/auth endpoints
  */
+/// <reference types="vite/client" />
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+// Always use /api when same-origin so POST /api/auth/register hits the API (not SPA → 405)
+const API_BASE = (import.meta.env.VITE_API_URL && String(import.meta.env.VITE_API_URL).trim()) || '/api';
 
 export interface User {
   id: string;
