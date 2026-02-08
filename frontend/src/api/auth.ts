@@ -3,8 +3,14 @@
  */
 /// <reference types="vite/client" />
 
-// Always use /api when same-origin so POST /api/auth/register hits the API (not SPA → 405)
-const API_BASE = (import.meta.env.VITE_API_URL && String(import.meta.env.VITE_API_URL).trim()) || '/api';
+// Base URL for API: use /api when same-origin; if VITE_API_URL is a full origin (e.g. https://signage-six.vercel.app/), append /api so requests hit /api/auth/register not /auth/register
+function getApiBase(): string {
+  const raw = (import.meta.env.VITE_API_URL && String(import.meta.env.VITE_API_URL).trim()) || '';
+  if (!raw) return '/api';
+  if (raw.startsWith('http')) return raw.replace(/\/+$/, '') + '/api';
+  return raw || '/api';
+}
+const API_BASE = getApiBase();
 
 export interface User {
   id: string;
