@@ -9,10 +9,11 @@ import {
   AlertTriangle, 
   BookOpen,
   Network,
-  Library as LibraryIcon
+  Library as LibraryIcon,
+  User
 } from 'lucide-react';
 
-type TabType = 'dashboard' | 'signage' | 'authorized' | 'emergency' | 'templates' | 'ai-generator' | 'custom-editor' | 'blog' | 'admin' | 'organization-chart' | 'library';
+type TabType = 'dashboard' | 'signage' | 'authorized' | 'emergency' | 'templates' | 'ai-generator' | 'custom-editor' | 'blog' | 'admin' | 'organization-chart' | 'library' | 'profile';
 
 interface SidebarProps {
   activeTab: TabType;
@@ -236,6 +237,30 @@ export function Sidebar({ activeTab, onNavigate, menuOpen }: SidebarProps) {
             <div className="font-medium">Blog & Tutorials</div>
             <div className={`text-xs ${activeTab === 'blog' ? 'text-blue-100' : 'text-slate-500'}`}>
               Learn safety tips
+            </div>
+          </div>
+        </button>
+
+        {/* Divider */}
+        <div className="py-2">
+          <div className="border-t border-slate-200"></div>
+          <div className="text-xs text-slate-500 mt-2 px-2">ACCOUNT</div>
+        </div>
+
+        {/* Profile */}
+        <button
+          onClick={() => onNavigate('profile')}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+            activeTab === 'profile'
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'text-slate-700 hover:bg-slate-100'
+          }`}
+        >
+          <User className="w-5 h-5" />
+          <div className="text-left">
+            <div className="font-medium">Profile</div>
+            <div className={`text-xs ${activeTab === 'profile' ? 'text-blue-100' : 'text-slate-500'}`}>
+              Your account
             </div>
           </div>
         </button>

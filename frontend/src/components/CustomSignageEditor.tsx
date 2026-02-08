@@ -11,7 +11,8 @@ import {
   Undo, Redo, ZoomIn, ZoomOut, RotateCcw, FileType, MousePointer2, Image as ImageIcon, Box, Layers,
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyCenter, AlignHorizontalJustifyCenter, Save,
   List, LayoutTemplate, Smile, X, PenTool, QrCode, Circle as CircleIcon, Crop, Grid, MousePointer, PaintBucket,
-  AlertCircle, Radio, Construction, ArrowLeft, Cigarette, Phone, CameraOff, Camera, Car, Wrench, Lock
+  AlertCircle, Radio, Construction, ArrowLeft, Cigarette, Phone, CameraOff, Camera, Car, Wrench, Lock,
+  FlaskConical
 } from 'lucide-react';
 import { Resizable } from 're-resizable';
 // @ts-ignore
@@ -23,6 +24,7 @@ import * as htmlToImage from 'html-to-image';
 // @ts-ignore
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
+import { defaultTemplates } from '../data/customEditorTemplates';
 
 // Icon Map
 const iconMap: Record<string, any> = {
@@ -32,7 +34,8 @@ const iconMap: Record<string, any> = {
   Coffee, Trash2, HelpCircle, Users, XCircle, ShieldCheck, Brain, LogOut, Cross, HeartPulse, Move, 
   Power, PlusSquare, CheckCircle, Bell, Fuel, Sun, Anchor, Circle, Scissors, Triangle, Flame, Bot, Shield,
   Octagon, Hammer, Server, Recycle, Wifi, BellOff, Clock, ArrowRight, ShowerHead, Activity, Disc, BadgeAlert,
-  AlertCircle, Radio, Construction, ArrowLeft, Cigarette, Phone, CameraOff, Camera, Car, Wrench, Lock, AlertTriangle
+  AlertCircle, Radio, Construction, ArrowLeft, Cigarette, Phone, CameraOff, Camera, Car, Wrench, Lock, AlertTriangle,
+  FlaskConical, Box, Layers, Image: ImageIcon
 };
 
 const fontOptions = [
@@ -942,28 +945,45 @@ const CustomSignageEditor = ({ initialData, onDataLoaded }: CustomSignageEditorP
     }
   };
 
-  // Fetch templates - using local API or static data
+  // Fetch templates - using API first, then default templates + saved from localStorage
   useEffect(() => {
-    // Try to fetch from API, otherwise use empty array
+    const savedFromStorage = JSON.parse(localStorage.getItem('customSafetyTemplates') || '[]');
+
     fetch('/api/safety-templates')
       .then(res => {
         if (!res.ok) throw new Error('Network response was not ok');
         return res.json();
       })
       .then(data => {
-        if (Array.isArray(data)) {
-          setTemplates(data);
-          
-          const grouped = data.reduce((acc: Record<string, Record<string, any[]>>, tmpl: any) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const merged = [...data, ...savedFromStorage];
+          setTemplates(merged);
+          const grouped = merged.reduce((acc: Record<string, Record<string, any[]>>, tmpl: any) => {
             if (!acc[tmpl.type]) acc[tmpl.type] = {};
             if (!acc[tmpl.type][tmpl.category]) acc[tmpl.type][tmpl.category] = [];
             acc[tmpl.type][tmpl.category].push(tmpl);
             return acc;
           }, {});
           setGroupedTemplates(grouped);
+        } else {
+          initWithDefaultTemplates(savedFromStorage);
         }
       })
-      .catch(err => console.log("Using default templates"));
+      .catch(() => {
+        initWithDefaultTemplates(savedFromStorage);
+      });
+
+    function initWithDefaultTemplates(saved: any[]) {
+      const merged = [...defaultTemplates, ...saved];
+      setTemplates(merged);
+      const grouped = merged.reduce((acc: Record<string, Record<string, any[]>>, tmpl: any) => {
+        if (!acc[tmpl.type]) acc[tmpl.type] = {};
+        if (!acc[tmpl.type][tmpl.category]) acc[tmpl.type][tmpl.category] = [];
+        acc[tmpl.type][tmpl.category].push(tmpl);
+        return acc;
+      }, {});
+      setGroupedTemplates(grouped);
+    }
   }, []);
 
   const loadTemplate = (tmpl: any) => {
@@ -1587,7 +1607,8 @@ const CustomSignageEditor = ({ initialData, onDataLoaded }: CustomSignageEditorP
                         tmpl.type === 'danger' ? 'bg-red-500' : 
                         tmpl.type === 'warning' ? 'bg-orange-500' : 
                         tmpl.type === 'caution' ? 'bg-yellow-400' : 
-                        tmpl.type === 'safety' ? 'bg-green-500' : 'bg-blue-500'
+                        tmpl.type === 'safety' ? 'bg-green-500' : 
+                        tmpl.type === 'fire' ? 'bg-red-600' : 'bg-blue-500'
                       }`}></div>
                       <div className="pl-3">
                         <div className="font-bold text-white mb-0.5">{tmpl.text}</div>
@@ -1660,7 +1681,8 @@ const CustomSignageEditor = ({ initialData, onDataLoaded }: CustomSignageEditorP
                         type === 'danger' ? 'bg-red-500' : 
                         type === 'warning' ? 'bg-orange-500' : 
                         type === 'caution' ? 'bg-yellow-400' : 
-                        type === 'safety' ? 'bg-green-500' : 'bg-blue-500'
+                        type === 'safety' ? 'bg-green-500' : 
+                        type === 'fire' ? 'bg-red-600' : 'bg-blue-500'
                       }`}></div>
                       {type} Signs
                     </div>

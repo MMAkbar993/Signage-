@@ -30,6 +30,12 @@ router.post(
       .trim()
       .isLength({ max: 50 })
       .withMessage('Last name must be less than 50 characters'),
+    body('username')
+      .optional({ values: 'falsy' })
+      .trim()
+      .isLength({ min: 3, max: 30 })
+      .matches(/^[a-zA-Z0-9_-]+$/)
+      .withMessage('Username: 3-30 chars, letters, numbers, underscore, hyphen'),
   ]),
   authController.register
 );
@@ -99,11 +105,24 @@ router.put(
       .optional()
       .trim()
       .isLength({ max: 50 }),
+    body('username')
+      .optional({ values: 'falsy' })
+      .trim()
+      .isLength({ min: 3, max: 30 })
+      .matches(/^[a-zA-Z0-9_-]+$/)
+      .withMessage('Username: 3-30 chars, letters, numbers, underscore, hyphen'),
     body('avatar')
       .optional(),
   ]),
   authController.updateProfile
 );
+
+/**
+ * @route GET /api/auth/users/search
+ * @desc Search users by username (for chat/friends)
+ * @access Private
+ */
+router.get('/users/search', authenticate, authController.searchUsers);
 
 /**
  * @route PUT /api/auth/password

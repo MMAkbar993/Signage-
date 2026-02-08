@@ -106,7 +106,7 @@ export function AdminAuth({ children }: any) {
             <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-600 rounded-full shadow-2xl mb-4">
               <Lock className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-white text-3xl mb-2">Admin Access</h1>
+            <h1 className="text-white text-3xl mb-2">Safete Gram Admin</h1>
             <p className="text-blue-200">Authorized Personnel Only</p>
           </div>
 
@@ -165,7 +165,7 @@ export function AdminAuth({ children }: any) {
                 className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg h-12 flex items-center justify-center gap-2 transition-colors"
               >
                 <Lock className="w-5 h-5" />
-                Login to Admin Panel
+                Login to Safete Gram Admin Panel
               </button>
             </form>
 
@@ -174,7 +174,7 @@ export function AdminAuth({ children }: any) {
               <div className="flex items-start gap-3 text-sm text-slate-600">
                 <Shield className="w-4 h-4 flex-shrink-0 mt-0.5 text-blue-600" />
                 <p>
-                  This admin panel controls the entire signage system including company branding, 
+                  This Safete Gram admin panel controls the entire signage system including company branding, 
                   data management, and system settings. Unauthorized access is prohibited.
                 </p>
               </div>

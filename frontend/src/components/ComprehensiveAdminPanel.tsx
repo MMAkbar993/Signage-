@@ -190,13 +190,13 @@ export function ComprehensiveAdminPanel() {
 
   // Website Settings
   const [websiteSettings, setWebsiteSettings] = useState<WebsiteSettings>({
-    siteName: 'Universal Smart Signage Generator',
+    siteName: 'Safete Gram',
     siteTagline: 'Professional EHS, Safety & Industrial Signage System',
     siteLogo: '/logo.jpeg',
     primaryColor: '#2563EB',
     secondaryColor: '#7C3AED',
-    footerText: '© 2024 Universal Smart Signage Generator. All rights reserved.',
-    contactEmail: 'support@signagecreators.com',
+    footerText: '© 2024 Safete Gram.In. All rights reserved.',
+    contactEmail: 'support@safetegram.in',
     contactPhone: '+1 (555) 123-4567',
     address: '123 Safety Street, Industrial Zone',
     socialLinks: {
@@ -470,9 +470,9 @@ export function ComprehensiveAdminPanel() {
           <div>
             <h1 className="text-3xl flex items-center gap-3 mb-2">
               <Shield className="w-10 h-10" />
-              Signage System Admin Panel
+              Safete Gram Admin Panel
             </h1>
-            <p className="text-blue-200">Complete control over your Universal Smart Signage Generator</p>
+            <p className="text-blue-200">Complete control over your Safete Gram.In signage system</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right mr-4">
@@ -715,7 +715,7 @@ function OverviewSection({ stats, featureFlags, onRefresh }: any) {
     <div className="space-y-6">
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
-        <h2 className="text-2xl mb-2">Welcome to Admin Panel</h2>
+        <h2 className="text-2xl mb-2">Welcome to Safete Gram Admin Panel</h2>
         <p className="text-blue-100">
           Manage your Universal Smart Signage Generator system. Control all aspects of your website from this central dashboard.
         </p>

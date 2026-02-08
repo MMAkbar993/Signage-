@@ -18,6 +18,7 @@ datasource db {
 model User {
   id                String   @id @default(uuid())
   email             String   @unique
+  username          String?  @unique
   password          String
   firstName         String?
   lastName          String?
@@ -40,6 +41,7 @@ model User {
   userSettings      UserSettings?
 
   @@index([email])
+  @@index([username])
 }
 
 enum UserRole {

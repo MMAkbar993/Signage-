@@ -15,7 +15,7 @@ export async function register(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { email, password, firstName, lastName } = req.body;
+    const { email, password, firstName, lastName, username } = req.body;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -26,19 +26,36 @@ export async function register(
       throw new ConflictError('User with this email already exists');
     }
 
+    // If username provided, check uniqueness
+    if (username !== undefined && username !== null && String(username).trim() !== '') {
+      const trimmed = String(username).trim().toLowerCase();
+      const existingUsername = await prisma.user.findUnique({
+        where: { username: trimmed },
+      });
+      if (existingUsername) {
+        throw new ConflictError('Username is already taken');
+      }
+    }
+
     // Hash password and create user
     const hashedPassword = await hashPassword(password);
 
+    const createData: Record<string, any> = {
+      email,
+      password: hashedPassword,
+      firstName,
+      lastName,
+    };
+    if (username !== undefined && username !== null && String(username).trim() !== '') {
+      createData.username = String(username).trim().toLowerCase();
+    }
+
     const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        firstName,
-        lastName,
-      },
+      data: createData,
       select: {
         id: true,
         email: true,
+        username: true,
         firstName: true,
         lastName: true,
         role: true,
@@ -127,6 +144,7 @@ export async function login(
       user: {
         id: user.id,
         email: user.email,
+        username: user.username,
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
@@ -246,6 +264,7 @@ export async function me(
       select: {
         id: true,
         email: true,
+        username: true,
         firstName: true,
         lastName: true,
         role: true,
@@ -277,18 +296,43 @@ export async function updateProfile(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { firstName, lastName, avatar } = req.body;
+    const { firstName, lastName, avatar, username } = req.body;
+
+    // If username is provided (non-empty), check it's unique and valid
+    if (username !== undefined && username !== null && String(username).trim() !== '') {
+      const trimmed = String(username).trim().toLowerCase();
+      if (trimmed.length < 3) {
+        throw new BadRequestError('Username must be at least 3 characters');
+      }
+      if (!/^[a-z0-9_-]+$/.test(trimmed)) {
+        throw new BadRequestError('Username can only contain letters, numbers, underscore and hyphen');
+      }
+      const existing = await prisma.user.findFirst({
+        where: {
+          username: trimmed,
+          id: { not: req.user!.id },
+        },
+      });
+      if (existing) {
+        throw new ConflictError('Username is already taken');
+      }
+    }
+
+    const updateData: Record<string, any> = {};
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
+    if (avatar !== undefined) updateData.avatar = avatar;
+    if (username !== undefined && username !== null && String(username).trim() !== '') {
+      updateData.username = String(username).trim().toLowerCase();
+    }
 
     const user = await prisma.user.update({
       where: { id: req.user!.id },
-      data: {
-        firstName,
-        lastName,
-        avatar,
-      },
+      data: updateData,
       select: {
         id: true,
         email: true,
+        username: true,
         firstName: true,
         lastName: true,
         role: true,
@@ -298,6 +342,46 @@ export async function updateProfile(
     });
 
     sendSuccess(res, user, 'Profile updated successfully');
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Search users by username (for chat/friends)
+ * Also searches firstName and lastName so users without usernames can be found
+ */
+export async function searchUsers(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const q = (req.query.username as string)?.trim();
+    if (!q || q.length < 2) {
+      return sendSuccess(res, []);
+    }
+    const term = q;
+    const users = await prisma.user.findMany({
+      where: {
+        isActive: true,
+        id: { not: req.user!.id },
+        OR: [
+          { username: { contains: term, mode: 'insensitive' } },
+          { firstName: { contains: term, mode: 'insensitive' } },
+          { lastName: { contains: term, mode: 'insensitive' } },
+        ],
+      },
+      select: {
+        id: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        avatar: true,
+      },
+      take: 20,
+    });
+    sendSuccess(res, users);
   } catch (error) {
     next(error);
   }
@@ -357,4 +441,5 @@ export default {
   me,
   updateProfile,
   changePassword,
+  searchUsers,
 };

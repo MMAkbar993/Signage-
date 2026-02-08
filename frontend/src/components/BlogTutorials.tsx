@@ -50,6 +50,8 @@ import {
   XCircle,
 } from 'lucide-react';
 import { getCurrentUser, logActivity } from '../utils/userTracking';
+import { useAuth } from '../contexts/AuthContext';
+import { authApi } from '../api/auth';
 
 // =============== INTERFACES ===============
 
@@ -168,6 +170,7 @@ interface JobApplicant {
 interface ChatUser {
   id: string;
   name: string;
+  username?: string;
   avatar?: string;
   status: 'online' | 'offline' | 'away';
   lastSeen?: string;
@@ -275,6 +278,12 @@ export function BlogTutorials() {
   const [mentionSearch, setMentionSearch] = useState('');
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const [chatUsers, setChatUsers] = useState<ChatUser[]>([]);
+  const [usernameSearch, setUsernameSearch] = useState('');
+  const [usernameSearchResults, setUsernameSearchResults] = useState<ChatUser[]>([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+  const [hasSearchedUsers, setHasSearchedUsers] = useState(false);
+  
+  const { user: authUser } = useAuth();
   
   // Chat menu (3-dots) and mute
   const [showChatMenuDropdown, setShowChatMenuDropdown] = useState(false);
@@ -370,6 +379,10 @@ export function BlogTutorials() {
     loadNotifications();
     loadChatUsers();
   }, []);
+
+  useEffect(() => {
+    loadChatUsers();
+  }, [authUser?.id, friendRequests.length]);
 
   useEffect(() => {
     const unread = notifications.filter(n => !n.read).length;
@@ -603,16 +616,52 @@ All employees should receive fire safety training annually.`,
   };
 
   const loadChatUsers = () => {
-    // Simulate loading users - in real app, this would come from backend
-    const users: ChatUser[] = [
-      { id: 'user_1', name: 'John Safety', status: 'online' },
-      { id: 'user_2', name: 'Safety Manager', status: 'online' },
-      { id: 'user_3', name: 'EHS Professional', status: 'away' },
-      { id: 'admin_1', name: 'Safety Admin', status: 'online' },
-      { id: 'expert_1', name: 'Fire Safety Expert', status: 'offline' },
-      { id: 'hr_1', name: 'HR Manager', status: 'online' },
-    ];
-    setChatUsers(users);
+    if (authUser) {
+      const friends = getFriends();
+      const friendsUsers: ChatUser[] = [];
+      friendRequests.forEach(r => {
+        if (r.status === 'accepted') {
+          const otherId = r.fromUserId === authUser.id ? r.toUserId : r.fromUserId;
+          const otherName = r.fromUserId === authUser.id ? r.toUserName : r.fromUserName;
+          if (!friendsUsers.find(u => u.id === otherId)) {
+            friendsUsers.push({ id: otherId, name: otherName, status: 'online' });
+          }
+        }
+      });
+      setChatUsers(friendsUsers);
+    } else {
+      const users: ChatUser[] = [
+        { id: 'user_1', name: 'John Safety', status: 'online' },
+        { id: 'user_2', name: 'Safety Manager', status: 'online' },
+        { id: 'user_3', name: 'EHS Professional', status: 'away' },
+        { id: 'admin_1', name: 'Safety Admin', status: 'online' },
+        { id: 'expert_1', name: 'Fire Safety Expert', status: 'offline' },
+        { id: 'hr_1', name: 'HR Manager', status: 'online' },
+      ];
+      setChatUsers(users);
+    }
+  };
+
+  const searchUsersByUsername = async () => {
+    if (!usernameSearch.trim() || !authUser) return;
+    setIsSearchingUsers(true);
+    setHasSearchedUsers(false);
+    try {
+      const raw = await authApi.searchUsers(usernameSearch);
+      const results = Array.isArray(raw) ? raw : [];
+      const chatUsersList: ChatUser[] = results.map(u => ({
+        id: u.id,
+        name: [u.firstName, u.lastName].filter(Boolean).join(' ') || u.username || 'Unknown',
+        username: u.username || undefined,
+        status: 'online' as const,
+      }));
+      setUsernameSearchResults(chatUsersList);
+    } catch {
+      setUsernameSearchResults([]);
+    } finally {
+      setIsSearchingUsers(false);
+      setHasSearchedUsers(true);
+    }
   };
 
   // =============== HELPERS ===============
@@ -651,13 +700,16 @@ All employees should receive fire safety training annually.`,
   };
 
   const getCurrentUserId = () => {
-    const user = getCurrentUser();
-    return user.id;
+    if (authUser) return authUser.id;
+    return getCurrentUser().id;
   };
 
   const getCurrentUserName = () => {
-    const user = getCurrentUser();
-    return user.name;
+    if (authUser) {
+      const name = [authUser.firstName, authUser.lastName].filter(Boolean).join(' ');
+      return name || authUser.username || authUser.email?.split('@')[0] || 'User';
+    }
+    return getCurrentUser().name;
   };
 
   // =============== POST HANDLERS ===============
@@ -1048,35 +1100,39 @@ All employees should receive fire safety training annually.`,
 
   // =============== CHAT HANDLERS ===============
 
-  const handleStartPrivateChat = (userId: string) => {
-    const currentUser = getCurrentUser();
-    const otherUser = chatUsers.find(u => u.id === userId);
-    if (!otherUser) return;
+  const handleStartPrivateChat = (userId: string, otherUserName?: string) => {
+    const currentId = getCurrentUserId();
+    const currentName = getCurrentUserName();
+    const otherUser = chatUsers.find(u => u.id === userId) || usernameSearchResults.find(u => u.id === userId);
+    const name = otherUserName || otherUser?.name;
+    if (!name) return;
 
     // Check if chat already exists
     const existingChat = chats.find(c => 
       c.type === 'private' && 
-      c.participants.includes(currentUser.id) && 
+      c.participants.includes(currentId) && 
       c.participants.includes(userId)
     );
 
     if (existingChat) {
       setSelectedChat(existingChat);
       setShowNewChat(false);
+      setUsernameSearch('');
+      setUsernameSearchResults([]);
       return;
     }
 
     const chat: Chat = {
       id: 'chat_' + Date.now(),
       type: 'private',
-      participants: [currentUser.id, userId],
+      participants: [currentId, userId],
       participantNames: {
-        [currentUser.id]: currentUser.name,
-        [userId]: otherUser.name,
+        [currentId]: currentName,
+        [userId]: name,
       },
-      createdBy: currentUser.id,
+      createdBy: currentId,
       createdAt: new Date().toISOString(),
-      unreadCount: { [currentUser.id]: 0, [userId]: 0 },
+      unreadCount: { [currentId]: 0, [userId]: 0 },
     };
 
     const updatedChats = [chat, ...chats];
@@ -1084,6 +1140,8 @@ All employees should receive fire safety training annually.`,
     localStorage.setItem('chats', JSON.stringify(updatedChats));
     
     setSelectedChat(chat);
+    setUsernameSearch('');
+    setUsernameSearchResults([]);
     setShowNewChat(false);
   };
 
@@ -1112,7 +1170,7 @@ All employees should receive fire safety training annually.`,
 
   // Friends: list of user ids who are friends with current user (accepted request in both directions)
   const getFriends = (): string[] => {
-    const currentId = getCurrentUser().id;
+    const currentId = getCurrentUserId();
     const accepted = friendRequests.filter(r => r.status === 'accepted');
     const friendIds = new Set<string>();
     accepted.forEach(r => {
@@ -1122,32 +1180,34 @@ All employees should receive fire safety training annually.`,
     return Array.from(friendIds);
   };
 
-  const handleSendFriendRequest = (toUserId: string) => {
-    const currentUser = getCurrentUser();
-    const toUser = chatUsers.find(u => u.id === toUserId);
-    if (!toUser) return;
+  const handleSendFriendRequest = (toUserId: string, toUserName?: string) => {
+    const currentId = getCurrentUserId();
+    const currentName = getCurrentUserName();
+    const toUser = chatUsers.find(u => u.id === toUserId) || usernameSearchResults.find(u => u.id === toUserId);
+    const name = toUserName || toUser?.name;
+    if (!name) return;
     const isAlreadyFriends = friendRequests.some(r =>
       r.status === 'accepted' &&
-      ((r.fromUserId === currentUser.id && r.toUserId === toUserId) || (r.fromUserId === toUserId && r.toUserId === currentUser.id))
+      ((r.fromUserId === currentId && r.toUserId === toUserId) || (r.fromUserId === toUserId && r.toUserId === currentId))
     );
     if (isAlreadyFriends) {
       showMessage('info', 'You are already friends');
       return;
     }
-    if (friendRequests.some(r => r.fromUserId === currentUser.id && r.toUserId === toUserId && r.status === 'pending')) {
+    if (friendRequests.some(r => r.fromUserId === currentId && r.toUserId === toUserId && r.status === 'pending')) {
       showMessage('info', 'Request already sent');
       return;
     }
-    if (friendRequests.some(r => r.fromUserId === toUserId && r.toUserId === currentUser.id && r.status === 'pending')) {
+    if (friendRequests.some(r => r.fromUserId === toUserId && r.toUserId === currentId && r.status === 'pending')) {
       showMessage('info', 'They sent you a request - check Pending to accept');
       return;
     }
     const request: FriendRequest = {
       id: 'fr_' + Date.now(),
-      fromUserId: currentUser.id,
-      fromUserName: currentUser.name,
+      fromUserId: currentId,
+      fromUserName: currentName,
       toUserId,
-      toUserName: toUser.name,
+      toUserName: name,
       status: 'pending',
       createdAt: new Date().toISOString(),
     };
@@ -3227,17 +3287,93 @@ All employees should receive fire safety training annually.`,
             <div className="p-6 border-b border-slate-200 flex items-center justify-between">
               <h3 className="text-xl text-slate-900">Start New Chat</h3>
               <button
-                onClick={() => setShowNewChat(false)}
+                onClick={() => { setShowNewChat(false); setUsernameSearch(''); setUsernameSearchResults([]); setHasSearchedUsers(false); }}
                 className="p-2 hover:bg-slate-100 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-4 max-h-96 overflow-y-auto">
+              {authUser ? (
+                <>
+                  <div className="mb-4">
+                    <p className="text-sm font-medium text-slate-700 mb-2">Find people by username</p>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input
+                          type="text"
+                          value={usernameSearch}
+                          onChange={(e) => { setUsernameSearch(e.target.value.replace(/[^a-zA-Z0-9_-]/g, '')); setHasSearchedUsers(false); }}
+                          onKeyDown={(e) => e.key === 'Enter' && searchUsersByUsername()}
+                          placeholder="e.g. john_doe"
+                          className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        />
+                      </div>
+                      <button
+                        onClick={searchUsersByUsername}
+                        disabled={usernameSearch.trim().length < 2 || isSearchingUsers}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-sm font-medium rounded-lg"
+                      >
+                        {isSearchingUsers ? 'Searching...' : 'Search'}
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">Set your username in Profile to be found by others</p>
+                  </div>
+                  {usernameSearchResults.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">Search results</h4>
+                      <div className="space-y-2">
+                        {usernameSearchResults.map(user => {
+                          const currentId = getCurrentUserId();
+                          const isFriend = getFriends().includes(user.id);
+                          const sentPending = friendRequests.some(r =>
+                            r.fromUserId === currentId && r.toUserId === user.id && r.status === 'pending'
+                          );
+                          return (
+                            <div
+                              key={user.id}
+                              className="p-3 hover:bg-slate-50 rounded-lg flex items-center gap-3"
+                            >
+                              <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                                <User className="w-5 h-5" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-slate-900">{user.name}</p>
+                                <p className="text-xs text-slate-500 truncate">{user.username ? `@${user.username}` : user.name}</p>
+                              </div>
+                              {isFriend ? (
+                                <button
+                                  onClick={() => handleStartPrivateChat(user.id)}
+                                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg"
+                                >
+                                  Chat
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleSendFriendRequest(user.id); }}
+                                  disabled={sentPending}
+                                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-sm rounded-lg flex items-center gap-1"
+                                >
+                                  <UserPlus className="w-4 h-4" />
+                                  {sentPending ? 'Pending' : 'Add friend'}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {hasSearchedUsers && !isSearchingUsers && usernameSearchResults.length === 0 && usernameSearch.trim().length >= 2 && (
+                    <p className="text-sm text-slate-500 mb-4">No users found. Try a different search or ask them to set a username in Profile.</p>
+                  )}
+                </>
+              ) : null}
               <p className="text-sm text-slate-600 mb-2">Chat with friends</p>
               <p className="text-xs text-slate-500 mb-3">Or add new people as friends to chat with them</p>
               {(() => {
-                const currentId = getCurrentUser().id;
+                const currentId = getCurrentUserId();
                 const friends = getFriends();
                 const friendsList = chatUsers.filter(u => u.id !== currentId && friends.includes(u.id));
                 const nonFriends = chatUsers.filter(u => u.id !== currentId && !friends.includes(u.id));
@@ -3305,8 +3441,11 @@ All employees should receive fire safety training annually.`,
                         </div>
                       </div>
                     )}
-                    {friendsList.length === 0 && nonFriends.length === 0 && (
-                      <p className="text-slate-500 text-sm">No other users yet. Add people as friends from the Friends panel (person icon).</p>
+                    {friendsList.length === 0 && nonFriends.length === 0 && !authUser && (
+                      <p className="text-slate-500 text-sm">Log in to find people by username and chat with friends.</p>
+                    )}
+                    {friendsList.length === 0 && nonFriends.length === 0 && authUser && usernameSearchResults.length === 0 && (
+                      <p className="text-slate-500 text-sm">Search by username above to find and add people, or they can add you as a friend.</p>
                     )}
                   </div>
                 );
