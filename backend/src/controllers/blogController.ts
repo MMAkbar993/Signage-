@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/database';
+import { getParam } from '../utils/request';
 import { sendSuccess, sendCreated, sendNoContent, sendPaginated } from '../utils/response';
 import { NotFoundError, ForbiddenError } from '../utils/errors';
 import { BlogCategory, UserRole } from '@prisma/client';
@@ -17,9 +18,11 @@ export async function getAllPosts(
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
-    const { category, search, tags } = req.query;
+    const category = getParam(req, 'category');
+    const search = getParam(req, 'search');
+    const tags = getParam(req, 'tags');
 
-    const where: any = {
+    const where: Record<string, unknown> = {
       isPublished: true,
     };
 
@@ -29,14 +32,14 @@ export async function getAllPosts(
 
     if (search) {
       where.OR = [
-        { title: { contains: search as string, mode: 'insensitive' } },
-        { excerpt: { contains: search as string, mode: 'insensitive' } },
-        { content: { contains: search as string, mode: 'insensitive' } },
+        { title: { contains: search, mode: 'insensitive' } },
+        { excerpt: { contains: search, mode: 'insensitive' } },
+        { content: { contains: search, mode: 'insensitive' } },
       ];
     }
 
     if (tags) {
-      const tagArray = (tags as string).split(',').map(t => t.trim());
+      const tagArray = tags.split(',').map(t => t.trim());
       where.tags = { hasSome: tagArray };
     }
 
@@ -82,7 +85,7 @@ export async function getPostBySlug(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { slug } = req.params;
+    const slug = getParam(req, 'slug')!;
 
     const post = await prisma.blogPost.findUnique({
       where: { slug },
@@ -180,7 +183,7 @@ export async function addComment(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { slug } = req.params;
+    const slug = getParam(req, 'slug')!;
     const { name, email, content } = req.body;
 
     const post = await prisma.blogPost.findUnique({
@@ -225,9 +228,10 @@ export async function adminGetAllPosts(
     const limit = parseInt(req.query.limit as string) || 20;
     const skip = (page - 1) * limit;
 
-    const { isPublished, search } = req.query;
+    const isPublished = getParam(req, 'isPublished');
+    const search = getParam(req, 'search');
 
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     // Non-super admins can only see their own posts
     if (req.user!.role !== UserRole.SUPER_ADMIN) {
@@ -240,8 +244,8 @@ export async function adminGetAllPosts(
 
     if (search) {
       where.OR = [
-        { title: { contains: search as string, mode: 'insensitive' } },
-        { content: { contains: search as string, mode: 'insensitive' } },
+        { title: { contains: search, mode: 'insensitive' } },
+        { content: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -310,7 +314,7 @@ export async function updatePost(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const existing = await prisma.blogPost.findUnique({
       where: { id },
@@ -356,7 +360,7 @@ export async function deletePost(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const existing = await prisma.blogPost.findUnique({
       where: { id },
@@ -388,7 +392,7 @@ export async function moderateComment(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
     const { isApproved } = req.body;
 
     const comment = await prisma.blogComment.update({
@@ -411,7 +415,7 @@ export async function deleteComment(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     await prisma.blogComment.delete({ where: { id } });
 

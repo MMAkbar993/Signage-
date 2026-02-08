@@ -3,6 +3,7 @@ import { prisma } from '../config/database';
 import { sendSuccess, sendPaginated, sendNoContent } from '../utils/response';
 import { NotFoundError, ForbiddenError, BadRequestError } from '../utils/errors';
 import { hashPassword } from '../utils/password';
+import { getParam } from '../utils/request';
 import { UserRole } from '@prisma/client';
 
 /**
@@ -72,15 +73,17 @@ export async function getAllUsers(
     const limit = parseInt(req.query.limit as string) || 20;
     const skip = (page - 1) * limit;
 
-    const { search, role, isActive } = req.query;
+    const search = getParam(req, 'search');
+    const role = getParam(req, 'role');
+    const isActive = getParam(req, 'isActive');
 
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (search) {
       where.OR = [
-        { email: { contains: search as string, mode: 'insensitive' } },
-        { firstName: { contains: search as string, mode: 'insensitive' } },
-        { lastName: { contains: search as string, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -133,7 +136,7 @@ export async function getUser(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const user = await prisma.user.findUnique({
       where: { id },
@@ -178,7 +181,7 @@ export async function updateUser(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
     const { firstName, lastName, role, isActive } = req.body;
 
     const existing = await prisma.user.findUnique({
@@ -233,7 +236,7 @@ export async function resetUserPassword(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
     const { newPassword } = req.body;
 
     const existing = await prisma.user.findUnique({
@@ -280,7 +283,7 @@ export async function deleteUser(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     if (id === req.user!.id) {
       throw new BadRequestError('Cannot delete your own account');
@@ -321,9 +324,11 @@ export async function getSignageHistory(
     const limit = parseInt(req.query.limit as string) || 50;
     const skip = (page - 1) * limit;
 
-    const { action, category, userId } = req.query;
+    const action = getParam(req, 'action');
+    const category = getParam(req, 'category');
+    const userId = getParam(req, 'userId');
 
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (action) {
       where.action = action;
@@ -381,7 +386,7 @@ export async function updateTemplate(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const template = await prisma.template.update({
       where: { id },
@@ -403,7 +408,7 @@ export async function deleteTemplate(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     await prisma.template.delete({ where: { id } });
 

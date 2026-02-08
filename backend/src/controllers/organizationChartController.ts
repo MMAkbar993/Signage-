@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
+import { getParam } from '../utils/request';
 import { sendSuccess, sendCreated, sendNoContent, sendPaginated } from '../utils/response';
 import { NotFoundError, ForbiddenError } from '../utils/errors';
 
@@ -24,8 +26,8 @@ export async function getAllOrganizationCharts(
 
     if (search) {
       where.OR = [
-        { name: { contains: search as string, mode: 'insensitive' } },
-        { description: { contains: search as string, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -58,7 +60,7 @@ export async function getOrganizationChart(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const chart = await prisma.organizationChart.findUnique({
       where: { id },
@@ -109,7 +111,7 @@ export async function updateOrganizationChart(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const existing = await prisma.organizationChart.findUnique({
       where: { id },
@@ -144,7 +146,7 @@ export async function deleteOrganizationChart(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const existing = await prisma.organizationChart.findUnique({
       where: { id },
@@ -176,7 +178,7 @@ export async function duplicateOrganizationChart(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const original = await prisma.organizationChart.findUnique({
       where: { id },
@@ -195,9 +197,11 @@ export async function duplicateOrganizationChart(
     const duplicate = await prisma.organizationChart.create({
       data: {
         ...data,
+        chartData: data.chartData ?? Prisma.JsonNull,
+        style: data.style ?? Prisma.JsonNull,
         name: `${original.name} (Copy)`,
         userId: req.user!.id,
-      },
+      } as unknown as Prisma.OrganizationChartCreateInput,
     });
 
     sendCreated(res, duplicate, 'Organization chart duplicated successfully');

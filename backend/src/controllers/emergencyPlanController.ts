@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
+import { getParam } from '../utils/request';
 import { sendSuccess, sendCreated, sendNoContent, sendPaginated } from '../utils/response';
 import { NotFoundError, ForbiddenError } from '../utils/errors';
 
@@ -16,17 +18,19 @@ export async function getAllEmergencyPlans(
     const limit = parseInt(req.query.limit as string) || 20;
     const skip = (page - 1) * limit;
 
-    const { search, emergencyType, isActive } = req.query;
+    const search = getParam(req, 'search');
+    const emergencyType = getParam(req, 'emergencyType');
+    const isActive = getParam(req, 'isActive');
 
-    const where: any = {
+    const where: Record<string, unknown> = {
       userId: req.user!.id,
     };
 
     if (search) {
       where.OR = [
-        { name: { contains: search as string, mode: 'insensitive' } },
-        { location: { contains: search as string, mode: 'insensitive' } },
-        { description: { contains: search as string, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { location: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -63,7 +67,7 @@ export async function getEmergencyPlan(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const plan = await prisma.emergencyPlan.findUnique({
       where: { id },
@@ -114,7 +118,7 @@ export async function updateEmergencyPlan(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const existing = await prisma.emergencyPlan.findUnique({
       where: { id },
@@ -149,7 +153,7 @@ export async function deleteEmergencyPlan(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const existing = await prisma.emergencyPlan.findUnique({
       where: { id },
@@ -181,7 +185,7 @@ export async function duplicateEmergencyPlan(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const original = await prisma.emergencyPlan.findUnique({
       where: { id },
@@ -200,9 +204,12 @@ export async function duplicateEmergencyPlan(
     const duplicate = await prisma.emergencyPlan.create({
       data: {
         ...data,
+        evacuationRoutes: data.evacuationRoutes ?? Prisma.JsonNull,
+        emergencyContacts: data.emergencyContacts ?? Prisma.JsonNull,
+        teamMembers: data.teamMembers ?? Prisma.JsonNull,
         name: `${original.name} (Copy)`,
         userId: req.user!.id,
-      },
+      } as unknown as Prisma.EmergencyPlanCreateInput,
     });
 
     sendCreated(res, duplicate, 'Emergency plan duplicated successfully');

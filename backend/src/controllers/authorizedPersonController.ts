@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { getParam } from '../utils/request';
 import { prisma } from '../config/database';
 import { sendSuccess, sendCreated, sendNoContent, sendPaginated } from '../utils/response';
 import { NotFoundError, ForbiddenError } from '../utils/errors';
@@ -16,17 +17,19 @@ export async function getAllAuthorizedPersons(
     const limit = parseInt(req.query.limit as string) || 50;
     const skip = (page - 1) * limit;
 
-    const { search, department, shift } = req.query;
+    const search = getParam(req, 'search');
+    const department = getParam(req, 'department');
+    const shift = getParam(req, 'shift');
 
-    const where: any = {
+    const where: Record<string, unknown> = {
       userId: req.user!.id,
     };
 
     if (search) {
       where.OR = [
-        { name: { contains: search as string, mode: 'insensitive' } },
-        { employeeId: { contains: search as string, mode: 'insensitive' } },
-        { designation: { contains: search as string, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { employeeId: { contains: search, mode: 'insensitive' } },
+        { designation: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -63,7 +66,7 @@ export async function getAuthorizedPerson(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const person = await prisma.authorizedPerson.findUnique({
       where: { id },
@@ -141,7 +144,7 @@ export async function updateAuthorizedPerson(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const existing = await prisma.authorizedPerson.findUnique({
       where: { id },
@@ -176,7 +179,7 @@ export async function deleteAuthorizedPerson(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const existing = await prisma.authorizedPerson.findUnique({
       where: { id },

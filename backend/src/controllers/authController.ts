@@ -40,18 +40,16 @@ export async function register(
     // Hash password and create user
     const hashedPassword = await hashPassword(password);
 
-    const createData: Record<string, any> = {
-      email,
-      password: hashedPassword,
-      firstName,
-      lastName,
-    };
-    if (username !== undefined && username !== null && String(username).trim() !== '') {
-      createData.username = String(username).trim().toLowerCase();
-    }
-
     const user = await prisma.user.create({
-      data: createData,
+      data: {
+        email,
+        password: hashedPassword,
+        firstName: firstName ?? undefined,
+        lastName: lastName ?? undefined,
+        ...(username !== undefined && username !== null && String(username).trim() !== ''
+          ? { username: String(username).trim().toLowerCase() }
+          : {}),
+      },
       select: {
         id: true,
         email: true,
@@ -359,7 +357,8 @@ export async function searchUsers(
   try {
     const q = (req.query.username as string)?.trim();
     if (!q || q.length < 2) {
-      return sendSuccess(res, []);
+      sendSuccess(res, []);
+      return;
     }
     const term = q;
     const users = await prisma.user.findMany({

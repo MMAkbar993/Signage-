@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { getParam } from '../utils/request';
 import { prisma } from '../config/database';
 import { sendSuccess, sendCreated, sendNoContent } from '../utils/response';
 import { NotFoundError, BadRequestError } from '../utils/errors';
@@ -103,7 +104,9 @@ export async function uploadImage(
       throw new BadRequestError('No image uploaded');
     }
 
-    const { width, height, quality } = req.query;
+    const width = getParam(req, 'width');
+    const height = getParam(req, 'height');
+    const quality = getParam(req, 'quality');
     
     const outputPath = req.file.path.replace(
       path.extname(req.file.path),
@@ -116,14 +119,14 @@ export async function uploadImage(
     // Resize if dimensions provided
     if (width || height) {
       sharpInstance = sharpInstance.resize(
-        width ? parseInt(width as string) : undefined,
-        height ? parseInt(height as string) : undefined,
+        width ? parseInt(width) : undefined,
+        height ? parseInt(height) : undefined,
         { fit: 'inside', withoutEnlargement: true }
       );
     }
 
     // Set quality
-    const q = quality ? parseInt(quality as string) : 80;
+    const q = quality ? parseInt(quality) : 80;
     
     if (req.file.mimetype === 'image/jpeg') {
       sharpInstance = sharpInstance.jpeg({ quality: q });
@@ -200,7 +203,7 @@ export async function deleteUpload(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const upload = await prisma.upload.findUnique({
       where: { id },

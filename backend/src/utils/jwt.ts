@@ -17,7 +17,7 @@ export interface TokenPair {
  */
 export function generateAccessToken(payload: Omit<TokenPayload, 'iat' | 'exp'>): string {
   const options: SignOptions = {
-    expiresIn: config.jwt.expiresIn,
+    expiresIn: config.jwt.expiresIn as unknown as SignOptions['expiresIn'],
   };
   return jwt.sign(payload, config.jwt.secret, options);
 }
@@ -27,7 +27,7 @@ export function generateAccessToken(payload: Omit<TokenPayload, 'iat' | 'exp'>):
  */
 export function generateRefreshToken(payload: Omit<TokenPayload, 'iat' | 'exp'>): string {
   const options: SignOptions = {
-    expiresIn: config.jwt.refreshExpiresIn,
+    expiresIn: config.jwt.refreshExpiresIn as unknown as SignOptions['expiresIn'],
   };
   return jwt.sign(payload, config.jwt.refreshSecret, options);
 }

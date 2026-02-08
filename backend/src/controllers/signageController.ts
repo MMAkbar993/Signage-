@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
+import { Prisma, SignageCategory } from '@prisma/client';
+import { getParam } from '../utils/request';
 import { prisma } from '../config/database';
 import { sendSuccess, sendCreated, sendNoContent, sendPaginated } from '../utils/response';
 import { NotFoundError, ForbiddenError } from '../utils/errors';
-import { Prisma, SignageCategory } from '@prisma/client';
 
 /**
  * Get all signages for the current user
@@ -17,7 +18,9 @@ export async function getAllSignages(
     const limit = parseInt(req.query.limit as string) || 20;
     const skip = (page - 1) * limit;
 
-    const { category, search, isTemplate } = req.query;
+    const category = getParam(req, 'category');
+    const search = getParam(req, 'search');
+    const isTemplate = getParam(req, 'isTemplate');
 
     // Build where clause
     const where: Prisma.SignageWhereInput = {
@@ -34,9 +37,9 @@ export async function getAllSignages(
 
     if (search) {
       where.OR = [
-        { title: { contains: search as string, mode: 'insensitive' } },
-        { description: { contains: search as string, mode: 'insensitive' } },
-        { location: { contains: search as string, mode: 'insensitive' } },
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { location: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -66,7 +69,7 @@ export async function getSignage(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const signage = await prisma.signage.findUnique({
       where: { id },
@@ -100,7 +103,7 @@ export async function createSignage(
       data: {
         ...req.body,
         userId: req.user!.id,
-      },
+      } as unknown as Prisma.SignageCreateInput,
     });
 
     // Track signage creation
@@ -130,7 +133,7 @@ export async function updateSignage(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     // Check if signage exists and belongs to user
     const existing = await prisma.signage.findUnique({
@@ -166,7 +169,7 @@ export async function deleteSignage(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     // Check if signage exists and belongs to user
     const existing = await prisma.signage.findUnique({
@@ -199,7 +202,7 @@ export async function duplicateSignage(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const original = await prisma.signage.findUnique({
       where: { id },
@@ -220,10 +223,13 @@ export async function duplicateSignage(
     const duplicate = await prisma.signage.create({
       data: {
         ...data,
+        customPPEImages: data.customPPEImages ?? Prisma.JsonNull,
+        emergencyContacts: data.emergencyContacts ?? Prisma.JsonNull,
+        qrCodeConfig: data.qrCodeConfig ?? Prisma.JsonNull,
         title: `${original.title} (Copy)`,
         userId: req.user!.id,
         isPublic: false,
-      },
+      } as unknown as Prisma.SignageCreateInput,
     });
 
     sendCreated(res, duplicate, 'Signage duplicated successfully');
@@ -245,7 +251,8 @@ export async function getPublicSignages(
     const limit = parseInt(req.query.limit as string) || 20;
     const skip = (page - 1) * limit;
 
-    const { category, search } = req.query;
+    const category = getParam(req, 'category');
+    const search = getParam(req, 'search');
 
     const where: Prisma.SignageWhereInput = {
       isPublic: true,
@@ -257,8 +264,8 @@ export async function getPublicSignages(
 
     if (search) {
       where.OR = [
-        { title: { contains: search as string, mode: 'insensitive' } },
-        { description: { contains: search as string, mode: 'insensitive' } },
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -295,7 +302,7 @@ export async function trackDownload(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
     const { format } = req.body;
 
     await prisma.signageHistory.create({

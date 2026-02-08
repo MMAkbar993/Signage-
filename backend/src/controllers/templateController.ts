@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { getParam } from '../utils/request';
 import { prisma } from '../config/database';
 import { sendSuccess, sendCreated, sendNoContent, sendPaginated } from '../utils/response';
 import { NotFoundError, ForbiddenError } from '../utils/errors';
@@ -17,7 +18,10 @@ export async function getAllTemplates(
     const limit = parseInt(req.query.limit as string) || 50;
     const skip = (page - 1) * limit;
 
-    const { category, industry, search, tags } = req.query;
+    const category = getParam(req, 'category');
+    const industry = getParam(req, 'industry');
+    const search = getParam(req, 'search');
+    const tags = getParam(req, 'tags');
 
     const where: any = {
       isActive: true,
@@ -33,14 +37,14 @@ export async function getAllTemplates(
 
     if (search) {
       where.OR = [
-        { name: { contains: search as string, mode: 'insensitive' } },
-        { description: { contains: search as string, mode: 'insensitive' } },
-        { detailedDescription: { contains: search as string, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { detailedDescription: { contains: search, mode: 'insensitive' } },
       ];
     }
 
     if (tags) {
-      const tagArray = (tags as string).split(',').map(t => t.trim());
+      const tagArray = tags.split(',').map(t => t.trim());
       where.tags = { hasSome: tagArray };
     }
 
@@ -72,7 +76,7 @@ export async function getTemplate(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const template = await prisma.template.findUnique({
       where: { id },
@@ -181,7 +185,8 @@ export async function getUserTemplates(
     const limit = parseInt(req.query.limit as string) || 20;
     const skip = (page - 1) * limit;
 
-    const { category, search } = req.query;
+    const category = getParam(req, 'category');
+    const search = getParam(req, 'search');
 
     const where: any = {
       userId: req.user!.id,
@@ -193,8 +198,8 @@ export async function getUserTemplates(
 
     if (search) {
       where.OR = [
-        { name: { contains: search as string, mode: 'insensitive' } },
-        { description: { contains: search as string, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -223,7 +228,7 @@ export async function getUserTemplate(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const template = await prisma.customTemplate.findUnique({
       where: { id },
@@ -274,7 +279,7 @@ export async function updateUserTemplate(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const existing = await prisma.customTemplate.findUnique({
       where: { id },
@@ -309,7 +314,7 @@ export async function deleteUserTemplate(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = getParam(req, 'id')!;
 
     const existing = await prisma.customTemplate.findUnique({
       where: { id },
