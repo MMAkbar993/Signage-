@@ -58,6 +58,16 @@ async function request<T>(
   }
 
   const res = await fetch(url, { ...options, headers, credentials: 'include' });
+  const contentType = res.headers.get('Content-Type') || '';
+  if (!contentType.includes('application/json')) {
+    const text = await res.text();
+    if (res.status === 404) {
+      throw new Error('API not found (404). Check Vercel: Root Directory must be repo root, not frontend.');
+    }
+    throw new Error(
+      res.ok ? 'Server returned non-JSON.' : `Server error (${res.status}). ${text.slice(0, 80)}`
+    );
+  }
   const json: ApiResponse<T> = await res.json();
 
   if (!res.ok) {

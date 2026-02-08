@@ -5,6 +5,11 @@
   "outputDirectory": "frontend/dist",
   "installCommand": "cd backend && npm install && cd ../frontend && npm install",
   "framework": "vite",
+  "functions": {
+    "api/[[...path]].js": {
+      "includeFiles": "backend/dist/**"
+    }
+  },
   "rewrites": [
     {
       "source": "/auth/:path*",
