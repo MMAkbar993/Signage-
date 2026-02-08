@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
 import { hashPassword, comparePassword } from '../utils/password';
 import { generateTokenPair, verifyRefreshToken, getTokenExpiration } from '../utils/jwt';
@@ -40,16 +41,18 @@ export async function register(
     // Hash password and create user
     const hashedPassword = await hashPassword(password);
 
+    const createData: Prisma.UserCreateInput = {
+      email,
+      password: hashedPassword,
+      firstName: firstName ?? undefined,
+      lastName: lastName ?? undefined,
+      ...(username !== undefined && username !== null && String(username).trim() !== ''
+        ? { username: String(username).trim().toLowerCase() }
+        : {}),
+    };
+
     const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        firstName: firstName ?? undefined,
-        lastName: lastName ?? undefined,
-        ...(username !== undefined && username !== null && String(username).trim() !== ''
-          ? { username: String(username).trim().toLowerCase() }
-          : {}),
-      },
+      data: createData,
       select: {
         id: true,
         email: true,
@@ -316,7 +319,7 @@ export async function updateProfile(
       }
     }
 
-    const updateData: Record<string, any> = {};
+    const updateData: Prisma.UserUpdateInput = {};
     if (firstName !== undefined) updateData.firstName = firstName;
     if (lastName !== undefined) updateData.lastName = lastName;
     if (avatar !== undefined) updateData.avatar = avatar;

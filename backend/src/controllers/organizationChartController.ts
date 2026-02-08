@@ -197,11 +197,11 @@ export async function duplicateOrganizationChart(
     const duplicate = await prisma.organizationChart.create({
       data: {
         ...data,
-        chartData: data.chartData ?? Prisma.JsonNull,
-        style: data.style ?? Prisma.JsonNull,
+        chartData: (data.chartData == null ? Prisma.JsonNull : data.chartData) as Prisma.InputJsonValue,
+        style: (data.style == null ? Prisma.JsonNull : data.style) as Prisma.InputJsonValue,
         name: `${original.name} (Copy)`,
         userId: req.user!.id,
-      } as unknown as Prisma.OrganizationChartCreateInput,
+      },
     });
 
     sendCreated(res, duplicate, 'Organization chart duplicated successfully');

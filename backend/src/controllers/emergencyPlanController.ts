@@ -204,12 +204,12 @@ export async function duplicateEmergencyPlan(
     const duplicate = await prisma.emergencyPlan.create({
       data: {
         ...data,
-        evacuationRoutes: data.evacuationRoutes ?? Prisma.JsonNull,
-        emergencyContacts: data.emergencyContacts ?? Prisma.JsonNull,
-        teamMembers: data.teamMembers ?? Prisma.JsonNull,
+        evacuationRoutes: (data.evacuationRoutes == null ? Prisma.JsonNull : data.evacuationRoutes) as Prisma.InputJsonValue,
+        emergencyContacts: (data.emergencyContacts == null ? Prisma.JsonNull : data.emergencyContacts) as Prisma.InputJsonValue,
+        teamMembers: (data.teamMembers == null ? Prisma.JsonNull : data.teamMembers) as Prisma.InputJsonValue,
         name: `${original.name} (Copy)`,
         userId: req.user!.id,
-      } as unknown as Prisma.EmergencyPlanCreateInput,
+      },
     });
 
     sendCreated(res, duplicate, 'Emergency plan duplicated successfully');

@@ -4,5 +4,6 @@ import { Request } from 'express';
 export function getParam(req: Request, key: string): string | undefined {
   const val = req.params[key] ?? req.query[key];
   if (val === undefined || val === null) return undefined;
-  return Array.isArray(val) ? val[0] : String(val);
+  const single = Array.isArray(val) ? val[0] : val;
+  return typeof single === 'string' ? single : undefined;
 }

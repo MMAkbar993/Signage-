@@ -223,13 +223,13 @@ export async function duplicateSignage(
     const duplicate = await prisma.signage.create({
       data: {
         ...data,
-        customPPEImages: data.customPPEImages ?? Prisma.JsonNull,
-        emergencyContacts: data.emergencyContacts ?? Prisma.JsonNull,
-        qrCodeConfig: data.qrCodeConfig ?? Prisma.JsonNull,
+        customPPEImages: (data.customPPEImages == null ? Prisma.JsonNull : data.customPPEImages) as Prisma.InputJsonValue,
+        emergencyContacts: (data.emergencyContacts == null ? Prisma.JsonNull : data.emergencyContacts) as Prisma.InputJsonValue,
+        qrCodeConfig: (data.qrCodeConfig == null ? Prisma.JsonNull : data.qrCodeConfig) as Prisma.InputJsonValue,
         title: `${original.title} (Copy)`,
         userId: req.user!.id,
         isPublic: false,
-      } as unknown as Prisma.SignageCreateInput,
+      },
     });
 
     sendCreated(res, duplicate, 'Signage duplicated successfully');
