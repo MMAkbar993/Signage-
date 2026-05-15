@@ -60,6 +60,21 @@ router.post(
 );
 
 /**
+ * @route POST /api/auth/google
+ * @desc Login or register with Google (send idToken from Google Sign-In)
+ * @access Public
+ */
+router.post(
+  '/google',
+  validate([
+    body('idToken')
+      .notEmpty()
+      .withMessage('Google ID token is required'),
+  ]),
+  authController.loginWithGoogle
+);
+
+/**
  * @route POST /api/auth/refresh
  * @desc Refresh access token
  * @access Public
