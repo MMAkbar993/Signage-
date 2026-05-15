@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { Prisma } from '@prisma/client';
+import { OAuth2Client } from 'google-auth-library';
 import { prisma } from '../config/database';
 import { hashPassword, comparePassword } from '../utils/password';
 import { generateTokenPair, verifyRefreshToken, getTokenExpiration } from '../utils/jwt';
@@ -116,6 +117,11 @@ export async function login(
       throw new UnauthorizedError('Your account has been deactivated');
     }
 
+    // Users who signed up with Google have no password
+    if (!user.password) {
+      throw new UnauthorizedError('This account uses Google sign-in. Please use "Sign in with Google".');
+    }
+
     // Verify password
     const isPasswordValid = await comparePassword(password, user.password);
 
@@ -150,6 +156,124 @@ export async function login(
         lastName: user.lastName,
         role: user.role,
       },
+      ...tokens,
+    }, 'Login successful');
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Login or register with Google (OAuth2 ID token)
+ */
+export async function loginWithGoogle(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { idToken } = req.body;
+    if (!idToken || typeof idToken !== 'string') {
+      throw new BadRequestError('Google ID token is required');
+    }
+    const clientId = config.google?.clientId;
+    if (!clientId) {
+      throw new BadRequestError('Google sign-in is not configured');
+    }
+
+    const client = new OAuth2Client(clientId);
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: clientId,
+    });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email || !payload.sub) {
+      throw new UnauthorizedError('Invalid Google token');
+    }
+
+    const { email, sub: googleId, given_name: firstName, family_name: lastName, picture: avatar } = payload;
+
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [{ googleId }, { email: email.toLowerCase() }],
+      },
+    });
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: email.toLowerCase(),
+          googleId,
+          firstName: firstName ?? undefined,
+          lastName: lastName ?? undefined,
+          avatar: avatar ?? undefined,
+          emailVerified: true,
+        },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          avatar: true,
+          createdAt: true,
+        },
+      });
+    } else {
+      if (!user.isActive) {
+        throw new UnauthorizedError('Your account has been deactivated');
+      }
+      if (!user.googleId) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { googleId, emailVerified: true, avatar: avatar ?? user.avatar },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+            avatar: true,
+            createdAt: true,
+          },
+        });
+      } else {
+        user = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+            avatar: true,
+            createdAt: true,
+          },
+        });
+      }
+    }
+
+    const tokens = generateTokenPair({
+      userId: user!.id,
+      email: user!.email,
+      role: user!.role,
+    });
+
+    await prisma.session.create({
+      data: {
+        userId: user!.id,
+        refreshToken: tokens.refreshToken,
+        expiresAt: getTokenExpiration(config.jwt.refreshExpiresIn),
+        userAgent: req.headers['user-agent'],
+        ipAddress: req.ip,
+      },
+    });
+
+    sendSuccess(res, {
+      user: user!,
       ...tokens,
     }, 'Login successful');
   } catch (error) {
@@ -409,6 +533,10 @@ export async function changePassword(
       throw new UnauthorizedError('User not found');
     }
 
+    if (!user.password) {
+      throw new BadRequestError('This account uses Google sign-in. Set a password in your profile to use email login.');
+    }
+
     // Verify current password
     const isPasswordValid = await comparePassword(currentPassword, user.password);
 
@@ -438,6 +566,7 @@ export async function changePassword(
 export default {
   register,
   login,
+  loginWithGoogle,
   refreshToken,
   logout,
   me,

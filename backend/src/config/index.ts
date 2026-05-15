@@ -52,6 +52,11 @@ export const config = {
     email: process.env.ADMIN_EMAIL || 'admin@signagecreators.com',
     password: process.env.ADMIN_PASSWORD || 'admin123',
   },
+
+  // Google OAuth (for login with Google)
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+  },
 };
 
 export default config;
