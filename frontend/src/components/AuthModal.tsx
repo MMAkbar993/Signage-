@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, User, Eye, EyeOff, AlertCircle, AtSign } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AuthModalProps {
@@ -23,7 +24,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { login, register } = useAuth();
+  const { login, loginWithGoogle, register } = useAuth();
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
   const resetForm = () => {
     setEmail('');
@@ -99,6 +101,37 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
             <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {error}
+            </div>
+          )}
+
+          {googleClientId && (
+            <div className="flex flex-col items-center gap-2">
+              <GoogleLogin
+                theme="filled"
+                size="large"
+                text={mode === 'login' ? 'signin_with' : 'signup_with'}
+                width="100%"
+                onSuccess={(credentialResponse) => {
+                  const token = credentialResponse.credential;
+                  if (token) {
+                    setError('');
+                    setIsSubmitting(true);
+                    loginWithGoogle(token)
+                      .then(() => {
+                        resetForm();
+                        onClose();
+                      })
+                      .catch((err: unknown) => {
+                        setError(err instanceof Error ? err.message : 'Google sign-in failed');
+                      })
+                      .finally(() => setIsSubmitting(false));
+                  }
+                }}
+                onError={() => {
+                  setError('Google sign-in was cancelled or failed');
+                }}
+              />
+              <p className="text-slate-500 text-sm">or continue with email</p>
             </div>
           )}
 

@@ -92,6 +92,13 @@ export const authApi = {
     });
   },
 
+  async loginWithGoogle(idToken: string): Promise<AuthResponse> {
+    return request<AuthResponse>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    });
+  },
+
   async logout(): Promise<void> {
     const refreshToken = localStorage.getItem('refreshToken');
     try {
