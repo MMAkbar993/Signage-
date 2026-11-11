@@ -23,7 +23,7 @@
     "vite": "6.3.5"
   },
   "scripts": {
-    "dev": "node init && vite",
-    "build": "node init && vite build"
+    "dev": "vite",
+    "build": "vite build"
   }
 }
